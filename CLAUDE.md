@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 2.5 Flash, Vertex AI Imagen 4, or AWS Bedrock Nova Canvas
+- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4, or AWS Bedrock Nova Canvas
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -104,7 +104,8 @@ type ImageGenerator interface {
 ### Backend Selection Logic
 
 Model name implies backend (auto-detect):
-- `gemini-2.5-flash-image` → gemini
+- `gemini-2.5-flash-image` → gemini (FREE tier)
+- `gemini-3-pro-image-preview` → gemini (native 4K, $0.134/image)
 - `imagen-4` → vertex
 - `amazon.nova-canvas-v1:0` → bedrock
 
@@ -114,11 +115,14 @@ Optional `--api` flag overrides auto-detection.
 
 Map informal names to exact model IDs:
 
-| User Input | Exact Model ID | API |
-|-----------|---------------|-----|
-| "gemini", "flash" | `gemini-2.5-flash-image` | gemini |
-| "imagen", "imagen-4" | `imagen-4` | vertex |
-| "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock |
+| User Input | Exact Model ID | API | Features |
+|-----------|---------------|-----|----------|
+| "gemini", "flash" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
+| "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image |
+| "imagen", "imagen-4" | `imagen-4` | vertex | Highest quality, $0.04/image |
+| "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.08/image |
+
+**Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
 
 **Always use exact model IDs from the mapping table.**
 

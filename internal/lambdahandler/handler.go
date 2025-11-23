@@ -3,25 +3,28 @@ package lambdahandler
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/apresai/gimage/internal/observability"
 )
 
 // Handler is the main Lambda handler
 type Handler struct {
 	s3Client *S3Client
+	log      *observability.VerboseLogger
 }
 
 // NewHandler creates a new Lambda handler
 func NewHandler() *Handler {
-	return &Handler{}
+	return &Handler{
+		log: observability.NewVerboseLogger(observability.ComponentLambda),
+	}
 }
 
 // Handle processes an API Gateway proxy request
 func (h *Handler) Handle(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Log the request
-	log.Printf("Received %s request to %s", req.HTTPMethod, req.Path)
+	h.log.Info("Received %s request to %s", req.HTTPMethod, req.Path)
 
 	// Handle OPTIONS requests for CORS preflight
 	if req.HTTPMethod == "OPTIONS" {
@@ -35,7 +38,7 @@ func (h *Handler) Handle(ctx context.Context, req events.APIGatewayProxyRequest)
 	if h.s3Client == nil {
 		s3Client, err := NewS3Client(ctx)
 		if err != nil {
-			log.Printf("Failed to create S3 client: %v", err)
+			h.log.Error("Failed to create S3 client: %v", err)
 			return errorResponse(500, fmt.Sprintf("Failed to initialize S3 client: %v", err)), nil
 		}
 		h.s3Client = s3Client

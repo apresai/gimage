@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"image"
 	"path/filepath"
+	"time"
 
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/disintegration/imaging"
 )
 
@@ -49,6 +51,11 @@ func RegisterCropImageTool(server *mcp.MCPServer) {
 			"required": []string{"input", "x", "y", "width", "height"},
 		},
 		Handler: func(args map[string]interface{}) (map[string]interface{}, error) {
+			log := observability.NewVerboseLogger(observability.ComponentMCP)
+			startTime := time.Now()
+
+			log.Debug("crop_image tool invoked")
+
 			// Validate input
 			inputArg, err := validateString(args["input"], "input")
 			if err != nil {
@@ -137,6 +144,8 @@ func RegisterCropImageTool(server *mcp.MCPServer) {
 
 			// Get absolute path for response
 			absPath, _ := filepath.Abs(output)
+
+			log.Debug("Crop complete: (%d,%d) %dx%d in %s", x, y, width, height, time.Since(startTime))
 
 			result := map[string]interface{}{
 				"success":     true,

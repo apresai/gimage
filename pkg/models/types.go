@@ -8,6 +8,7 @@ type GenerateOptions struct {
 	Style          string
 	NegativePrompt string
 	Seed           int64
+	ImageSize      string // For Gemini 3 Pro: "1K", "2K", "4K" (native upscaling)
 }
 
 // GeneratedImage represents the result of an AI image generation request

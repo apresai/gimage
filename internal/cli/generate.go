@@ -86,6 +86,46 @@ func formatImageSize(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
+// getGemini3ProCost returns the cost for Gemini 3 Pro based on image size
+// Pricing: $0.134 for 1K/2K, $0.24 for 4K
+func getGemini3ProCost(imageSize string) float64 {
+	if strings.ToUpper(imageSize) == "4K" {
+		return 0.24
+	}
+	return 0.134 // Default for 1K/2K or unspecified
+}
+
+// getNovaCanvasCost returns the cost for Nova Canvas based on image dimensions
+// Pricing: $0.04 for ≤1024x1024, $0.08 for >1024x1024
+func getNovaCanvasCost(size string) float64 {
+	width, height := parseDimensionsForCost(size)
+	if width > 1024 || height > 1024 {
+		return 0.08
+	}
+	return 0.04
+}
+
+// parseDimensionsForCost parses "WIDTHxHEIGHT" string for cost calculation
+func parseDimensionsForCost(size string) (int, int) {
+	if size == "" {
+		return 1024, 1024
+	}
+	parts := strings.Split(size, "x")
+	if len(parts) != 2 {
+		return 1024, 1024
+	}
+	var width, height int
+	fmt.Sscanf(parts[0], "%d", &width)
+	fmt.Sscanf(parts[1], "%d", &height)
+	if width <= 0 {
+		width = 1024
+	}
+	if height <= 0 {
+		height = 1024
+	}
+	return width, height
+}
+
 var generateCmd = &cobra.Command{
 	Use:   "generate [prompt]",
 	Short: "Generate an image from a text prompt using AI",
@@ -135,6 +175,12 @@ Examples:
 			return nil // Skip validation for list-providers
 		}
 
+		// Check if --prompt-howto flag is set
+		promptHowto, _ := cmd.Flags().GetBool("prompt-howto")
+		if promptHowto {
+			return nil // Skip validation for prompt-howto
+		}
+
 		// Require either positional prompt or --prompt flag
 		prompt, _ := cmd.Flags().GetString("prompt")
 		if len(args) == 0 && prompt == "" {
@@ -174,6 +220,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	size, _ := cmd.Flags().GetString("size")
+	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3 Pro: 1K, 2K, 4K
+	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3 Pro: 1:1, 16:9, etc.
 	style, _ := cmd.Flags().GetString("style")
 	negative, _ := cmd.Flags().GetString("negative")
 	seed, _ := cmd.Flags().GetInt64("seed")
@@ -188,6 +236,12 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	// Handle --list-models flag (legacy)
 	if listModels {
 		return printAvailableModels()
+	}
+
+	// Handle --prompt-howto flag
+	promptHowto, _ := cmd.Flags().GetBool("prompt-howto")
+	if promptHowto {
+		return printPromptHowto()
 	}
 
 	// Get prompt - prefer positional argument, fall back to --prompt flag
@@ -209,6 +263,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	options := models.GenerateOptions{
 		Model:          model,
 		Size:           size,
+		ImageSize:      imageSize,   // For Gemini 3 Pro: 1K, 2K, 4K
+		AspectRatio:    aspectRatio, // For Gemini 3 Pro: 1:1, 16:9, etc.
 		Style:          style,
 		NegativePrompt: negative,
 		Seed:           seed,
@@ -311,13 +367,26 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			if provider.Pricing.FreeTier {
 				pricingDisplay = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
 			} else if provider.Pricing.CostPerImage != nil {
-				pricingDisplay = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
+				// Gemini 3 Pro has variable pricing based on image size
+				if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+					cost := getGemini3ProCost(imageSize)
+					pricingDisplay = fmt.Sprintf("$%.4f/image (%s)", cost, imageSizeLabel(imageSize))
+				} else {
+					pricingDisplay = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
+				}
 			}
 			printInfo("Pricing: %s", pricingDisplay)
 
 			// Warn if expensive (cost > $0.05)
-			if provider.Pricing.CostPerImage != nil && *provider.Pricing.CostPerImage > 0.05 {
-				fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, *provider.Pricing.CostPerImage)
+			if provider.Pricing.CostPerImage != nil {
+				cost := *provider.Pricing.CostPerImage
+				// Use actual cost for Gemini 3 Pro
+				if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+					cost = getGemini3ProCost(imageSize)
+				}
+				if cost > 0.05 {
+					fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, cost)
+				}
 			}
 		}
 
@@ -448,7 +517,18 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		// Show pricing info
 		if !provider.Pricing.FreeTier && provider.Pricing.CostPerImage != nil {
 			cost := *provider.Pricing.CostPerImage
-			printVerbose("Cost: $%.4f/image", cost)
+			// Nova Canvas has variable pricing based on size
+			if strings.Contains(provider.ModelID, "nova-canvas") {
+				cost = getNovaCanvasCost(size)
+				w, h := parseDimensionsForCost(size)
+				if w > 1024 || h > 1024 {
+					printVerbose("Cost: $%.4f/image (>1024px)", cost)
+				} else {
+					printVerbose("Cost: $%.4f/image (≤1024px)", cost)
+				}
+			} else {
+				printVerbose("Cost: $%.4f/image", cost)
+			}
 
 			// Warn if expensive (cost > $0.05)
 			if cost > 0.05 {
@@ -538,15 +618,46 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		if provider.Pricing.FreeTier {
 			printInfo("  Cost: FREE (within %s)", provider.Pricing.FreeTierLimit)
 		} else if provider.Pricing.CostPerImage != nil {
-			printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
+			// Gemini 3 Pro has variable pricing based on image size
+			if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+				cost := getGemini3ProCost(imageSize)
+				printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
+			} else if strings.Contains(provider.ModelID, "nova-canvas") {
+				// Nova Canvas has variable pricing based on dimensions
+				cost := getNovaCanvasCost(size)
+				w, h := parseDimensionsForCost(size)
+				if w > 1024 || h > 1024 {
+					printInfo("  Cost: $%.4f (>1024px)", cost)
+				} else {
+					printInfo("  Cost: $%.4f (≤1024px)", cost)
+				}
+			} else {
+				printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
+			}
 		}
 	}
 
 	return nil
 }
 
+// imageSizeLabel returns a human-readable label for the image size
+func imageSizeLabel(imageSize string) string {
+	switch strings.ToUpper(imageSize) {
+	case "4K":
+		return "4K resolution"
+	case "2K":
+		return "2K resolution"
+	case "1K":
+		return "1K resolution"
+	default:
+		return "1K/2K resolution"
+	}
+}
+
 // runGenerateWithProvider handles image generation using the new provider system
 func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, size, style, negative string, seed int64) error {
+	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3 Pro: 1K, 2K, 4K
+	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3 Pro: 1:1, 16:9, etc.
 	registry := generate.GetProviderRegistry()
 
 	// Resolve provider
@@ -598,6 +709,8 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	options := models.GenerateOptions{
 		Model:          provider.ModelID,
 		Size:           size,
+		ImageSize:      imageSize,   // For Gemini 3 Pro: 1K, 2K, 4K
+		AspectRatio:    aspectRatio, // For Gemini 3 Pro: 1:1, 16:9, etc.
 		Style:          style,
 		NegativePrompt: negative,
 		Seed:           seed,
@@ -638,7 +751,22 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	if provider.Pricing.FreeTier {
 		printInfo("  Cost: FREE (within daily limit)")
 	} else if provider.Pricing.CostPerImage != nil {
-		printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
+		// Gemini 3 Pro has variable pricing based on image size
+		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+			cost := getGemini3ProCost(imageSize)
+			printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
+		} else if strings.Contains(provider.ModelID, "nova-canvas") {
+			// Nova Canvas has variable pricing based on dimensions
+			cost := getNovaCanvasCost(size)
+			w, h := parseDimensionsForCost(size)
+			if w > 1024 || h > 1024 {
+				printInfo("  Cost: $%.4f (>1024px)", cost)
+			} else {
+				printInfo("  Cost: $%.4f (≤1024px)", cost)
+			}
+		} else {
+			printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
+		}
 	}
 
 	return nil
@@ -967,6 +1095,194 @@ func printAvailableModels() error {
 	return nil
 }
 
+// printPromptHowto displays tips and examples for writing effective prompts
+func printPromptHowto() error {
+	fmt.Println(`
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                        PROMPT WRITING GUIDE                                   ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ CORE PRINCIPLE                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Describe the scene, don't just list keywords.                                 │
+│                                                                                 │
+│   The model excels at language comprehension. Descriptive paragraphs            │
+│   consistently outperform disconnected word lists.                              │
+│                                                                                 │
+│   ✗ BAD:  "coffee mug, black, modern, studio"                                   │
+│   ✓ GOOD: "a minimalist ceramic coffee mug in matte black, resting on           │
+│            polished concrete, illuminated by soft three-point studio lighting"  │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ PHOTOREALISTIC IMAGES                                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Use photography terminology:                                                    │
+│   • Camera/Lens: "shot with 85mm lens", "wide-angle perspective"                │
+│   • Lighting: "golden hour light", "soft diffused lighting"                     │
+│   • Mood: "serene atmosphere", "moody and cinematic"                            │
+│   • Details: "fine texture visible", "shallow depth of field"                   │
+│                                                                                 │
+│ Example:                                                                        │
+│   gimage generate "portrait of an elderly craftsman in his woodworking shop,    │
+│   shot with 85mm lens, golden hour light streaming through dusty windows,       │
+│   shallow depth of field, warm tones"                                           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STYLIZED ILLUSTRATIONS                                                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Be explicit about artistic style:                                               │
+│   • Art style: kawaii, cel-shading, minimalist, watercolor, vector art          │
+│   • Line work: bold outlines, thin linework, no outlines                        │
+│   • Colors: pastel palette, vibrant colors, monochromatic                       │
+│   • Background: transparent, gradient, solid color                              │
+│                                                                                 │
+│ Example:                                                                        │
+│   gimage generate "kawaii style cat sticker with bold black outlines,           │
+│   pastel pink and white color palette, chibi proportions, simple background"    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ TEXT IN IMAGES (Gemini excels at this!)                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   • State the exact text to include in quotes                                   │
+│   • Describe font style: "bold sans-serif", "elegant script"                    │
+│   • Specify context: logo, poster, menu, sign                                   │
+│                                                                                 │
+│ Example:                                                                        │
+│   gimage generate "vintage coffee shop chalkboard menu with hand-lettered       │
+│   text reading 'Fresh Roasted Daily', weathered wooden frame, warm lighting"    │
+│                                                                                 │
+│ For professional text-heavy assets, use Gemini 3 Pro:                           │
+│   gimage generate "..." --model gemini-3-pro --image-size 4K                    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ PRODUCT PHOTOGRAPHY                                                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Structure prompts with studio details:                                          │
+│   1. Product description: materials, colors, size context                       │
+│   2. Studio setup: lighting type, background surface                            │
+│   3. Camera angle: overhead, eye-level, 45-degree                               │
+│   4. Focus: what should be sharp vs soft                                        │
+│                                                                                 │
+│ Example:                                                                        │
+│   gimage generate "luxury wristwatch with rose gold case and black leather      │
+│   strap, positioned at 45-degree angle on white marble surface, three-point     │
+│   softbox lighting, macro detail on watch face, clean white background"         │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ QUICK TRANSFORMATIONS                                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Weak → Strong:                                                                  │
+│                                                                                 │
+│   "sunset" →                                                                    │
+│   "dramatic sunset over ocean waves, vibrant orange and purple sky,             │
+│    silhouetted palm trees, shot from beach level"                               │
+│                                                                                 │
+│   "cat" →                                                                       │
+│   "fluffy orange tabby cat curled up on vintage velvet armchair,                │
+│    soft window light, cozy living room atmosphere"                              │
+│                                                                                 │
+│   "logo" →                                                                      │
+│   "minimalist mountain logo in deep blue, clean geometric lines,                │
+│    text 'SUMMIT' in bold sans-serif below"                                      │
+│                                                                                 │
+│   "food" →                                                                      │
+│   "artisan sourdough bread loaf on rustic wooden cutting board,                 │
+│    steam rising, golden crust with flour dusting, warm kitchen background"      │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STYLE MODIFIERS                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Add these to shift the aesthetic:                                               │
+│                                                                                 │
+│   Realism:  "photorealistic", "hyperrealistic", "documentary style"             │
+│   Art:      "oil painting style", "digital art", "pencil sketch"                │
+│   Mood:     "cinematic", "ethereal", "gritty", "whimsical"                       │
+│   Era:      "1970s film grain", "art deco", "cyberpunk", "vintage"              │
+│   Quality:  "highly detailed", "4K resolution", "studio quality"                │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ LIGHTING KEYWORDS                                                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Soft:     diffused, overcast, ambient, fill light                             │
+│   Hard:     direct sunlight, spotlight, harsh shadows                           │
+│   Dramatic: rim lighting, backlit, chiaroscuro, silhouette                      │
+│   Natural:  golden hour, blue hour, midday sun, overcast sky                    │
+│   Studio:   softbox, ring light, three-point setup, product lighting            │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ SIZE & ASPECT RATIO                                                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Standard sizes (--size):                                                        │
+│   Square (1024x1024):     social media posts, icons, avatars                    │
+│   Landscape (1792x1024):  banners, scenes, desktop wallpapers                   │
+│   Portrait (1024x1792):   phone wallpapers, portraits, stories                  │
+│                                                                                 │
+│   gimage generate "..." --size 1024x1024    # Square                            │
+│   gimage generate "..." --size 1792x1024    # Landscape                         │
+│   gimage generate "..." --size 1024x1792    # Portrait                          │
+│                                                                                 │
+│ Gemini 3 Pro native options (--image-size, --aspect-ratio):                     │
+│   gimage generate "..." --model gemini-3-pro --image-size 4K                    │
+│   gimage generate "..." --model gemini-3-pro --aspect-ratio 16:9                │
+│   gimage generate "..." --model gemini-3-pro --image-size 2K --aspect-ratio 5:4 │
+│                                                                                 │
+│ Supported aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3          │
+│                                                                                 │
+│ Gemini 3 Pro pricing (varies by size):                                          │
+│   1K/2K: $0.134/image    4K: $0.24/image                                        │
+│                                                                                 │
+│ Nova Canvas pricing (varies by dimensions):                                     │
+│   ≤1024x1024: $0.04/image    >1024x1024: $0.08/image                            │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ TIPS FOR BETTER RESULTS                                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   1. Start simple, add details incrementally                                    │
+│   2. Be specific about what matters most                                        │
+│   3. Use concrete nouns over abstract concepts                                  │
+│   4. Specify what you don't want with --negative flag                           │
+│   5. Try different phrasings - small changes yield different results            │
+│   6. Use --seed for reproducibility when iterating                              │
+│                                                                                 │
+│ Example with negative prompt:                                                   │
+│   gimage generate "serene forest path" --negative "people, buildings, cars"     │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+Source: https://ai.google.dev/gemini-api/docs/image-generation
+`)
+	return nil
+}
+
 func init() {
 	generateCmd.Flags().StringP("prompt", "p", "", "Text description of the image to generate (required)")
 	generateCmd.Flags().StringP("output", "o", "", "Output file path (default: generated_<timestamp>.png)")
@@ -978,7 +1294,10 @@ func init() {
 	generateCmd.Flags().String("model", "", fmt.Sprintf("Model to use (deprecated, use --provider). Default: %s", generate.DefaultModel))
 	generateCmd.Flags().Bool("list-models", false, "List all available models and exit")
 	generateCmd.Flags().Bool("list-providers", false, "List all available providers with pricing and auth status")
+	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
+	generateCmd.Flags().String("image-size", "", "Native resolution for Gemini 3 Pro: 1K, 2K, or 4K (sharp text/diagrams)")
+	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3 Pro (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime")
 	generateCmd.Flags().String("negative", "", "Negative prompt to avoid certain features")
 	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility (0 for random)")

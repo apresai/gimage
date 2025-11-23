@@ -8,14 +8,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/sony/gobreaker"
-	"github.com/spf13/viper"
 )
 
 // Gemini REST API endpoint
@@ -26,7 +25,7 @@ type GeminiRESTClient struct {
 	apiKey         string
 	model          string
 	httpClient     *http.Client
-	verbose        bool
+	log            *observability.VerboseLogger
 	circuitBreaker *gobreaker.CircuitBreaker
 }
 
@@ -36,25 +35,15 @@ func NewGeminiRESTClient(apiKey string) (*GeminiRESTClient, error) {
 		return nil, fmt.Errorf("API key is required")
 	}
 
-	// Check if verbose mode is enabled via Viper flag or environment variable
-	verbose := viper.GetBool("verbose") || os.Getenv("GIMAGE_VERBOSE") == "true" || os.Getenv("VERBOSE") == "true"
-
 	return &GeminiRESTClient{
-		apiKey:  apiKey,
-		model:   DefaultModel,
-		verbose: verbose,
+		apiKey: apiKey,
+		model:  DefaultModel,
+		log:    observability.NewVerboseLogger(observability.ComponentGemini),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Minute,
 		},
 		circuitBreaker: newCircuitBreaker("GeminiAPI"),
 	}, nil
-}
-
-// logVerbose logs debug information if verbose mode is enabled
-func (c *GeminiRESTClient) logVerbose(format string, args ...interface{}) {
-	if c.verbose {
-		fmt.Fprintf(os.Stderr, "[GEMINI-REST] "+format+"\n", args...)
-	}
 }
 
 // GenerateImage generates an image using Gemini REST API
@@ -91,7 +80,7 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 
 		// Check if circuit breaker is open
 		if isCircuitBreakerError(err) {
-			c.logVerbose("Circuit breaker is open, failing fast")
+			c.log.Debug("Circuit breaker is open, failing fast")
 			return nil, fmt.Errorf("API circuit breaker is open (too many failures): %w", err)
 		}
 
@@ -118,6 +107,11 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 	return nil, fmt.Errorf("failed after %d attempts: %w", maxRetries, lastErr)
 }
 
+// isGemini3Pro returns true if the model is Gemini 3 Pro
+func isGemini3Pro(modelName string) bool {
+	return strings.Contains(modelName, "gemini-3") || strings.Contains(modelName, "pro-image-preview")
+}
+
 // generateWithRetry performs a single generation attempt using REST API
 func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
 	// Build the prompt with options
@@ -126,20 +120,42 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Parse dimensions from options
 	width, height := parseDimensions(options.Size)
 
-	c.logVerbose("Building request for model: %s", modelName)
-	c.logVerbose("Full prompt: %s", fullPrompt)
-	c.logVerbose("Requested dimensions: %dx%d", width, height)
+	c.log.Debug("Building request for model: %s", modelName)
+	c.log.Debug("Full prompt: %s", fullPrompt)
+	c.log.Debug("Requested dimensions: %dx%d", width, height)
+
+	// Build generation config based on model
+	genConfig := &geminiGenerationConfig{}
+
+	// Gemini 3 Pro uses TEXT+IMAGE modalities and supports imageConfig
+	if isGemini3Pro(modelName) {
+		genConfig.ResponseModalities = []string{"TEXT", "IMAGE"}
+
+		// Add imageConfig for Gemini 3 Pro (supports 4K, aspect ratio)
+		imageConfig := &geminiImageConfig{}
+
+		// Set imageSize if specified (1K, 2K, 4K)
+		if options.ImageSize != "" {
+			imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
+			c.log.Debug("Using imageSize: %s", imageConfig.ImageSize)
+		}
+
+		// Set aspectRatio if specified
+		if options.AspectRatio != "" {
+			imageConfig.AspectRatio = options.AspectRatio
+			c.log.Debug("Using aspectRatio: %s", imageConfig.AspectRatio)
+		}
+
+		// Only add imageConfig if we have settings
+		if imageConfig.ImageSize != "" || imageConfig.AspectRatio != "" {
+			genConfig.ImageConfig = imageConfig
+		}
+	} else {
+		// Standard Gemini 2.5 Flash: IMAGE only
+		genConfig.ResponseModalities = []string{"IMAGE"}
+	}
 
 	// Build request payload using Gemini's generateContent API format
-	// According to Gemini API documentation, the request should have:
-	// {
-	//   "contents": [{
-	//     "parts": [{"text": "prompt text"}]
-	//   }],
-	//   "generationConfig": {
-	//     "responseModalities": ["IMAGE"]
-	//   }
-	// }
 	request := geminiGenerateContentRequest{
 		Contents: []geminiContent{
 			{
@@ -150,9 +166,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 				},
 			},
 		},
-		GenerationConfig: &geminiGenerationConfig{
-			ResponseModalities: []string{"IMAGE"},
-		},
+		GenerationConfig: genConfig,
 	}
 
 	// Marshal request to JSON
@@ -161,12 +175,12 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	c.logVerbose("Request body: %s", string(requestBody))
+	c.log.Debug("Request body: %s", string(requestBody))
 
 	// Build API URL - use generateContent endpoint
 	apiURL := fmt.Sprintf("%s/%s:generateContent?key=%s", geminiAPIEndpoint, modelName, c.apiKey)
 
-	c.logVerbose("API URL: %s", strings.Replace(apiURL, c.apiKey, "***KEY***", -1))
+	c.log.Debug("API URL: %s", strings.Replace(apiURL, c.apiKey, "***KEY***", -1))
 
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(requestBody))
@@ -177,17 +191,17 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 
-	c.logVerbose("Sending request to Gemini API...")
+	c.log.Debug("Sending request to Gemini API...")
 
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		c.logVerbose("Request failed: %v", err)
+		c.log.Debug("Request failed: %v", err)
 		return nil, enhanceError(err)
 	}
 	defer resp.Body.Close()
 
-	c.logVerbose("Response status: %d %s", resp.StatusCode, resp.Status)
+	c.log.Debug("Response status: %d %s", resp.StatusCode, resp.Status)
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -197,9 +211,9 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 	// Log response (truncated)
 	if len(body) > 500 {
-		c.logVerbose("Response body (first 500 chars): %s...", string(body[:500]))
+		c.log.Debug("Response body (first 500 chars): %s...", string(body[:500]))
 	} else {
-		c.logVerbose("Response body: %s", string(body))
+		c.log.Debug("Response body: %s", string(body))
 	}
 
 	// Check for HTTP errors
@@ -210,19 +224,19 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Parse response using Gemini's generateContent response format
 	var response geminiGenerateContentResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		c.logVerbose("Failed to parse response: %v", err)
+		c.log.Debug("Failed to parse response: %v", err)
 		return nil, fmt.Errorf("failed to parse response: %w (body: %s)", err, string(body))
 	}
 
 	// Validate response structure
 	if len(response.Candidates) == 0 {
-		c.logVerbose("No candidates in response")
+		c.log.Debug("No candidates in response")
 		return nil, fmt.Errorf("no image generated from prompt")
 	}
 
 	candidate := response.Candidates[0]
 	if candidate.Content.Parts == nil || len(candidate.Content.Parts) == 0 {
-		c.logVerbose("No parts in candidate content")
+		c.log.Debug("No parts in candidate content")
 		return nil, fmt.Errorf("no content parts in response")
 	}
 
@@ -232,23 +246,23 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	found := false
 
 	for i, part := range candidate.Content.Parts {
-		c.logVerbose("Part %d: has InlineData=%v", i, part.InlineData != nil)
+		c.log.Debug("Part %d: has InlineData=%v", i, part.InlineData != nil)
 		if part.InlineData != nil && part.InlineData.Data != "" {
 			// Decode base64 image data
 			imageData, err = base64.StdEncoding.DecodeString(part.InlineData.Data)
 			if err != nil {
-				c.logVerbose("Failed to decode base64 from part %d: %v", i, err)
+				c.log.Debug("Failed to decode base64 from part %d: %v", i, err)
 				return nil, fmt.Errorf("failed to decode base64 image data: %w", err)
 			}
 			mimeType = part.InlineData.MimeType
 			found = true
-			c.logVerbose("Found image data in part %d: %d bytes, mime=%s", i, len(imageData), mimeType)
+			c.log.Debug("Found image data in part %d: %d bytes, mime=%s", i, len(imageData), mimeType)
 			break
 		}
 	}
 
 	if !found {
-		c.logVerbose("No inline_data found in any parts")
+		c.log.Debug("No inline_data found in any parts")
 		return nil, fmt.Errorf("no image data found in response")
 	}
 
@@ -265,18 +279,27 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		}
 	}
 
-	c.logVerbose("Successfully generated image: %d bytes, format=%s", len(imageData), format)
+	c.log.Debug("Successfully generated image: %d bytes, format=%s", len(imageData), format)
+
+	// For Gemini 3 Pro with native imageSize (1K, 2K, 4K), preserve the native resolution
+	// by setting width/height to 0, which skips dimension enforcement in SaveImage
+	finalWidth, finalHeight := width, height
+	if isGemini3Pro(modelName) && options.ImageSize != "" {
+		finalWidth, finalHeight = 0, 0
+		c.log.Debug("Preserving native %s resolution from Gemini 3 Pro", options.ImageSize)
+	}
 
 	return &models.GeneratedImage{
 		Data:   imageData,
 		Format: format,
-		Width:  width,
-		Height: height,
+		Width:  finalWidth,
+		Height: finalHeight,
 		Metadata: map[string]string{
-			"model":  modelName,
-			"prompt": prompt,
-			"style":  options.Style,
-			"api":    "gemini-rest",
+			"model":     modelName,
+			"prompt":    prompt,
+			"style":     options.Style,
+			"api":       "gemini-rest",
+			"imageSize": options.ImageSize,
 		},
 	}, nil
 }
@@ -339,10 +362,17 @@ type geminiInlineData struct {
 }
 
 type geminiGenerationConfig struct {
-	ResponseModalities []string `json:"responseModalities,omitempty"`
-	Temperature        *float64 `json:"temperature,omitempty"`
-	TopP               *float64 `json:"topP,omitempty"`
-	TopK               *int     `json:"topK,omitempty"`
+	ResponseModalities []string          `json:"responseModalities,omitempty"`
+	Temperature        *float64          `json:"temperature,omitempty"`
+	TopP               *float64          `json:"topP,omitempty"`
+	TopK               *int              `json:"topK,omitempty"`
+	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"` // For Gemini 3 Pro
+}
+
+// geminiImageConfig configures image generation for Gemini 3 Pro
+type geminiImageConfig struct {
+	AspectRatio string `json:"aspectRatio,omitempty"` // e.g., "16:9", "1:1", "4:3"
+	ImageSize   string `json:"imageSize,omitempty"`   // "1K", "2K", "4K" (uppercase required)
 }
 
 type geminiGenerateContentResponse struct {

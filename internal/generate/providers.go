@@ -14,7 +14,7 @@ import (
 
 // Model ID constants for backward compatibility
 const (
-	DefaultModel    = "gemini-2.5-flash-image"
+	DefaultModel    = "gemini-3-pro-image-preview"
 	ModelNovaCanvas = "amazon.nova-canvas-v1:0"
 )
 
@@ -136,6 +136,43 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
+	// Gemini 3 Pro Image Preview via Gemini API
+	r.Register(&Provider{
+		ID:          "gemini/pro-3",
+		Name:        "Gemini 3 Pro (via Gemini API)",
+		API:         "gemini",
+		ModelID:     "gemini-3-pro-image-preview",
+		Description: "Native 4K, sharp text rendering, grounded generation with Google Search",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GEMINI_API_KEY",
+				ConfigKey:   "gemini_api_key",
+				Description: "API key from https://aistudio.google.com",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage:  float64Ptr(0.134), // $0.134 for 1K/2K, $0.24 for 4K
+			FreeTier:      false,
+			FreeTierLimit: "",
+			Currency:      "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsNegativePrompt: true,
+			SupportsSeed:           true,
+			MaxPromptLength:        2000, // 65k context window
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GEMINI_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GEMINI_API_KEY is required")
+			}
+			return NewGeminiRESTClient(apiKey)
+		},
+	})
+
 	// Imagen 4 via Vertex AI
 	r.Register(&Provider{
 		ID:          "vertex/imagen-4",
@@ -225,7 +262,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.02),
+			CostPerImage: float64Ptr(0.04),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -283,7 +320,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.02),
+			CostPerImage: float64Ptr(0.04),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -341,7 +378,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.01),
+			CostPerImage: float64Ptr(0.02),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -406,7 +443,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.08),
+			CostPerImage: float64Ptr(0.04), // $0.04 for ≤1024x1024, $0.08 for >1024x1024
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -616,13 +653,23 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 	// Try common aliases
 	input = strings.ToLower(input)
 	aliases := map[string]string{
-		"gemini":       "gemini/flash-2.5",
-		"gemini-flash": "gemini/flash-2.5",
-		"flash":        "gemini/flash-2.5",
-		"imagen":       "vertex/imagen-4",
-		"imagen-4":     "vertex/imagen-4",
-		"nova":         "bedrock/nova-canvas",
-		"nova-canvas":  "bedrock/nova-canvas",
+		// Default "gemini" now maps to Gemini 3 Pro
+		"gemini":                     "gemini/pro-3",
+		"gemini-3":                   "gemini/pro-3",
+		"gemini-3-pro":               "gemini/pro-3",
+		"gemini3":                    "gemini/pro-3",
+		"pro-3":                      "gemini/pro-3",
+		"gemini-3-pro-image-preview": "gemini/pro-3",
+		// Explicit aliases for Gemini 2.5 Flash (free tier)
+		"gemini-flash":               "gemini/flash-2.5",
+		"flash":                      "gemini/flash-2.5",
+		"gemini-2.5":                 "gemini/flash-2.5",
+		"gemini-2.5-flash":           "gemini/flash-2.5",
+		// Vertex/Bedrock aliases
+		"imagen":                     "vertex/imagen-4",
+		"imagen-4":                   "vertex/imagen-4",
+		"nova":                       "bedrock/nova-canvas",
+		"nova-canvas":                "bedrock/nova-canvas",
 	}
 
 	if providerID, ok := aliases[input]; ok {

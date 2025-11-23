@@ -11,9 +11,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/sony/gobreaker"
-	"github.com/spf13/viper"
 )
 
 // Vertex AI Platform API endpoint (supports API key authentication)
@@ -27,7 +27,7 @@ type VertexRESTClient struct {
 	location       string
 	model          string
 	httpClient     *http.Client
-	verbose        bool
+	log            *observability.VerboseLogger
 	circuitBreaker *gobreaker.CircuitBreaker
 }
 
@@ -49,27 +49,17 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 		location = "us-central1" // Default location
 	}
 
-	// Check if verbose mode is enabled via Viper flag or environment variable
-	verbose := viper.GetBool("verbose") || os.Getenv("GIMAGE_VERBOSE") == "true" || os.Getenv("VERBOSE") == "true"
-
 	return &VertexRESTClient{
 		apiKey:    apiKey,
 		projectID: projectID,
 		location:  location,
 		model:     "imagen-4.0-generate-001", // Default model (AI Studio API)
-		verbose:   verbose,
+		log:       observability.NewVerboseLogger(observability.ComponentVertex),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Minute,
 		},
 		circuitBreaker: newCircuitBreaker("VertexAPI"),
 	}, nil
-}
-
-// logVerbose logs debug information if verbose mode is enabled
-func (c *VertexRESTClient) logVerbose(format string, args ...interface{}) {
-	if c.verbose {
-		fmt.Fprintf(os.Stderr, "[VERTEX-REST] "+format+"\n", args...)
-	}
 }
 
 // GenerateImage generates an image using Vertex AI REST API
@@ -106,7 +96,7 @@ func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 
 		// Check if circuit breaker is open
 		if isCircuitBreakerError(err) {
-			c.logVerbose("Circuit breaker is open, failing fast")
+			c.log.Debug("Circuit breaker is open, failing fast")
 			return nil, fmt.Errorf("API circuit breaker is open (too many failures): %w", err)
 		}
 
@@ -138,15 +128,15 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
-	c.logVerbose("Building request for model: %s", modelName)
-	c.logVerbose("Project: %s, Location: %s", c.projectID, c.location)
-	c.logVerbose("Full prompt: %s", fullPrompt)
+	c.log.Debug("Building request for model: %s", modelName)
+	c.log.Debug("Project: %s, Location: %s", c.projectID, c.location)
+	c.log.Debug("Full prompt: %s", fullPrompt)
 
 	// Determine aspect ratio from size
 	aspectRatio := "1:1" // Default
 	if options.Size != "" {
 		width, height := parseDimensions(options.Size)
-		c.logVerbose("Requested dimensions: %dx%d", width, height)
+		c.log.Debug("Requested dimensions: %dx%d", width, height)
 
 		// Calculate aspect ratio
 		if width == height {
@@ -172,7 +162,7 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		}
 	}
 
-	c.logVerbose("Using aspect ratio: %s", aspectRatio)
+	c.log.Debug("Using aspect ratio: %s", aspectRatio)
 
 	// Build request payload for Vertex AI Imagen
 	// Format according to Vertex AI Imagen API:
@@ -205,7 +195,7 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	c.logVerbose("Request body: %s", string(requestJSON))
+	c.log.Debug("Request body: %s", string(requestJSON))
 
 	// Build API URL using Vertex AI Platform endpoint
 	// Format: https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:predict
@@ -216,8 +206,8 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	if len(maskedKey) > 8 {
 		maskedKey = maskedKey[:8] + "***"
 	}
-	c.logVerbose("API URL: %s", apiURL)
-	c.logVerbose("Using API key: %s", maskedKey)
+	c.log.Debug("API URL: %s", apiURL)
+	c.log.Debug("Using API key: %s", maskedKey)
 
 	// Create HTTP request with API key header
 	// Vertex AI Platform uses x-goog-api-key header
@@ -230,17 +220,17 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-goog-api-key", c.apiKey)
 
-	c.logVerbose("Sending request to Vertex AI Platform API...")
+	c.log.Debug("Sending request to Vertex AI Platform API...")
 
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		c.logVerbose("Request failed: %v", err)
+		c.log.Debug("Request failed: %v", err)
 		return nil, enhanceError(err)
 	}
 	defer resp.Body.Close()
 
-	c.logVerbose("Response status: %d %s", resp.StatusCode, resp.Status)
+	c.log.Debug("Response status: %d %s", resp.StatusCode, resp.Status)
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -250,9 +240,9 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 	// Log response (truncated)
 	if len(body) > 500 {
-		c.logVerbose("Response body (first 500 chars): %s...", string(body[:500]))
+		c.log.Debug("Response body (first 500 chars): %s...", string(body[:500]))
 	} else {
-		c.logVerbose("Response body: %s", string(body))
+		c.log.Debug("Response body: %s", string(body))
 	}
 
 	// Check for HTTP errors
@@ -263,13 +253,13 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Parse response
 	var response vertexPredictResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		c.logVerbose("Failed to parse response: %v", err)
+		c.log.Debug("Failed to parse response: %v", err)
 		return nil, fmt.Errorf("failed to parse response: %w (body: %s)", err, string(body))
 	}
 
 	// Validate response structure
 	if len(response.Predictions) == 0 {
-		c.logVerbose("No predictions in response")
+		c.log.Debug("No predictions in response")
 		return nil, fmt.Errorf("no image generated from prompt")
 	}
 
@@ -283,13 +273,13 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		// Decode base64 image data
 		imageData, err = base64.StdEncoding.DecodeString(prediction.BytesBase64Encoded)
 		if err != nil {
-			c.logVerbose("Failed to decode base64: %v", err)
+			c.log.Debug("Failed to decode base64: %v", err)
 			return nil, fmt.Errorf("failed to decode base64 image data: %w", err)
 		}
 		mimeType = prediction.MimeType
-		c.logVerbose("Successfully decoded image: %d bytes, mime=%s", len(imageData), mimeType)
+		c.log.Debug("Successfully decoded image: %d bytes, mime=%s", len(imageData), mimeType)
 	} else {
-		c.logVerbose("No image data found in prediction")
+		c.log.Debug("No image data found in prediction")
 		return nil, fmt.Errorf("no image data found in response")
 	}
 
@@ -309,7 +299,7 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Parse dimensions from options
 	width, height := parseDimensions(options.Size)
 
-	c.logVerbose("Successfully generated image: %d bytes, format=%s", len(imageData), format)
+	c.log.Debug("Successfully generated image: %d bytes, format=%s", len(imageData), format)
 
 	return &models.GeneratedImage{
 		Data:   imageData,

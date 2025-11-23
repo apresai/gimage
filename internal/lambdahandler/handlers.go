@@ -9,7 +9,6 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"github.com/apresai/gimage/internal/config"
 	"github.com/apresai/gimage/internal/generate"
 	gimageimaging "github.com/apresai/gimage/internal/imaging"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/disintegration/imaging"
 )
@@ -52,7 +52,8 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 		options.Size = "1024x1024"
 	}
 
-	log.Printf("Generating image with prompt: %s, model: %s", req.Prompt, options.Model)
+	log := observability.NewVerboseLogger(observability.ComponentLambda)
+	log.Info("Generating image with prompt: %s, model: %s", req.Prompt, options.Model)
 
 	// Determine API to use
 	api, err := generate.DetectAPIFromModel(options.Model)

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 )
 
 // RegisterConvertImageTool registers the convert_image tool
@@ -33,6 +35,11 @@ func RegisterConvertImageTool(server *mcp.MCPServer) {
 			"required": []string{"input", "format"},
 		},
 		Handler: func(args map[string]interface{}) (map[string]interface{}, error) {
+			log := observability.NewVerboseLogger(observability.ComponentMCP)
+			startTime := time.Now()
+
+			log.Debug("convert_image tool invoked")
+
 			// Validate input
 			inputArg, err := validateString(args["input"], "input")
 			if err != nil {
@@ -97,6 +104,8 @@ func RegisterConvertImageTool(server *mcp.MCPServer) {
 
 			// Get absolute path for response
 			absPath, _ := filepath.Abs(output)
+
+			log.Debug("Convert complete: %s -> %s in %s", originalFormat, format, time.Since(startTime))
 
 			result := map[string]interface{}{
 				"success":         true,

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultModel        = "gemini-2.5-flash-image"
+	defaultModel        = "gemini-3-pro-image-preview"
 	defaultSize         = "1024x1024"
 	maxRetries          = 3
 	retryBackoffInitial = 1 * time.Second

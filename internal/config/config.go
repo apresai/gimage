@@ -34,7 +34,7 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		// Set defaults
 		DefaultAPI:     "gemini",
-		DefaultModel:   "gemini-2.5-flash-image",
+		DefaultModel:   "gemini-3-pro-image-preview",
 		DefaultSize:    "1024x1024",
 		VertexLocation: "us-central1",
 		AWSRegion:      "us-east-1",
@@ -91,7 +91,7 @@ func LoadConfig() (*Config, error) {
 		cfg.DefaultAPI = "gemini"
 	}
 	if cfg.DefaultModel == "" {
-		cfg.DefaultModel = "gemini-2.5-flash-image"
+		cfg.DefaultModel = "gemini-3-pro-image-preview"
 	}
 	if cfg.DefaultSize == "" {
 		cfg.DefaultSize = "1024x1024"

@@ -3,8 +3,10 @@ package tools
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/disintegration/imaging"
 )
 
@@ -35,6 +37,11 @@ func RegisterCompressImageTool(server *mcp.MCPServer) {
 			"required": []string{"input"},
 		},
 		Handler: func(args map[string]interface{}) (map[string]interface{}, error) {
+			log := observability.NewVerboseLogger(observability.ComponentMCP)
+			startTime := time.Now()
+
+			log.Debug("compress_image tool invoked")
+
 			// Validate input
 			inputArg, err := validateString(args["input"], "input")
 			if err != nil {
@@ -94,6 +101,8 @@ func RegisterCompressImageTool(server *mcp.MCPServer) {
 
 			// Get absolute path for response
 			absPath, _ := filepath.Abs(output)
+
+			log.Debug("Compress complete: %.1f%% reduction in %s", savingsPercent, time.Since(startTime))
 
 			result := map[string]interface{}{
 				"success":               true,

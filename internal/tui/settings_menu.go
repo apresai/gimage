@@ -422,7 +422,7 @@ func (m *SettingsMenuModel) saveAPIKey() tea.Cmd {
 			// If no config exists, create a new one
 			cfg = &config.Config{
 				DefaultAPI:   "gemini",
-				DefaultModel: "gemini-2.5-flash-image",
+				DefaultModel: "gemini-3-pro-image-preview",
 				DefaultSize:  "1024x1024",
 			}
 		}

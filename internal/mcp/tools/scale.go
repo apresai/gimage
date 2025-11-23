@@ -3,8 +3,10 @@ package tools
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/disintegration/imaging"
 )
 
@@ -34,6 +36,11 @@ func RegisterScaleImageTool(server *mcp.MCPServer) {
 			"required": []string{"input", "factor"},
 		},
 		Handler: func(args map[string]interface{}) (map[string]interface{}, error) {
+			log := observability.NewVerboseLogger(observability.ComponentMCP)
+			startTime := time.Now()
+
+			log.Debug("scale_image tool invoked")
+
 			// Validate input file path
 			inputArg, err := validateString(args["input"], "input")
 			if err != nil {
@@ -93,6 +100,8 @@ func RegisterScaleImageTool(server *mcp.MCPServer) {
 
 			// Get absolute path for response
 			absPath, _ := filepath.Abs(output)
+
+			log.Debug("Scale complete: %dx%d -> %dx%d (%.1fx) in %s", origWidth, origHeight, newWidth, newHeight, factorVal, time.Since(startTime))
 
 			result := map[string]interface{}{
 				"success":       true,

@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/disintegration/imaging"
 )
 
@@ -141,6 +143,11 @@ func RegisterBatchConvertTool(server *mcp.MCPServer) {
 }
 
 func batchProcessImages(args map[string]interface{}, operation string) (map[string]interface{}, error) {
+	log := observability.NewVerboseLogger(observability.ComponentMCP)
+	startTime := time.Now()
+
+	log.Debug("batch_%s tool invoked", operation)
+
 	// Validate input directory
 	inputDirArg, err := validateString(args["input_dir"], "input_dir")
 	if err != nil {
@@ -201,6 +208,8 @@ func batchProcessImages(args map[string]interface{}, operation string) (map[stri
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no image files found in %s", inputDir)
 	}
+
+	log.Debug("Found %d image files to process with %d workers", len(files), workers)
 
 	// Process images concurrently
 	var wg sync.WaitGroup
@@ -276,6 +285,8 @@ func batchProcessImages(args map[string]interface{}, operation string) (map[stri
 	}
 
 	wg.Wait()
+
+	log.Debug("Batch %s complete: %d processed, %d failed in %s", operation, processed, failed, time.Since(startTime))
 
 	result := map[string]interface{}{
 		"success":    failed == 0,

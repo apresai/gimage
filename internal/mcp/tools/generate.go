@@ -9,6 +9,7 @@ import (
 	"github.com/apresai/gimage/internal/config"
 	"github.com/apresai/gimage/internal/generate"
 	"github.com/apresai/gimage/internal/mcp"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 )
 
@@ -44,6 +45,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"enum": []string{
 						"gemini-2.5-flash-image",
 						"gemini-2.0-flash-preview-image-generation",
+						"gemini-3-pro-image-preview",
+						"gemini-3",
+						"gemini-3-pro",
 						"imagen-3.0-generate-002",
 						"imagen-4",
 						"gemini",
@@ -52,8 +56,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"nova-canvas",
 						"amazon.nova-canvas-v1:0",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, gemini/flash-2.5 provider, up to 1024x1024), 'imagen-4' ($0.04/image, vertex/imagen-4 provider, up to 2048x2048, highest quality), 'nova-canvas' ($0.08/image, bedrock/nova-canvas provider, AWS integration). Aliases automatically resolve to correct provider. Falls back to gemini if invalid. TIP: Use gemini for iterations, imagen-4 for final production.",
-					"default":     "gemini-2.5-flash-image",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"default":     "gemini-3-pro-image-preview",
+				},
+				"image_size": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"1K", "2K", "4K"},
+					"description": "Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling. Produces sharper text and diagrams at higher resolutions. Only works with gemini-3-pro-image-preview model.",
 				},
 				"style": map[string]interface{}{
 					"type":        "string",
@@ -72,11 +81,16 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			"required": []string{"prompt"},
 		},
 		Handler: func(args map[string]interface{}) (map[string]interface{}, error) {
+			log := observability.NewVerboseLogger(observability.ComponentMCP)
+			startTime := time.Now()
+
 			// Extract and validate prompt
 			prompt, ok := args["prompt"].(string)
 			if !ok || prompt == "" {
 				return nil, fmt.Errorf("prompt is required and must be a non-empty string")
 			}
+
+			log.Debug("generate_image tool invoked")
 
 			// Extract optional parameters
 			outputArg, _ := args["output"].(string)
@@ -103,22 +117,28 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 
 			modelName, _ := args["model"].(string)
 			if modelName == "" {
-				modelName = "gemini-2.5-flash-image"
+				modelName = "gemini-3-pro-image-preview"
 			}
 
 			// Resolve model aliases to exact names (e.g., "gemini" -> "gemini-2.5-flash-image")
-			modelName = generate.ResolveModelName(modelName)
+			resolvedModel := generate.ResolveModelName(modelName)
+			if resolvedModel != modelName {
+				log.Debug("Model resolved: %s -> %s", modelName, resolvedModel)
+			}
+			modelName = resolvedModel
 
 			// Validate provider/model exists, fallback to default if not
 			registry := generate.GetProviderRegistry()
 			_, providerErr := registry.ResolveProvider(modelName)
 			if providerErr != nil {
-				// Provider not found, fallback to default free model
-				modelName = "gemini-2.5-flash-image"
+				// Provider not found, fallback to default model
+				log.Debug("Provider not found for model %s, falling back to default", modelName)
+				modelName = "gemini-3-pro-image-preview"
 			}
 
 			style, _ := args["style"].(string)
 			negative, _ := args["negative"].(string)
+			imageSize, _ := args["image_size"].(string) // For Gemini 3 Pro: 1K, 2K, 4K
 
 			var seed int64
 			if seedVal, ok := args["seed"].(float64); ok {
@@ -132,13 +152,23 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Style:          style,
 				NegativePrompt: negative,
 				Seed:           seed,
+				ImageSize:      imageSize, // Native resolution for Gemini 3 Pro
 			}
+
+			log.LogGenerationStart(prompt, map[string]interface{}{
+				"model":      modelName,
+				"size":       size,
+				"style":      style,
+				"image_size": imageSize,
+				"seed":       seed,
+			})
 
 			// Determine which backend to use based on model
 			selectedAPI := "gemini" // default
 			if isVertexModel(modelName) {
 				selectedAPI = "vertex"
 			}
+			log.Debug("Selected API: %s", selectedAPI)
 
 			// Create context for API calls
 			ctx := context.Background()
@@ -258,6 +288,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			if pathWarning != "" {
 				result["warning"] = pathWarning
 			}
+
+			log.Debug("Generation complete in %s: %s", time.Since(startTime), absOutput)
 
 			return result, nil
 		},
