@@ -1278,8 +1278,7 @@ func printPromptHowto() error {
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
-Source: https://ai.google.dev/gemini-api/docs/image-generation
-`)
+Source: https://ai.google.dev/gemini-api/docs/image-generation`)
 	return nil
 }
 
