@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.76] - 2025-11-23
+
+### Added
+- **Go SDK**: Auto-generated type-safe SDK published to separate repository (`github.com/apresai/gimage-go-sdk`) with complete documentation and examples
+- **gimage-deploy**: Complete Lambda deployment management tool with AWS SDK v2, API key management, CloudWatch monitoring, and interactive TUI
+- **`--aspect-ratio` flag**: Support for aspect ratio constraints in image generation (e.g., `16:9`, `9:16`)
+- **`--prompt-howto` guide**: Interactive prompt engineering guide in generate command
+- **Prompt engineering documentation**: New `docs/PROMPT_GUIDE.md` with 159 lines of best practices
+- **Verbose logging**: Comprehensive `--verbose` flag support across all commands with structured output
+- **Homebrew installation**: Added `gimage-deploy` to Homebrew tap for easy installation
+
+### Changed
+- **Release process**: Replaced GitHub Actions with `make release` for all CI/CD (local-only releases)
+- **Pricing accuracy**: Fixed pricing display for all providers (Gemini 3 Pro, Gemini Flash, Imagen 4, Nova Canvas)
+- **Documentation**: Updated CLAUDE.md with Git Security Hooks guidelines, make release automation, and gimage-deploy integration
+- **GoReleaser**: Enhanced config for multi-module builds supporting both gimage and gimage-deploy
+- **OpenAPI spec**: Updated with aspect ratio support and improved model documentation
+
+### Fixed
+- **Multi-module builds**: Fixed GoReleaser configuration for proper handling of gimage-deploy alongside main CLI
+- **Provider pricing**: Corrected cost estimates across Gemini, Vertex AI, and AWS Bedrock
+- **Documentation links**: Updated references to point to separate Go SDK repository
+
+### Removed
+- **GitHub Actions workflows**: Removed `.github/workflows/` directory in favor of local `make release`
+
+
 ## [1.2.63] - 2025-11-06
 
 ### Changed
