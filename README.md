@@ -459,6 +459,19 @@ Edit your Claude Desktop config file:
 - **Homebrew**: Uses `"command": "gimage"` - directly calls the binary in your PATH
 - **npm**: Uses `"command": "npx"` - npx finds and runs the npm-installed package
 
+#### Method 3: Claude Code
+
+**Use this if:** You're using Claude Code CLI and want to add gimage as an MCP server.
+
+**Prerequisites:** Install gimage via Homebrew first (see Method 1, Step 1).
+
+**One-command setup:**
+```bash
+claude mcp add-json gimage '{"command": "gimage", "args": ["serve"]}'
+```
+
+That's it! Claude Code will now have access to all gimage MCP tools.
+
 ### Setup Authentication
 
 Before using the MCP server, configure your API credentials:
