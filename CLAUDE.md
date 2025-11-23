@@ -476,7 +476,11 @@ make release
 - Run goreleaser directly
 - Publish to npm directly
 
-The Makefile handles all coordination to ensure version consistency.
+**No GitHub Actions** - All CI/CD runs locally via `make release`. This gives you:
+- Full control over when releases happen
+- No dependency on GitHub's infrastructure
+- Immediate feedback (not waiting for remote runners)
+- Same environment as local development
 
 ## Lambda Deployment
 
