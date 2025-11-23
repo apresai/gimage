@@ -446,11 +446,37 @@ wg.Wait()
 
 ## Release Process
 
-1. Update version in code
-2. Run `make test`
-3. Build all platforms: `make build-all`
-4. Create tag: `git tag v1.x.x` (only when user requests)
-5. GitHub Actions handles release automation
+**Use `make release` for all releases.** It automates everything:
+
+```bash
+make release
+```
+
+**What it does (6 steps):**
+1. Updates CHANGELOG.md with current date
+2. Syncs version to `package.json` and `npm/package.json`
+3. Commits and pushes changes to main
+4. Creates and pushes git tag `v$(VERSION)`
+5. Runs GoReleaser (builds binaries, creates GitHub release, updates Homebrew tap)
+6. Publishes npm package `@apresai/gimage-mcp`
+
+**Version calculation:**
+- Auto-calculated: `1.2.$(git rev-list --count HEAD)`
+- Override with: `VERSION=1.3.0 make release`
+
+**Required environment:**
+- `GITHUB_TOKEN` - Auto-detected from `gh auth token` if not set
+- `HOMEBREW_TAP_TOKEN` - Required for Homebrew tap updates
+- `goreleaser` - Must be installed
+- `npm` - Must be logged in for publishing
+
+**Never manually:**
+- Create tags
+- Push tags
+- Run goreleaser directly
+- Publish to npm directly
+
+The Makefile handles all coordination to ensure version consistency.
 
 ## Lambda Deployment
 
