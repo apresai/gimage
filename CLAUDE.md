@@ -359,6 +359,44 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 - Document all public APIs with godoc
 - Never log API keys or sensitive data
 
+### Git Security Hooks
+
+**NEVER bypass git-secrets or other security hooks.**
+
+**Forbidden practices**:
+- `--no-verify` flag on git commit
+- `SKIP=git-secrets` environment variable
+- Disabling pre-commit hooks to "work around" issues
+
+**When git-secrets fails**:
+1. **Audit the error** - Determine if it's a real secret or a false positive
+2. **Fix the root cause**:
+   - If real secret: Remove the secret from the code immediately
+   - If invalid regex pattern: Fix the pattern in `.git/config` or run `git config --unset`
+   - If false positive: Add to allowed patterns with `git secrets --add --allowed 'pattern'`
+3. **Never bypass** - The hook exists to protect against credential leaks
+
+**Fixing broken git-secrets patterns**:
+```bash
+# List current patterns
+git secrets --list
+
+# Remove a broken pattern
+git config --local --unset secrets.patterns 'broken-pattern'
+
+# Add a properly escaped pattern
+git secrets --add 'AKIA[0-9A-Z]{16}'
+
+# Add an allowed pattern for examples
+git secrets --add --allowed 'your-api-key-here'
+```
+
+**Why this matters**: A single leaked API key can result in:
+- Unauthorized charges (potentially thousands of dollars)
+- Service abuse and rate limit exhaustion
+- Security breaches and data exposure
+- Revoked credentials requiring rotation across all systems
+
 ## Common Patterns
 
 ### Loading and Saving Images
