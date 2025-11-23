@@ -419,7 +419,7 @@ func (h *Handler) handleBatch(ctx context.Context, body []byte) (events.APIGatew
 func (h *Handler) handleHealth(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 	health := HealthResponse{
 		Status:  "healthy",
-		Version: "0.1.1",
+		Version: "1.2.66",
 		APIs:    make(map[string]string),
 	}
 

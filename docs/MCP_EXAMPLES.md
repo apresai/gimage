@@ -27,16 +27,18 @@ Generate an image of a sunset over mountain peaks with orange and purple sky
 
 **What Happens:**
 1. Claude calls `generate_image` tool with your prompt
-2. Uses Gemini 2.5 Flash (default, fast and free)
+2. Uses Gemini 3 Pro (default, high quality with sharp text)
 3. Generates 1024x1024 image
 4. Saves to current directory with timestamp
 
 **Result:**
 ```
-✓ Generated image saved to: generated_1730400123.png
+Generated image saved to: generated_1730400123.png
 Size: 1024x1024
-Model: gemini-2.5-flash-image
+Model: gemini-3-pro-image-preview
 ```
+
+**Want FREE generation?** Specify `model="gemini-2.5-flash-image"` for the free tier (500/day).
 
 ### Example 2: Resize an Existing Photo
 

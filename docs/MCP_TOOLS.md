@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, or AWS Bedrock.
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Imagen 3, Imagen 4, Nova Canvas), various sizes up to 2048x2048, and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 3, Imagen 4, Nova Canvas), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
 
 ### Parameters
 
@@ -32,13 +32,11 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `prompt` | string | Yes | - | Text description of the image to generate |
 | `output` | string | No | Auto-generated | Output file path |
 | `size` | string | No | "1024x1024" | Image dimensions |
-| `model` | string | No | "gemini-2.5-flash-image" | AI model to use |
-| `api` | string | No | Auto-detect | Backend API (gemini, vertex, bedrock) |
+| `model` | string | No | "gemini-3-pro-image-preview" | AI model to use |
+| `image_size` | string | No | - | Native resolution for Gemini 3 Pro: "1K", "2K", or "4K" |
 | `style` | string | No | - | Image style (photorealistic, artistic, anime) |
 | `negative` | string | No | - | Negative prompt (what to exclude) |
 | `seed` | integer | No | - | Random seed for reproducibility |
-| `quality` | string | No | "standard" | Quality preset (standard, premium) - Bedrock only |
-| `cfg_scale` | number | No | 8.0 | Prompt adherence strength (1.1-10.0) - Bedrock only |
 
 ### Supported Sizes
 
@@ -63,15 +61,16 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 ### Supported Models
 
 **Google Gemini API:**
-- **gemini-2.5-flash-image** (default, recommended)
+- **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
+- **gemini-2.5-flash-image** (FREE, 500 images/day, up to 1024x1024)
 - **gemini-2.0-flash-preview-image-generation**
 
 **Google Vertex AI:**
-- **imagen-3.0-generate-002** (Imagen 3)
-- **imagen-4** (highest quality, up to 2048x2048)
+- **imagen-4** (highest quality, $0.04/image, up to 2048x2048)
+- **imagen-3.0-generate-002** (Imagen 3, $0.04/image)
 
 **AWS Bedrock:**
-- **amazon.nova-canvas-v1:0** (Nova Canvas, up to 1408x1408)
+- **amazon.nova-canvas-v1:0** (Nova Canvas, $0.04 for <=1024x1024, $0.08 for larger, up to 1408x1408)
 
 ### Returns
 
@@ -80,14 +79,14 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
   "success": true,
   "output_path": "/absolute/path/to/generated_1234567890.png",
   "size": "1024x1024",
-  "model": "gemini-2.5-flash-image",
+  "model": "gemini-3-pro-image-preview",
   "prompt": "a sunset over mountains"
 }
 ```
 
 ### Examples
 
-**Basic generation (Gemini):**
+**Basic generation (Gemini 3 Pro - default):**
 ```
 Generate an image of a sunset over mountains
 ```
@@ -95,6 +94,11 @@ Generate an image of a sunset over mountains
 **With style:**
 ```
 Create a photorealistic image of a wise old wizard
+```
+
+**Gemini 3 Pro with native 4K resolution:**
+```
+Generate a 4K image of a detailed infographic about space exploration
 ```
 
 **With size and negative prompt:**
@@ -107,14 +111,14 @@ Generate a 1024x1792 image of a forest scene, but exclude any people or building
 Generate an image with seed 42 of abstract patterns
 ```
 
-**AWS Bedrock Nova Canvas with premium quality:**
+**Using Gemini 2.5 Flash (FREE tier):**
 ```
-Generate a premium quality image of a futuristic cityscape using Nova Canvas model
+Generate an image of a cat using gemini-2.5-flash-image model to stay within free tier
 ```
 
-**Nova Canvas with negative prompt and CFG scale:**
+**AWS Bedrock Nova Canvas:**
 ```
-Create an image of a serene lake at dawn using Nova Canvas, exclude boats and people, with high prompt adherence (cfg_scale 10)
+Generate an image of a futuristic cityscape using Nova Canvas model
 ```
 
 **Nova Canvas ultra-wide format:**
@@ -495,7 +499,7 @@ None
       "supports_negative": true,
       "supports_seed": true,
       "free_tier": true,
-      "free_tier_limit": "1500 requests/day"
+      "free_tier_limit": "500 images/day"
     },
     // ... more models
   ],
@@ -568,9 +572,10 @@ Error messages are designed to be clear and actionable:
 2. Increase workers for faster batch processing (up to 16)
 3. Use smaller images when possible
 4. For generation:
-   - Use Gemini 2.5 Flash for fastest results
-   - Use Nova Canvas Standard for cost-effective generation ($0.04/image)
-   - Use Nova Canvas Premium or Imagen 4 for highest quality
+   - Use **Gemini 2.5 Flash** for FREE tier (500 images/day)
+   - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
+   - Use **Imagen 4** for premium photo-realistic quality ($0.04/image)
+   - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
 
 ---
 

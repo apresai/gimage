@@ -44,9 +44,9 @@ gimage auth test
 **Get your free API key**: https://aistudio.google.com/app/apikey
 
 The Gemini free tier includes:
-- 1500 requests per day
-- All Gemini models
+- 500 image generations per day (gemini-2.5-flash-image)
 - No credit card required
+- Note: Gemini 3 Pro is a paid model ($0.134-$0.24/image)
 
 **For advanced users**:
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
@@ -111,13 +111,13 @@ Try these prompts in Claude:
 
 ## Available Operations
 
-### 🎨 AI Image Generation
+### AI Image Generation
 
 Generate stunning images from text descriptions using state-of-the-art AI models.
 
 **Capabilities:**
-- **Multiple AI models**: Gemini 2.5 Flash (default), Gemini 2.0 Flash, Imagen 3, Imagen 4
-- **Size options**: From 256x256 up to 2048x2048 pixels
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas
+- **Size options**: From 256x256 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
@@ -389,17 +389,23 @@ export VERTEX_PROJECT="your-gcp-project"
 
 ### Using Different AI Models
 
-**Gemini Models** (Fast, Free Tier):
-- `gemini-2.5-flash-image` (default, recommended)
+**Gemini Models**:
+- `gemini-3-pro-image-preview` (default, native 4K, sharp text, $0.134-$0.24/image)
+- `gemini-2.5-flash-image` (FREE, 500/day, up to 1024x1024)
 - `gemini-2.0-flash-preview-image-generation`
 
 **Vertex AI Models** (Premium Quality):
-- `imagen-3.0-generate-002`
-- `imagen-4` (highest quality, up to 2K resolution)
+- `imagen-4` (highest quality, $0.04/image, up to 2048x2048)
+- `imagen-3.0-generate-002` ($0.04/image)
 
-**Example**:
+**AWS Bedrock Models**:
+- `amazon.nova-canvas-v1:0` ($0.04-$0.08/image, up to 1408x1408)
+
+**Examples**:
 ```
 "Generate an image using Imagen 4 model with 2048x2048 resolution showing a hyper-realistic dragon"
+"Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
+"Generate an image using gemini-2.5-flash-image to use the free tier"
 ```
 
 ### Reproducible Generation
@@ -441,8 +447,10 @@ Claude can chain multiple operations:
    - "Generate a forest scene, but avoid showing any people, buildings, or modern objects"
 
 4. **Try different models** - Each has strengths
-   - Gemini 2.5 Flash: Fast, great for most uses
-   - Imagen 4: Highest quality, best for professional work
+   - Gemini 2.5 Flash: FREE tier, fast, great for quick iterations
+   - Gemini 3 Pro: Best for text, diagrams, and native 4K
+   - Imagen 4: Highest quality photo-realistic images
+   - Nova Canvas: AWS integration, good balance of quality/price
 
 ### Image Processing
 

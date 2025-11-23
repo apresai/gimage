@@ -61,7 +61,7 @@ gimage generate --prompt "your prompt" [flags]
 | `-p, --prompt` | string | Text prompt (alternative to positional arg) | - |
 | `--provider` | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/imagen-4`) | Auto-detected |
 | `--api` | string | API to use: `gemini`, `vertex`, or `bedrock` (deprecated, use `--provider`) | Auto-detected from model |
-| `--model` | string | Model to use (deprecated, use `--provider`) | `gemini-2.5-flash-image` |
+| `--model` | string | Model to use (deprecated, use `--provider`) | `gemini-3-pro-image-preview` |
 | `--size` | string | Image size (WxH) | `1024x1024` |
 | `--style` | string | Style: `photorealistic`, `artistic`, `anime` | - |
 | `--negative` | string | Negative prompt to avoid features | - |
@@ -71,19 +71,24 @@ gimage generate --prompt "your prompt" [flags]
 | `-o, --output` | string | Output file path | `generated_<timestamp>.png` |
 | `--list-models` | bool | List all available models with pricing | `false` |
 | `--list-providers` | bool | List all providers with auth status | `false` |
+| `--prompt-howto` | bool | Show tips and examples for writing effective prompts | `false` |
+| `--image-size` | string | Native resolution for Gemini 3 Pro: `1K`, `2K`, or `4K` | - |
+| `--aspect-ratio` | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `4:3`) | - |
 
 ### Available Models
 
-**Gemini API (FREE tier):**
-- `gemini-2.5-flash-image` (default, recommended) - FREE: 1500 requests/day
-- `gemini-2.0-flash-preview-image-generation` - FREE: 1500 requests/day
+**Gemini API:**
+- `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
+- `gemini-2.5-flash-image` (FREE tier) - FREE: 500 images/day, up to 1024x1024
+- `gemini-2.0-flash-preview-image-generation` - FREE: 500 images/day
 
 **Vertex AI (Paid):**
-- `imagen-3.0-generate-002` - $0.02-0.04/image, up to 1536x1536
 - `imagen-4` - $0.04/image, up to 2048x2048
+- `imagen-3.0-generate-002` - $0.04/image, up to 1536x1536
+- `imagen-3.0-fast-generate-001` - $0.02/image, optimized for speed
 
 **AWS Bedrock (Paid):**
-- `amazon.nova-canvas-v1:0` - Standard: $0.04, Premium: $0.08, up to 1408x1408
+- `amazon.nova-canvas-v1:0` - $0.04/image (up to 1024x1024), $0.08/image (larger), up to 1408x1408
 
 ### Examples
 
@@ -899,16 +904,27 @@ gimage generate "abstract art" --seed 42
 ```
 
 ### Quick Thumbnails
-Create thumbnails for all images:
+Create thumbnails for all images using shell scripts:
 ```bash
-gimage batch resize photos/ --width 200 --height 200 --output thumbnails/
+# Using find + xargs for parallel processing
+find photos/ -name "*.jpg" | xargs -P 4 -I {} gimage resize --input {} --width 200 --height 200
+
+# Or use MCP server batch_resize tool with Claude
 ```
 
 ### Optimize for Web
-Compress and convert to WebP:
+Compress and convert using shell scripts:
 ```bash
-gimage batch convert photos/ webp --output web/
-gimage batch compress web/ --quality 85
+# Using a simple loop
+for file in photos/*.jpg; do
+  gimage convert --input "$file" --format webp
+done
+
+for file in photos/*.webp; do
+  gimage compress --input "$file" --quality 85
+done
+
+# Or use MCP server batch_convert and batch_compress tools with Claude
 ```
 
 ### Test Different Models
@@ -949,15 +965,22 @@ gimage crop generated.png 0 262 1500 500 --output twitter-header.png
 ```
 
 ### Batch Optimization
+Batch operations are available via MCP server for AI assistants like Claude, or using shell scripts:
+
 ```bash
+# Using shell scripts for CLI users:
+mkdir -p hd web optimized
+
 # Resize all photos to HD
-gimage batch resize photos/ --width 1920 --height 1080 --output hd/
+find photos/ -name "*.jpg" | xargs -P 4 -I {} sh -c 'gimage resize --input {} --width 1920 --height 1080 --output hd/$(basename {})'
 
 # Compress for web
-gimage batch compress hd/ --quality 85 --output web/
+for file in hd/*.jpg; do gimage compress --input "$file" --quality 85 --output "web/$(basename $file)"; done
 
 # Convert to WebP
-gimage batch convert web/ webp --output optimized/
+for file in web/*.jpg; do gimage convert --input "$file" --format webp --output "optimized/$(basename ${file%.jpg}.webp)"; done
+
+# Or use MCP server tools (batch_resize, batch_compress, batch_convert) with Claude
 ```
 
 ### AI Art Generation

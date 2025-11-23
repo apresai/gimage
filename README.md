@@ -17,7 +17,7 @@ Production-ready serverless REST API for web applications and remote processing.
 
 ### 🎨 AI Image Generation
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, or AWS Bedrock
-- Multiple AI models: Gemini 2.5 Flash, Imagen 3, Imagen 4, Nova Canvas
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas
 - Control size, style, quality, and use negative prompts
 - Reproducible results with seed values
 
@@ -104,7 +104,7 @@ gimage auth test gemini
 ```
 
 **Get API Keys:**
-- **Gemini API**: https://aistudio.google.com/app/apikey (FREE tier: 1500 requests/day, no credit card)
+- **Gemini API**: https://aistudio.google.com/app/apikey (FREE tier: 500 images/day with gemini-2.5-flash-image, no credit card)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
 
@@ -231,7 +231,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **aws_profile**: default
 **aws_bedrock_api_key**: bearer-token
 **default_api**: gemini
-**default_model**: gemini-2.5-flash-image
+**default_model**: gemini-3-pro-image-preview
 **default_size**: 1024x1024
 **log_level**: info
 ```
@@ -286,33 +286,41 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ## Available Models
 
-### Gemini API (Google AI Studio) - FREE Tier
-- **`gemini-2.5-flash-image`** (default, recommended)
-  - FREE: 1500 requests/day, no credit card required
+### Gemini API (Google AI Studio)
+- **`gemini-3-pro-image-preview`** (default)
+  - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
+  - Native 4K resolution, sharp text rendering
+  - Best for: Professional work, text-heavy images, diagrams
+
+- **`gemini-2.5-flash-image`** (FREE tier, recommended for beginners)
+  - FREE: 500 images/day, no credit card required
   - Resolution: up to 1024x1024
   - Fast generation (~2-3 seconds)
   - Best for: Quick iterations, development, testing
 
 - **`gemini-2.0-flash-preview-image-generation`**
-  - FREE: 1500 requests/day
+  - FREE: 500 images/day
   - Preview model with experimental features
 
 ### Vertex AI (Google Cloud) - Paid
+- **`imagen-4`** (newest, highest quality)
+  - Pricing: $0.04/image
+  - Resolution: up to 2048x2048
+  - Best for: Professional work, final production images
+
 - **`imagen-3.0-generate-002`** (Imagen 3)
-  - Pricing: ~$0.02-0.04/image
+  - Pricing: $0.04/image
   - Resolution: up to 1536x1536
   - High quality, production-ready
 
-- **`imagen-4`** (newest, highest quality)
-  - Pricing: ~$0.04/image
-  - Resolution: up to 2048x2048
-  - Best for: Professional work, final production images
+- **`imagen-3.0-fast-generate-001`** (Imagen 3 Fast)
+  - Pricing: $0.02/image
+  - Optimized for speed
 
 ### AWS Bedrock - Paid
 - **`amazon.nova-canvas-v1:0`** (Nova Canvas)
   - Resolution: up to 1408x1408
-  - Standard quality: 50 steps, $0.04/image
-  - Premium quality: 100 steps, $0.08/image
+  - Pricing: $0.04/image (up to 1024x1024), $0.08/image (larger)
   - Best for: AWS-integrated applications
 
 **View all models with live pricing:**
@@ -340,11 +348,13 @@ All processing operations preserve format by default, or you can specify output 
 - Resampling: Lanczos algorithm (highest quality)
 - Transparency: Preserved for PNG, white background for JPEG
 
-### Batch Processing
-- Default: 4 parallel workers
-- Configurable with `--workers` flag
-- Processes entire directories
-- Preserves directory structure with `--output`
+### Batch Processing (MCP Server Only)
+Batch operations are available exclusively through the MCP server for AI assistants:
+- `batch_resize` - Concurrent image resizing
+- `batch_compress` - Concurrent compression
+- `batch_convert` - Concurrent format conversion
+
+CLI users can use shell scripts with `find` + `xargs` for parallel processing.
 
 ## Use Cases
 

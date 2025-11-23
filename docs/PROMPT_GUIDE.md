@@ -58,9 +58,14 @@ Gemini excels at legible text rendering:
 gimage generate "vintage coffee shop menu board with chalk lettering reading 'Fresh Roasted Daily', weathered wooden frame, warm ambient lighting"
 ```
 
-For professional text-heavy assets, use Gemini 3 Pro:
+For professional text-heavy assets, Gemini 3 Pro is the default and best choice:
 ```bash
-gimage generate "modern tech startup logo..." --model gemini-3-pro
+gimage generate "modern tech startup logo with text 'SKYWARD' in bold geometric sans-serif"
+```
+
+For native 4K resolution with sharp text:
+```bash
+gimage generate "detailed infographic about climate change" --image-size 4K
 ```
 
 ### Product Photography

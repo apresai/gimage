@@ -1,12 +1,12 @@
 openapi: 3.0.3
 info:
   title: Gimage API
-  version: 0.1.1
+  version: 1.2.66
   description: |
-    AI-powered image generation and processing API powered by Google Gemini and Vertex AI.
+    AI-powered image generation and processing API powered by Google Gemini, Vertex AI, and AWS Bedrock.
 
     ## Features
-    - **AI Image Generation**: Create images from text using Gemini 2.5 Flash or Vertex AI Imagen 4
+    - **AI Image Generation**: Create images from text using Gemini 2.5 Flash, Gemini 3 Pro, Vertex AI Imagen 4, or AWS Bedrock Nova Canvas
     - **Image Processing**: Resize, scale, crop, compress, and convert images
     - **Batch Operations**: Process multiple images concurrently
     - **Flexible Response**: Small images as base64, large images as S3 presigned URLs
@@ -45,11 +45,12 @@ paths:
         - Generation
       summary: Generate image from text prompt
       description: |
-        Generate an AI image from a text description using Google Gemini or Vertex AI.
+        Generate an AI image from a text description using Google Gemini, Vertex AI, or AWS Bedrock.
 
         **Models Available:**
-        - Gemini: `gemini-2.5-flash-image` (default), `gemini-2.0-flash-preview-image-generation`
-        - Vertex AI: `imagen-4.0-generate-001`, `imagen-4.0-ultra-generate-001`, `imagen-4.0-fast-generate-001`
+        - Gemini: `gemini-2.5-flash-image` (FREE, 500/day), `gemini-3-pro-image-preview` ($0.134-$0.24/image, native 4K)
+        - Vertex AI: `imagen-4` ($0.04/image), `imagen-3.0-generate-002` ($0.04/image)
+        - AWS Bedrock: `amazon.nova-canvas-v1:0` ($0.04-$0.08/image)
 
         **Response Formats:**
         - `base64`: Image data encoded in base64 (for images < 512KB)
@@ -412,18 +413,20 @@ paths:
                   summary: All APIs available
                   value:
                     status: "healthy"
-                    version: "0.1.1"
+                    version: "1.2.66"
                     apis:
                       gemini: "available"
                       vertex: "available"
+                      bedrock: "available"
                 gemini_only:
                   summary: Gemini only
                   value:
                     status: "healthy"
-                    version: "0.1.1"
+                    version: "1.2.66"
                     apis:
                       gemini: "available"
                       vertex: "not_configured"
+                      bedrock: "not_configured"
 
 components:
   schemas:
@@ -441,14 +444,14 @@ components:
         model:
           type: string
           description: AI model to use for generation
-          example: "gemini-2.5-flash-image"
+          example: "gemini-3-pro-image-preview"
           enum:
             - gemini-2.5-flash-image
             - gemini-2.0-flash-preview-image-generation
-            - imagen-3.0-generate-001
-            - imagen-4.0-generate-001
-            - imagen-4.0-ultra-generate-001
-            - imagen-4.0-fast-generate-001
+            - gemini-3-pro-image-preview
+            - imagen-3.0-generate-002
+            - imagen-4
+            - amazon.nova-canvas-v1:0
         size:
           type: string
           description: Image dimensions (WIDTHxHEIGHT)
@@ -481,6 +484,18 @@ components:
             - base64
             - s3_url
           example: "s3_url"
+        image_size:
+          type: string
+          description: Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
+          enum:
+            - 1K
+            - 2K
+            - 4K
+          example: "2K"
+        aspect_ratio:
+          type: string
+          description: Aspect ratio for Gemini 3 Pro (alternative to size). E.g., '1:1', '16:9', '9:16', '4:3', '3:4'
+          example: "16:9"
 
     ResizeRequest:
       type: object

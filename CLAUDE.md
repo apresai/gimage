@@ -117,10 +117,10 @@ Map informal names to exact model IDs:
 
 | User Input | Exact Model ID | API | Features |
 |-----------|---------------|-----|----------|
-| "gemini", "flash" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
-| "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image |
+| "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image (default) |
+| "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
 | "imagen", "imagen-4" | `imagen-4` | vertex | Highest quality, $0.04/image |
-| "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.08/image |
+| "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.04-$0.08/image |
 
 **Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
 
@@ -314,7 +314,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **aws_profile**: default
 **aws_bedrock_api_key**: bearer-token-here
 **default_api**: gemini
-**default_model**: gemini-2.5-flash-image
+**default_model**: gemini-3-pro-image-preview
 **log_level**: info
 ```
 

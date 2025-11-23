@@ -126,7 +126,7 @@ The MCP server will expose 10 tools covering all gimage operations:
         "imagen-3.0-generate-002",
         "imagen-4"
       ],
-      "description": "AI model to use (default: gemini-2.5-flash-image)"
+      "description": "AI model to use (default: gemini-3-pro-image-preview)"
     },
     "style": {
       "type": "string",
@@ -907,7 +907,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer, cfg *config.Config) {
 						"imagen-3.0-generate-002",
 						"imagen-4",
 					},
-					"description": "AI model to use (default: gemini-2.5-flash-image)",
+					"description": "AI model to use (default: gemini-3-pro-image-preview)",
 				},
 				"style": map[string]interface{}{
 					"type":        "string",
@@ -1707,7 +1707,7 @@ Configuration is stored in `~/.gimage/config.md`:
 **vertex_project**: your-project
 **vertex_location**: us-central1
 **default_api**: gemini
-**default_model**: gemini-2.5-flash-image
+**default_model**: gemini-3-pro-image-preview
 **log_level**: info
 ```
 
