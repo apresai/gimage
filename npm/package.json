@@ -1,6 +1,6 @@
 {
   "name": "@apresai/gimage-mcp",
-  "version": "1.2.89",
+  "version": "1.2.91",
   "description": "MCP server for AI-powered image generation and processing with gimage",
   "keywords": [
     "mcp",
