@@ -400,7 +400,7 @@ func TestListModelsTool_APITypes(t *testing.T) {
 	}
 
 	// Valid API types
-	validAPIs := map[string]bool{"gemini": true, "vertex": true, "bedrock": true}
+	validAPIs := map[string]bool{"gemini": true, "vertex": true, "bedrock": true, "grok": true}
 	for api := range apiTypes {
 		if !validAPIs[api] {
 			t.Errorf("Invalid API type: %s", api)
