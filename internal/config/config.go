@@ -21,6 +21,7 @@ type Config struct {
 	AWSRegion             string // AWS region (default: us-east-1)
 	AWSProfile            string // AWS profile name
 	AWSBedrockAPIKey      string // For AWS Bedrock REST API (bearer token)
+	GrokAPIKey            string // For xAI Grok API
 	DefaultAPI            string
 	DefaultModel          string
 	DefaultSize           string
@@ -81,6 +82,9 @@ func LoadConfig() (*Config, error) {
 	}
 	if bedrockKey := os.Getenv("AWS_BEARER_TOKEN_BEDROCK"); bedrockKey != "" {
 		cfg.AWSBedrockAPIKey = bedrockKey
+	}
+	if grokKey := os.Getenv("GROK_API_KEY"); grokKey != "" {
+		cfg.GrokAPIKey = grokKey
 	}
 	if logLevel := os.Getenv("GIMAGE_LOG_LEVEL"); logLevel != "" {
 		cfg.LogLevel = logLevel
@@ -169,6 +173,8 @@ func parseMarkdownConfig(path string, cfg *Config) error {
 			cfg.AWSProfile = value
 		case "aws_bedrock_api_key":
 			cfg.AWSBedrockAPIKey = value
+		case "grok_api_key":
+			cfg.GrokAPIKey = value
 		case "default_api":
 			cfg.DefaultAPI = value
 		case "default_model":
@@ -257,6 +263,9 @@ func SaveConfig(cfg *Config) error {
 	if cfg.AWSBedrockAPIKey != "" {
 		content.WriteString(fmt.Sprintf("**aws_bedrock_api_key**: %s\n", cfg.AWSBedrockAPIKey))
 	}
+	if cfg.GrokAPIKey != "" {
+		content.WriteString(fmt.Sprintf("**grok_api_key**: %s\n", cfg.GrokAPIKey))
+	}
 	if cfg.DefaultAPI != "" {
 		content.WriteString(fmt.Sprintf("**default_api**: %s\n", cfg.DefaultAPI))
 	}
@@ -311,9 +320,10 @@ func ValidateConfig(cfg *Config) error {
 			"gemini":  true,
 			"vertex":  true,
 			"bedrock": true,
+			"grok":    true,
 		}
 		if !validAPIs[cfg.DefaultAPI] {
-			return fmt.Errorf("default_api must be either 'gemini', 'vertex', or 'bedrock', got: %s", cfg.DefaultAPI)
+			return fmt.Errorf("default_api must be 'gemini', 'vertex', 'bedrock', or 'grok', got: %s", cfg.DefaultAPI)
 		}
 	}
 

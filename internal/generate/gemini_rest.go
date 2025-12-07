@@ -140,10 +140,19 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			c.log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
-		// Set aspectRatio if specified
+		// Set aspectRatio - use explicit value, infer from Size, or default to 1:1
 		if options.AspectRatio != "" {
 			imageConfig.AspectRatio = options.AspectRatio
-			c.log.Debug("Using aspectRatio: %s", imageConfig.AspectRatio)
+			c.log.Debug("Using explicit aspectRatio: %s", imageConfig.AspectRatio)
+		} else if options.Size != "" && width > 0 && height > 0 {
+			// Infer aspect ratio from Size dimensions for Gemini 3 Pro
+			imageConfig.AspectRatio = inferAspectRatio(width, height)
+			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, imageConfig.AspectRatio)
+		} else if imageConfig.ImageSize != "" {
+			// Default to 1:1 when imageSize is specified but no aspectRatio
+			// This prevents the API from defaulting to 16:9
+			imageConfig.AspectRatio = "1:1"
+			c.log.Debug("Using default aspectRatio 1:1 for imageSize %s", imageConfig.ImageSize)
 		}
 
 		// Only add imageConfig if we have settings
@@ -151,8 +160,21 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			genConfig.ImageConfig = imageConfig
 		}
 	} else {
-		// Standard Gemini 2.5 Flash: IMAGE only
+		// Standard Gemini 2.5 Flash: IMAGE only, supports aspectRatio but not imageSize
 		genConfig.ResponseModalities = []string{"IMAGE"}
+
+		// Gemini 2.5 Flash also supports aspectRatio
+		if options.AspectRatio != "" {
+			imageConfig := &geminiImageConfig{AspectRatio: options.AspectRatio}
+			genConfig.ImageConfig = imageConfig
+			c.log.Debug("Using aspectRatio for Gemini Flash: %s", options.AspectRatio)
+		} else if options.Size != "" && width > 0 && height > 0 {
+			// Infer aspect ratio from Size dimensions
+			aspectRatio := inferAspectRatio(width, height)
+			imageConfig := &geminiImageConfig{AspectRatio: aspectRatio}
+			genConfig.ImageConfig = imageConfig
+			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, aspectRatio)
+		}
 	}
 
 	// Build request payload using Gemini's generateContent API format
@@ -416,6 +438,56 @@ func parseDimensions(size string) (int, int) {
 	}
 
 	return width, height
+}
+
+// inferAspectRatio determines the best matching aspect ratio for given dimensions
+// Supported ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3
+func inferAspectRatio(width, height int) string {
+	if width <= 0 || height <= 0 {
+		return "1:1"
+	}
+
+	ratio := float64(width) / float64(height)
+
+	// Define aspect ratios with their numeric values
+	type aspectRatio struct {
+		name  string
+		value float64
+	}
+
+	ratios := []aspectRatio{
+		{"1:1", 1.0},
+		{"16:9", 16.0 / 9.0},   // 1.778
+		{"9:16", 9.0 / 16.0},   // 0.5625
+		{"4:3", 4.0 / 3.0},     // 1.333
+		{"3:4", 3.0 / 4.0},     // 0.75
+		{"3:2", 3.0 / 2.0},     // 1.5
+		{"2:3", 2.0 / 3.0},     // 0.667
+		{"5:4", 5.0 / 4.0},     // 1.25
+		{"4:5", 4.0 / 5.0},     // 0.8
+	}
+
+	// Find closest match
+	closestRatio := ratios[0]
+	smallestDiff := abs(ratio - closestRatio.value)
+
+	for _, r := range ratios[1:] {
+		diff := abs(ratio - r.value)
+		if diff < smallestDiff {
+			smallestDiff = diff
+			closestRatio = r
+		}
+	}
+
+	return closestRatio.name
+}
+
+// abs returns the absolute value of a float64
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // enhanceError provides more context for API errors

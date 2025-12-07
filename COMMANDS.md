@@ -44,7 +44,7 @@ gimage --version
 
 ## generate
 
-Generate images from text prompts using Google Gemini, Vertex AI, or AWS Bedrock.
+Generate images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok.
 
 ### Usage
 ```bash
@@ -67,13 +67,15 @@ gimage generate --prompt "your prompt" [flags]
 | `--negative` | string | Negative prompt to avoid features | - |
 | `--seed` | int | Random seed for reproducibility | `0` (random) |
 | `--quality` | string | Quality level for Nova Canvas: `standard` or `premium` | `standard` |
-| `--cfg-scale` | float | CFG scale for creativity (Nova Canvas: 1.1-10.0) | Model default |
+| `--cfg-scale` | float | CFG scale for creativity (Bedrock: 1.0-10.0, higher = more creative) | Model default |
+| `-n, --count` | int | Number of images to generate (1-5) | `1` |
+| `--output-format` | string | Output format for Vertex AI: `png`, `jpeg`, or `webp` | Provider default |
 | `-o, --output` | string | Output file path | `generated_<timestamp>.png` |
 | `--list-models` | bool | List all available models with pricing | `false` |
 | `--list-providers` | bool | List all providers with auth status | `false` |
 | `--prompt-howto` | bool | Show tips and examples for writing effective prompts | `false` |
 | `--image-size` | string | Native resolution for Gemini 3 Pro: `1K`, `2K`, or `4K` | - |
-| `--aspect-ratio` | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `4:3`) | - |
+| `--aspect-ratio` | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`) | - |
 
 ### Available Models
 
@@ -89,6 +91,9 @@ gimage generate --prompt "your prompt" [flags]
 
 **AWS Bedrock (Paid):**
 - `amazon.nova-canvas-v1:0` - $0.04/image (up to 1024x1024), $0.08/image (larger), up to 1408x1408
+
+**xAI Grok (Paid):**
+- `grok-2-image` - ~$0.07/image, Aurora-powered image generation
 
 ### Examples
 
@@ -120,6 +125,36 @@ gimage generate "random pattern" --seed 12345
 **Custom output path:**
 ```bash
 gimage generate "landscape" --output my-landscape.png
+```
+
+**Batch generation (multiple images):**
+```bash
+gimage generate "fantasy castle" --count 3
+```
+
+**Gemini 3 Pro with aspect ratio:**
+```bash
+gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
+```
+
+**Gemini 3 Pro with native 4K resolution:**
+```bash
+gimage generate "detailed infographic" --model gemini-3-pro --image-size 4K
+```
+
+**Vertex AI with output format:**
+```bash
+gimage generate "portrait" --api vertex --output-format webp
+```
+
+**Bedrock with CFG scale:**
+```bash
+gimage generate "abstract art" --model nova-canvas --cfg-scale 10.0
+```
+
+**Using xAI Grok:**
+```bash
+gimage generate "robot waving hello" --model grok
 ```
 
 **List all models:**
@@ -766,11 +801,24 @@ gimage --interactive
 
 ### Description
 
-Launches a menu-driven interface for:
-- Generating images from text prompts
-- Processing images (resize, scale, crop, compress, convert)
-- Configuring API keys and settings
-- Viewing help and keyboard shortcuts
+Launches an 8-step interactive menu for image generation:
+1. **Enter Prompt** - Describe the image you want
+2. **Select Model** - Choose AI model (Gemini, Vertex AI, or Bedrock)
+3. **Choose Size** - Select image dimensions
+4. **Select Style** - Pick style (photorealistic, artistic, anime, or none)
+5. **Advanced Options** - Configure optional parameters:
+   - Negative prompt (exclude unwanted elements)
+   - Seed (for reproducibility)
+   - Aspect ratio (Gemini 3 Pro: Auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+   - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
+   - Output format (Vertex AI: Auto, PNG, JPEG, WebP)
+   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
+   - Count (batch generation: 1-5 images)
+6. **Set Output Path** - Specify where to save the image
+7. **Review & Confirm** - Review all settings before generation
+8. **Generate** - Create your image
+
+The TUI provides feature parity with CLI and MCP, supporting all advanced generation options.
 
 ### Features
 - Interactive prompt-based workflow
@@ -790,9 +838,21 @@ gimage tui
 gimage --interactive
 ```
 
-### Keyboard Shortcuts
+### Keyboard Navigation
 
-Will be shown in the TUI help screen.
+**General Navigation:**
+- Tab / ↑↓: Navigate between fields
+- ←→: Change picker values
+- Enter: Continue to next step / Confirm
+- Esc: Go back to previous step
+- Ctrl+C: Exit at any time
+
+**Advanced Options Step:**
+- Tab: Move between input fields and pickers
+- ←→: Adjust picker values (aspect ratio, resolution, format, count)
+- Type directly: Enter values for text fields (negative prompt, seed, CFG scale)
+
+The TUI provides context-sensitive help throughout the workflow.
 
 ---
 
@@ -873,6 +933,7 @@ These environment variables can be used to configure gimage:
 | `VERTEX_PROJECT` | Vertex AI project ID | `my-gcp-project` |
 | `VERTEX_LOCATION` | Vertex AI location | `us-central1` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Service account file path | `/path/to/key.json` |
+| `GROK_API_KEY` | xAI Grok API key | `xai-5zM...` |
 | `GIMAGE_CONFIG` | Custom config file path | `~/my-config.md` |
 | `GIMAGE_LOG_LEVEL` | Log level (debug, info, warn, error) | `debug` |
 

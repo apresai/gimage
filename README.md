@@ -16,10 +16,12 @@ Production-ready serverless REST API for web applications and remote processing.
 ## What Can You Do with Gimage?
 
 ### 🎨 AI Image Generation
-- Generate stunning images from text prompts using Google Gemini, Vertex AI, or AWS Bedrock
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas
-- Control size, style, quality, and use negative prompts
+- Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas, Grok 2 Image
+- Control size, style, quality, aspect ratio, and use negative prompts
 - Reproducible results with seed values
+- Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3 Pro)
+- Batch generation: create multiple images at once
 
 ### 🛠️ Image Processing
 - **Resize** - Change image dimensions with high-quality resampling
@@ -107,6 +109,7 @@ gimage auth test gemini
 - **Gemini API**: https://aistudio.google.com/app/apikey (FREE tier: 500 images/day with gemini-2.5-flash-image, no credit card)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
+- **xAI Grok**: https://console.x.ai (Aurora-powered image generation, ~$0.07/image)
 
 ### 3. Generate Your First Image
 
@@ -139,8 +142,17 @@ gimage generate "forest scene" --negative "people, buildings"
 # Reproducible results with seed
 gimage generate "random pattern" --seed 12345
 
-# Control creativity with CFG scale (Nova Canvas)
+# Control creativity with CFG scale (Bedrock Nova Canvas, 1.0-10.0)
 gimage generate "abstract art" --model nova-canvas --cfg-scale 10
+
+# Generate multiple images at once (1-5 images)
+gimage generate "fantasy landscape" --count 3
+
+# Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
+
+# Control output format with Vertex AI (png, jpeg, webp)
+gimage generate "portrait" --api vertex --output-format webp
 
 # List all available models with pricing
 gimage generate --list-models
@@ -230,6 +242,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **aws_region**: us-east-1
 **aws_profile**: default
 **aws_bedrock_api_key**: bearer-token
+**grok_api_key**: xai-5zM...
 **default_api**: gemini
 **default_model**: gemini-3-pro-image-preview
 **default_size**: 1024x1024
@@ -279,6 +292,11 @@ export AWS_REGION="us-east-1"
 export AWS_REGION="us-east-1"  # Optional, defaults to instance region
 ```
 
+**xAI Grok**:
+```bash
+export GROK_API_KEY="xai-your-key"
+```
+
 **Check credential conflicts**:
 ```bash
 gimage auth status  # Shows which credentials are active and their sources
@@ -322,6 +340,12 @@ gimage auth status  # Shows which credentials are active and their sources
   - Resolution: up to 1408x1408
   - Pricing: $0.04/image (up to 1024x1024), $0.08/image (larger)
   - Best for: AWS-integrated applications
+
+### xAI Grok - Paid
+- **`grok-2-image`** (Aurora-powered)
+  - Pricing: ~$0.07/image
+  - Best for: Creative and artistic images
+  - Note: Does not support size, style, or negative prompt parameters
 
 **View all models with live pricing:**
 ```bash
@@ -489,7 +513,7 @@ gimage auth test gemini
 ```
 
 The MCP server automatically uses credentials from:
-1. **Environment variables** - `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, etc. (RECOMMENDED for security)
+1. **Environment variables** - `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, `GROK_API_KEY`, etc. (RECOMMENDED for security)
 2. **Config file** - `~/.gimage/config.md` (created by `gimage auth setup` commands)
 
 **Best Practice**: Use environment variables for production - they're more secure than storing credentials in config files.

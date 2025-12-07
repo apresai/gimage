@@ -292,6 +292,52 @@ func HasBedrockCredentials() bool {
 	return false
 }
 
+// HasGrokCredentials checks if xAI Grok API credentials are available
+func HasGrokCredentials() bool {
+	// Check environment variable
+	if os.Getenv("GROK_API_KEY") != "" {
+		return true
+	}
+
+	// Check config file
+	cfg, err := LoadConfig()
+	if err == nil && cfg.GrokAPIKey != "" {
+		return true
+	}
+
+	return false
+}
+
+// GetGrokAPIKey retrieves the Grok API key from multiple sources
+// Priority order: flagKey parameter > GROK_API_KEY env var > config file
+func GetGrokAPIKey(flagKey string) (string, error) {
+	// 1. Check command-line flag (highest priority)
+	if flagKey != "" {
+		return flagKey, nil
+	}
+
+	// 2. Check environment variable
+	if envKey := os.Getenv("GROK_API_KEY"); envKey != "" {
+		return envKey, nil
+	}
+
+	// 3. Load from config file
+	cfg, err := LoadConfig()
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if cfg.GrokAPIKey != "" {
+		return cfg.GrokAPIKey, nil
+	}
+
+	// No API key found
+	return "", fmt.Errorf("Grok API key not found. Please set it via:\n" +
+		"  1. Environment variable: export GROK_API_KEY=YOUR_KEY\n" +
+		"  2. Config file: gimage config set grok_api_key YOUR_KEY\n" +
+		"Get your API key at: https://console.x.ai")
+}
+
 // GetAWSRegion retrieves the AWS region from multiple sources
 // Priority order: flag parameter > AWS_REGION env var > config file > default (us-east-1)
 func GetAWSRegion(flagRegion string) string {

@@ -108,6 +108,37 @@ func isVertexModel(model string) bool {
 	return false
 }
 
+// isBedrockModel checks if a model is an AWS Bedrock model
+func isBedrockModel(model string) bool {
+	bedrockModels := []string{
+		"nova-canvas",
+		"amazon.nova-canvas-v1:0",
+	}
+	for _, bm := range bedrockModels {
+		if model == bm {
+			return true
+		}
+	}
+	return false
+}
+
+// isGrokModel checks if a model is an xAI Grok model
+func isGrokModel(model string) bool {
+	grokModels := []string{
+		"grok",
+		"grok-2",
+		"grok-2-image",
+		"xai",
+		"aurora",
+	}
+	for _, gm := range grokModels {
+		if model == gm {
+			return true
+		}
+	}
+	return false
+}
+
 // formatBytes formats bytes as human-readable string
 func formatBytes(bytes int64) string {
 	const unit = 1024

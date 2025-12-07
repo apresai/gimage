@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -55,8 +56,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"imagen",
 						"nova-canvas",
 						"amazon.nova-canvas-v1:0",
+						"grok",
+						"grok-2",
+						"grok-2-image",
+						"xai",
+						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048), 'grok' (xAI Aurora-powered). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
 					"default":     "gemini-3-pro-image-preview",
 				},
 				"image_size": map[string]interface{}{
@@ -76,6 +82,29 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"seed": map[string]interface{}{
 					"type":        "integer",
 					"description": "Random seed for reproducible generation. Use the same seed to get the same image.",
+				},
+				"aspect_ratio": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"},
+					"description": "Aspect ratio for Gemini 3 Pro. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
+				},
+				"cfg_scale": map[string]interface{}{
+					"type":        "number",
+					"description": "Guidance scale for Bedrock Nova Canvas (1.0-10.0, default 7.0). Higher values follow the prompt more closely.",
+					"minimum":     1.0,
+					"maximum":     10.0,
+				},
+				"count": map[string]interface{}{
+					"type":        "integer",
+					"description": "Number of images to generate (1-5). Currently only the first image is saved.",
+					"minimum":     1,
+					"maximum":     5,
+					"default":     1,
+				},
+				"output_format": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"png", "jpeg", "webp"},
+					"description": "Output format. Only supported by Vertex AI Imagen. Default: png.",
 				},
 			},
 			"required": []string{"prompt"},
@@ -138,11 +167,23 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 
 			style, _ := args["style"].(string)
 			negative, _ := args["negative"].(string)
-			imageSize, _ := args["image_size"].(string) // For Gemini 3 Pro: 1K, 2K, 4K
+			imageSize, _ := args["image_size"].(string)     // For Gemini 3 Pro: 1K, 2K, 4K
+			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3 Pro
+			outputFormat, _ := args["output_format"].(string)
 
 			var seed int64
 			if seedVal, ok := args["seed"].(float64); ok {
 				seed = int64(seedVal)
+			}
+
+			var cfgScale float64
+			if cfgVal, ok := args["cfg_scale"].(float64); ok {
+				cfgScale = cfgVal
+			}
+
+			var count int
+			if countVal, ok := args["count"].(float64); ok {
+				count = int(countVal)
 			}
 
 			// Create generate options
@@ -152,7 +193,11 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Style:          style,
 				NegativePrompt: negative,
 				Seed:           seed,
-				ImageSize:      imageSize, // Native resolution for Gemini 3 Pro
+				ImageSize:      imageSize,   // Native resolution for Gemini 3 Pro
+				AspectRatio:    aspectRatio, // For Gemini 3 Pro
+				CfgScale:       cfgScale,    // For Bedrock Nova Canvas
+				NumberOfImages: count,
+				OutputFormat:   outputFormat,
 			}
 
 			log.LogGenerationStart(prompt, map[string]interface{}{
@@ -167,6 +212,10 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			selectedAPI := "gemini" // default
 			if isVertexModel(modelName) {
 				selectedAPI = "vertex"
+			} else if isBedrockModel(modelName) {
+				selectedAPI = "bedrock"
+			} else if isGrokModel(modelName) {
+				selectedAPI = "grok"
 			}
 			log.Debug("Selected API: %s", selectedAPI)
 
@@ -194,7 +243,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				if err != nil {
 					return nil, fmt.Errorf("image generation failed: %w", err)
 				}
-			} else {
+			} else if selectedAPI == "vertex" {
 				// Use Vertex AI
 				// Load config to get project and location
 				cfg, err := config.LoadConfig()
@@ -236,6 +285,70 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
 				}
+			} else if selectedAPI == "bedrock" {
+				// Use AWS Bedrock Nova Canvas
+				region := config.GetAWSRegion("")
+
+				// Determine authentication method
+				// Priority: Bearer token (REST) > AWS SDK (keys/profile/IAM)
+				cfg, _ := config.LoadConfig()
+				bearerToken := ""
+				if cfg != nil {
+					bearerToken = cfg.AWSBedrockAPIKey
+				}
+
+				if bearerToken != "" {
+					// Use REST client with bearer token
+					client, err := generate.NewBedrockRESTClient(bearerToken, region)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create Bedrock REST client: %w", err)
+					}
+					defer client.Close()
+
+					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					if err != nil {
+						return nil, fmt.Errorf("image generation failed: %w", err)
+					}
+				} else {
+					// Use SDK client with IAM/keys/profile
+					client, err := generate.NewBedrockSDKClient(ctx, region)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create Bedrock SDK client: %w\nPlease run: gimage auth bedrock", err)
+					}
+					defer client.Close()
+
+					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					if err != nil {
+						return nil, fmt.Errorf("image generation failed: %w", err)
+					}
+				}
+			} else if selectedAPI == "grok" {
+				// Use xAI Grok
+				cfg, _ := config.LoadConfig()
+				apiKey := ""
+				if cfg != nil {
+					apiKey = cfg.GrokAPIKey
+				}
+				// Also check environment variable directly
+				if apiKey == "" {
+					apiKey = os.Getenv("GROK_API_KEY")
+				}
+				if apiKey == "" {
+					return nil, fmt.Errorf("Grok API key not configured\nPlease set GROK_API_KEY environment variable or run: gimage auth grok")
+				}
+
+				client, err := generate.NewGrokClient(apiKey)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create Grok client: %w", err)
+				}
+				defer client.Close()
+
+				generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+				if err != nil {
+					return nil, fmt.Errorf("image generation failed: %w", err)
+				}
+			} else {
+				return nil, fmt.Errorf("unsupported API: %s", selectedAPI)
 			}
 
 			// Save the generated image

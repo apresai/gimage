@@ -111,9 +111,13 @@ func (c *GeminiClient) GenerateImage(ctx context.Context, prompt string, options
 // generateWithRetry performs a single generation attempt
 func (c *GeminiClient) generateWithRetry(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
 	// Build the generation config
+	numberOfImages := 1
+	if options.NumberOfImages > 0 && options.NumberOfImages <= 4 {
+		numberOfImages = options.NumberOfImages
+	}
 	config := &genai.GenerateImagesConfig{
 		NegativePrompt: options.NegativePrompt,
-		NumberOfImages: 1,
+		NumberOfImages: int32(numberOfImages),
 	}
 
 	// Parse aspect ratio or size

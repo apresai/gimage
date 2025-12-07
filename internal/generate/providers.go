@@ -405,6 +405,42 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
+	// Grok 2 Image via xAI
+	r.Register(&Provider{
+		ID:          "grok/grok-2-image",
+		Name:        "Grok 2 Image (via xAI)",
+		API:         "grok",
+		ModelID:     "grok-2-image",
+		Description: "xAI's Aurora-powered image generation model",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GROK_API_KEY",
+				ConfigKey:   "grok_api_key",
+				Description: "API key from https://console.x.ai",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.07), // Approximate pricing
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         false, // Grok doesn't support style parameter
+			SupportsNegativePrompt: false, // Grok doesn't support negative prompts
+			SupportsSeed:           false, // Grok doesn't support seed
+			MaxPromptLength:        4000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GROK_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GROK_API_KEY is required")
+			}
+			return NewGrokClient(apiKey)
+		},
+	})
+
 	// Nova Canvas via Bedrock
 	r.Register(&Provider{
 		ID:          "bedrock/nova-canvas",
@@ -562,6 +598,8 @@ func (r *ProviderRegistry) gatherCredentials(p *Provider, cfg *config.Config) ma
 			creds[env.Name] = cfg.AWSAccessKeyID
 		case "aws_secret_access_key":
 			creds[env.Name] = cfg.AWSSecretAccessKey
+		case "grok_api_key":
+			creds[env.Name] = cfg.GrokAPIKey
 		}
 	}
 
@@ -670,6 +708,12 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"imagen-4":                   "vertex/imagen-4",
 		"nova":                       "bedrock/nova-canvas",
 		"nova-canvas":                "bedrock/nova-canvas",
+		// Grok aliases
+		"grok":                       "grok/grok-2-image",
+		"grok-2":                     "grok/grok-2-image",
+		"grok-2-image":               "grok/grok-2-image",
+		"xai":                        "grok/grok-2-image",
+		"aurora":                     "grok/grok-2-image",
 	}
 
 	if providerID, ok := aliases[input]; ok {

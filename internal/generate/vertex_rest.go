@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apresai/gimage/internal/observability"
@@ -164,6 +165,12 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 	c.log.Debug("Using aspect ratio: %s", aspectRatio)
 
+	// Determine number of images (Vertex AI Imagen supports 1-8)
+	sampleCount := 1
+	if options.NumberOfImages > 0 && options.NumberOfImages <= 8 {
+		sampleCount = options.NumberOfImages
+	}
+
 	// Build request payload for Vertex AI Imagen
 	// Format according to Vertex AI Imagen API:
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/image/generate-images
@@ -174,7 +181,7 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			},
 		},
 		"parameters": map[string]interface{}{
-			"sampleCount":  1,
+			"sampleCount":  sampleCount,
 			"aspectRatio":  aspectRatio,
 		},
 	}
@@ -187,6 +194,23 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Add seed if provided
 	if options.Seed != 0 {
 		requestBody["parameters"].(map[string]interface{})["seed"] = options.Seed
+	}
+
+	// Add output format if provided (jpeg, png, webp)
+	if options.OutputFormat != "" {
+		mimeType := "image/png" // default
+		switch strings.ToLower(options.OutputFormat) {
+		case "jpeg", "jpg":
+			mimeType = "image/jpeg"
+		case "webp":
+			mimeType = "image/webp"
+		case "png":
+			mimeType = "image/png"
+		}
+		requestBody["parameters"].(map[string]interface{})["outputOptions"] = map[string]string{
+			"mimeType": mimeType,
+		}
+		c.log.Debug("Using output format: %s", mimeType)
 	}
 
 	// Marshal request to JSON

@@ -19,11 +19,11 @@ Complete reference for all 10 MCP tools available in the gimage server.
 
 ## generate_image
 
-Generate an AI image from a text prompt using Gemini, Vertex AI, or AWS Bedrock.
+Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or xAI Grok.
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 3, Imagen 4, Nova Canvas), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 3, Imagen 4, Nova Canvas, Grok 2 Image), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
 
 ### Parameters
 
@@ -34,9 +34,13 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `size` | string | No | "1024x1024" | Image dimensions |
 | `model` | string | No | "gemini-3-pro-image-preview" | AI model to use |
 | `image_size` | string | No | - | Native resolution for Gemini 3 Pro: "1K", "2K", or "4K" |
+| `aspect_ratio` | string | No | - | Aspect ratio for Gemini 3 Pro: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3" |
 | `style` | string | No | - | Image style (photorealistic, artistic, anime) |
 | `negative` | string | No | - | Negative prompt (what to exclude) |
 | `seed` | integer | No | - | Random seed for reproducibility |
+| `cfg_scale` | float | No | - | CFG scale for Bedrock (1.0-10.0, higher = more creative) |
+| `count` | integer | No | 1 | Number of images to generate (1-5) |
+| `output_format` | string | No | - | Output format for Vertex AI: "png", "jpeg", or "webp" |
 
 ### Supported Sizes
 
@@ -72,6 +76,10 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 **AWS Bedrock:**
 - **amazon.nova-canvas-v1:0** (Nova Canvas, $0.04 for <=1024x1024, $0.08 for larger, up to 1408x1408)
 
+**xAI Grok:**
+- **grok-2-image** (Aurora-powered, ~$0.07/image, creative images)
+  - Note: Grok does not support size, style, negative prompts, or seed parameters
+
 ### Returns
 
 ```json
@@ -101,9 +109,29 @@ Create a photorealistic image of a wise old wizard
 Generate a 4K image of a detailed infographic about space exploration
 ```
 
+**Gemini 3 Pro with aspect ratio:**
+```
+Generate a 16:9 wide landscape image of mountains at sunset
+```
+
 **With size and negative prompt:**
 ```
 Generate a 1024x1792 image of a forest scene, but exclude any people or buildings
+```
+
+**Vertex AI with output format:**
+```
+Generate an image in WebP format of a modern architecture building
+```
+
+**Bedrock with CFG scale:**
+```
+Generate an abstract art image with CFG scale 10 for maximum creativity
+```
+
+**Batch generation (multiple images):**
+```
+Generate 3 variations of a fantasy castle
 ```
 
 **Reproducible generation:**
@@ -124,6 +152,11 @@ Generate an image of a futuristic cityscape using Nova Canvas model
 **Nova Canvas ultra-wide format:**
 ```
 Generate a 1173x640 panoramic landscape using Nova Canvas model
+```
+
+**xAI Grok (Aurora-powered):**
+```
+Generate a creative artistic image using grok-2-image model
 ```
 
 ---
@@ -566,6 +599,25 @@ Error messages are designed to be clear and actionable:
   - Compress: ~20-60 seconds (4 workers)
   - Convert: ~15-45 seconds (4 workers)
 
+### Provider-Specific Parameters
+
+Different providers support different advanced parameters:
+
+**Gemini 3 Pro Only:**
+- `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+- `image_size`: Native resolution upscaling (1K, 2K, 4K)
+
+**Vertex AI Only:**
+- `output_format`: Control output format (png, jpeg, webp)
+
+**Bedrock (Nova Canvas) Only:**
+- `cfg_scale`: Control creativity/adherence to prompt (1.0-10.0, higher = more creative)
+
+**All Providers:**
+- `negative`: Negative prompt (exclude unwanted elements)
+- `seed`: Random seed for reproducibility
+- `count`: Generate multiple images (1-5)
+
 ### Tips for Better Performance
 
 1. Use batch operations for multiple images instead of repeated single operations
@@ -576,6 +628,7 @@ Error messages are designed to be clear and actionable:
    - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
    - Use **Imagen 4** for premium photo-realistic quality ($0.04/image)
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
+5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---
 

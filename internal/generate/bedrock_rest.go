@@ -232,6 +232,27 @@ func (c *BedrockRESTClient) buildRequest(prompt string, options models.GenerateO
 		}
 	}
 
+	// Determine CFG scale (use option or default to 7.0)
+	cfgScale := 7.0
+	if options.CfgScale > 0 {
+		// Clamp to valid range (1.0-10.0)
+		cfgScale = options.CfgScale
+		if cfgScale < 1.0 {
+			cfgScale = 1.0
+		} else if cfgScale > 10.0 {
+			cfgScale = 10.0
+		}
+	}
+
+	// Determine number of images (use option or default to 1)
+	numberOfImages := 1
+	if options.NumberOfImages > 0 {
+		numberOfImages = options.NumberOfImages
+		if numberOfImages > 5 {
+			numberOfImages = 5 // Nova Canvas max is 5
+		}
+	}
+
 	// Build request
 	request := &NovaCanvasRequest{
 		TaskType: "TEXT_IMAGE",
@@ -239,11 +260,11 @@ func (c *BedrockRESTClient) buildRequest(prompt string, options models.GenerateO
 			Text: prompt,
 		},
 		ImageGenerationConfig: NovaCanvasImageConfig{
-			NumberOfImages: 1,
+			NumberOfImages: numberOfImages,
 			Quality:        quality,
 			Height:         height,
 			Width:          width,
-			CfgScale:       7.0, // Default CFG scale
+			CfgScale:       cfgScale,
 		},
 	}
 

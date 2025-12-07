@@ -27,10 +27,11 @@ const (
 	StepProvider  // Select provider (was StepModel)
 	StepSize
 	StepStyle
+	StepAdvanced  // NEW: Advanced options (negative prompt, seed, aspect ratio, etc.)
 	StepOutput
 	StepCommand  // Show command preview before generating
 	StepProgress
-	StepProviderRetry  // NEW: Select a different provider if first one fails
+	StepProviderRetry  // Select a different provider if first one fails
 	StepResult
 )
 
@@ -60,6 +61,25 @@ type styleOption struct {
 	desc  string
 }
 
+// Aspect ratio option for picker
+type aspectRatioOption struct {
+	value string
+	label string
+}
+
+// Image size option for Gemini 3 Pro
+type imageSizeOption struct {
+	value string
+	label string
+	desc  string
+}
+
+// Output format option
+type outputFormatOption struct {
+	value string
+	label string
+}
+
 // GenerateFlowModel handles the multi-step image generation flow
 type GenerateFlowModel struct {
 	currentStep GenerateStep
@@ -85,18 +105,31 @@ type GenerateFlowModel struct {
 	styles        []styleOption
 	selectedStyle int
 
-	// Step 5: Output path
+	// Step 5: Advanced options (NEW)
+	negativePromptInput textinput.Model
+	seedInput           textinput.Model
+	aspectRatios        []aspectRatioOption
+	selectedAspectRatio int
+	imageSizes          []imageSizeOption
+	selectedImageSize   int
+	outputFormats       []outputFormatOption
+	selectedOutputFormat int
+	cfgScaleInput       textinput.Model
+	countInput          textinput.Model
+	advancedFocusIndex  int // Track which field is focused (0-6)
+
+	// Step 6: Output path
 	outputInput textinput.Model
 
-	// Step 6: Command preview
+	// Step 7: Command preview
 	commandStr string
 
-	// Step 7: Progress
+	// Step 8: Progress
 	progressBar progress.Model
 	progressMsg string
 	generating  bool
 
-	// Step 8: Result
+	// Step 9: Result
 	resultPath     string
 	resultSize     int64
 	generationTime time.Duration
@@ -200,6 +233,55 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		{"anime", "Anime", "Anime and manga style"},
 	}
 
+	// Initialize advanced options inputs
+	negativePromptInput := textinput.New()
+	negativePromptInput.Placeholder = "e.g., blurry, low quality, watermark"
+	negativePromptInput.CharLimit = 500
+	negativePromptInput.Width = 60
+
+	seedInput := textinput.New()
+	seedInput.Placeholder = "e.g., 12345 (for reproducibility)"
+	seedInput.CharLimit = 20
+	seedInput.Width = 30
+
+	cfgScaleInput := textinput.New()
+	cfgScaleInput.Placeholder = "7.0 (1.0-10.0, Bedrock only)"
+	cfgScaleInput.CharLimit = 5
+	cfgScaleInput.Width = 20
+
+	countInput := textinput.New()
+	countInput.Placeholder = "1 (1-5)"
+	countInput.CharLimit = 2
+	countInput.Width = 10
+
+	// Aspect ratio options (for Gemini 3 Pro)
+	aspectRatioOpts := []aspectRatioOption{
+		{"", "Auto (from size)"},
+		{"1:1", "Square (1:1)"},
+		{"16:9", "Landscape (16:9)"},
+		{"9:16", "Portrait (9:16)"},
+		{"4:3", "Standard (4:3)"},
+		{"3:4", "Portrait (3:4)"},
+		{"3:2", "Photo (3:2)"},
+		{"2:3", "Portrait Photo (2:3)"},
+	}
+
+	// Image size options (for Gemini 3 Pro native resolution)
+	imageSizeOpts := []imageSizeOption{
+		{"", "Default", "Use standard resolution"},
+		{"1K", "1K (~1MP)", "Standard quality"},
+		{"2K", "2K (~4MP)", "High quality"},
+		{"4K", "4K (~16MP)", "Ultra quality ($0.24/image)"},
+	}
+
+	// Output format options
+	outputFormatOpts := []outputFormatOption{
+		{"", "Auto (PNG)"},
+		{"png", "PNG (lossless)"},
+		{"jpeg", "JPEG (smaller)"},
+		{"webp", "WebP (modern)"},
+	}
+
 	// Initialize provider retry input
 	providerRetryInput := textinput.New()
 	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/imagen-4"
@@ -218,6 +300,19 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		customHeight:          heightInput,
 		styles:                styleOpts,
 		selectedStyle:         0,
+		// Advanced options
+		negativePromptInput:  negativePromptInput,
+		seedInput:            seedInput,
+		aspectRatios:         aspectRatioOpts,
+		selectedAspectRatio:  0,
+		imageSizes:           imageSizeOpts,
+		selectedImageSize:    0,
+		outputFormats:        outputFormatOpts,
+		selectedOutputFormat: 0,
+		cfgScaleInput:        cfgScaleInput,
+		countInput:           countInput,
+		advancedFocusIndex:   0,
+		// Other steps
 		outputInput:           outputInput,
 		progressBar:           prog,
 		providerRetryInput:    providerRetryInput,
@@ -299,6 +394,8 @@ func (m *GenerateFlowModel) Update(msg tea.Msg) (*GenerateFlowModel, tea.Cmd) {
 		return m.updateSizeStep(msg)
 	case StepStyle:
 		return m.updateStyleStep(msg)
+	case StepAdvanced:
+		return m.updateAdvancedStep(msg)
 	case StepOutput:
 		return m.updateOutputStep(msg)
 	case StepCommand:
@@ -334,6 +431,8 @@ func (m *GenerateFlowModel) View() string {
 		return m.viewSizeStep()
 	case StepStyle:
 		return m.viewStyleStep()
+	case StepAdvanced:
+		return m.viewAdvancedStep()
 	case StepOutput:
 		return m.viewOutputStep()
 	case StepCommand:
@@ -354,6 +453,9 @@ func (m *GenerateFlowModel) resetFocusForStep() {
 	switch m.currentStep {
 	case StepPrompt:
 		m.promptTextarea.Focus()
+	case StepAdvanced:
+		m.advancedFocusIndex = 0
+		m.negativePromptInput.Focus()
 	case StepOutput:
 		m.outputInput.Focus()
 	}
@@ -388,7 +490,7 @@ func (m *GenerateFlowModel) viewPromptStep() string {
 	charCount := len(m.promptTextarea.Value())
 	charLimit := m.promptTextarea.CharLimit
 
-	content := TitleStyle.Render("Generate Image - Step 1/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 1/8") + "\n\n" +
 		SubtitleStyle.Render("Describe the image you want to generate") + "\n\n" +
 		m.promptTextarea.View() + "\n\n" +
 		MutedStyle.Render(fmt.Sprintf("Characters: %d/%d", charCount, charLimit)) + "\n\n" +
@@ -463,7 +565,7 @@ func (m *GenerateFlowModel) viewProviderStep() string {
 		items = append(items, title+"\n"+desc+"\n"+cost)
 	}
 
-	content := TitleStyle.Render("Generate Image - Step 2/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 2/8") + "\n\n" +
 		SubtitleStyle.Render("Select Provider") + "\n\n" +
 		strings.Join(items, "\n\n") + "\n\n" +
 		HelpStyle.Render("↑/↓: Navigate • Enter: Select • Esc: Back")
@@ -574,7 +676,7 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 			}
 		}
 
-		content := TitleStyle.Render("Generate Image - Step 3/7") + "\n\n" +
+		content := TitleStyle.Render("Generate Image - Step 3/8") + "\n\n" +
 			SubtitleStyle.Render("Select Image Size") + "\n\n" +
 			strings.Join(items, "\n\n") + "\n\n" +
 			HelpStyle.Render("↑/↓: Navigate • Enter: Select • Esc: Back")
@@ -591,7 +693,7 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 	}
 
 	// Custom size input view
-	content := TitleStyle.Render("Generate Image - Step 3/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 3/8") + "\n\n" +
 		SubtitleStyle.Render("Enter Custom Size") + "\n\n" +
 		FormatKeyValue("Width", m.customWidth.View()) + "\n\n" +
 		FormatKeyValue("Height", m.customHeight.View()) + "\n\n" +
@@ -622,8 +724,10 @@ func (m *GenerateFlowModel) updateStyleStep(msg tea.Msg) (*GenerateFlowModel, te
 				m.selectedStyle++
 			}
 		case "enter", " ":
-			m.currentStep = StepOutput
-			m.outputInput.Focus()
+			// Go to Advanced Options step
+			m.currentStep = StepAdvanced
+			m.advancedFocusIndex = 0
+			m.negativePromptInput.Focus()
 			return m, textinput.Blink
 		}
 	}
@@ -649,7 +753,7 @@ func (m *GenerateFlowModel) viewStyleStep() string {
 		items = append(items, title+"\n"+desc)
 	}
 
-	content := TitleStyle.Render("Generate Image - Step 4/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 4/8") + "\n\n" +
 		SubtitleStyle.Render("Select Image Style (Optional)") + "\n\n" +
 		strings.Join(items, "\n\n") + "\n\n" +
 		HelpStyle.Render("↑/↓: Navigate • Enter: Select • Esc: Back")
@@ -665,7 +769,189 @@ func (m *GenerateFlowModel) viewStyleStep() string {
 	)
 }
 
-// Step 5: Output Path
+// Step 5: Advanced Options
+func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel, tea.Cmd) {
+	var cmd tea.Cmd
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "tab", "down", "j":
+			// Move to next field
+			m.blurAllAdvancedInputs()
+			m.advancedFocusIndex = (m.advancedFocusIndex + 1) % 7
+			m.focusAdvancedInput()
+			return m, textinput.Blink
+		case "shift+tab", "up", "k":
+			// Move to previous field
+			m.blurAllAdvancedInputs()
+			m.advancedFocusIndex = (m.advancedFocusIndex - 1 + 7) % 7
+			m.focusAdvancedInput()
+			return m, textinput.Blink
+		case "enter":
+			// Move to output step
+			m.blurAllAdvancedInputs()
+			m.currentStep = StepOutput
+			m.outputInput.Focus()
+			return m, textinput.Blink
+		case "left", "h":
+			// Navigate picker options left
+			if m.advancedFocusIndex == 2 && m.selectedAspectRatio > 0 {
+				m.selectedAspectRatio--
+			} else if m.advancedFocusIndex == 3 && m.selectedImageSize > 0 {
+				m.selectedImageSize--
+			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat > 0 {
+				m.selectedOutputFormat--
+			}
+			return m, nil
+		case "right", "l":
+			// Navigate picker options right
+			if m.advancedFocusIndex == 2 && m.selectedAspectRatio < len(m.aspectRatios)-1 {
+				m.selectedAspectRatio++
+			} else if m.advancedFocusIndex == 3 && m.selectedImageSize < len(m.imageSizes)-1 {
+				m.selectedImageSize++
+			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat < len(m.outputFormats)-1 {
+				m.selectedOutputFormat++
+			}
+			return m, nil
+		}
+	}
+
+	// Update the focused input
+	switch m.advancedFocusIndex {
+	case 0:
+		m.negativePromptInput, cmd = m.negativePromptInput.Update(msg)
+	case 1:
+		m.seedInput, cmd = m.seedInput.Update(msg)
+	case 5:
+		m.cfgScaleInput, cmd = m.cfgScaleInput.Update(msg)
+	case 6:
+		m.countInput, cmd = m.countInput.Update(msg)
+	}
+
+	return m, cmd
+}
+
+func (m *GenerateFlowModel) blurAllAdvancedInputs() {
+	m.negativePromptInput.Blur()
+	m.seedInput.Blur()
+	m.cfgScaleInput.Blur()
+	m.countInput.Blur()
+}
+
+func (m *GenerateFlowModel) focusAdvancedInput() {
+	switch m.advancedFocusIndex {
+	case 0:
+		m.negativePromptInput.Focus()
+	case 1:
+		m.seedInput.Focus()
+	case 5:
+		m.cfgScaleInput.Focus()
+	case 6:
+		m.countInput.Focus()
+	// 2, 3, 4 are pickers - no focus needed
+	}
+}
+
+func (m *GenerateFlowModel) viewAdvancedStep() string {
+	// Get provider info to show relevant options
+	provider := m.providers[m.selectedProvider]
+	isGemini3Pro := strings.Contains(provider.model, "gemini-3")
+	isBedrock := provider.api == "bedrock"
+	isVertex := provider.api == "vertex"
+
+	var content string
+	content = TitleStyle.Render("Generate Image - Step 5/8") + "\n\n" +
+		SubtitleStyle.Render("Advanced Options (Optional)") + "\n\n"
+
+	// Negative Prompt (all providers)
+	focusIndicator := "  "
+	if m.advancedFocusIndex == 0 {
+		focusIndicator = "> "
+	}
+	content += focusIndicator + FormatKeyValue("Negative Prompt", m.negativePromptInput.View()) + "\n"
+	content += MutedStyle.Render("    Describe what you DON'T want in the image") + "\n\n"
+
+	// Seed (all providers)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 1 {
+		focusIndicator = "> "
+	}
+	content += focusIndicator + FormatKeyValue("Seed", m.seedInput.View()) + "\n"
+	content += MutedStyle.Render("    Use same seed for reproducible results") + "\n\n"
+
+	// Aspect Ratio (Gemini 3 Pro only)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 2 {
+		focusIndicator = "> "
+	}
+	aspectRatioValue := m.aspectRatios[m.selectedAspectRatio].label
+	if isGemini3Pro {
+		content += focusIndicator + FormatKeyValue("Aspect Ratio", aspectRatioValue) + "\n"
+		content += MutedStyle.Render("    ←/→ to change (Gemini 3 Pro only)") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  Aspect Ratio: (N/A - Gemini 3 Pro only)") + "\n\n"
+	}
+
+	// Image Size (Gemini 3 Pro native upscaling)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 3 {
+		focusIndicator = "> "
+	}
+	imageSizeValue := m.imageSizes[m.selectedImageSize].label
+	if isGemini3Pro {
+		content += focusIndicator + FormatKeyValue("Native Resolution", imageSizeValue) + "\n"
+		content += MutedStyle.Render("    ←/→ to change: 1K, 2K, or 4K") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  Native Resolution: (N/A - Gemini 3 Pro only)") + "\n\n"
+	}
+
+	// Output Format (Vertex AI only)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 4 {
+		focusIndicator = "> "
+	}
+	outputFormatValue := m.outputFormats[m.selectedOutputFormat].label
+	if isVertex {
+		content += focusIndicator + FormatKeyValue("Output Format", outputFormatValue) + "\n"
+		content += MutedStyle.Render("    ←/→ to change (Vertex AI only)") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  Output Format: (N/A - Vertex AI only)") + "\n\n"
+	}
+
+	// CFG Scale (Bedrock only)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 5 {
+		focusIndicator = "> "
+	}
+	if isBedrock {
+		content += focusIndicator + FormatKeyValue("CFG Scale", m.cfgScaleInput.View()) + "\n"
+		content += MutedStyle.Render("    1.0-10.0: higher = follows prompt more (Bedrock only)") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  CFG Scale: (N/A - Bedrock only)") + "\n\n"
+	}
+
+	// Number of Images (all providers)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 6 {
+		focusIndicator = "> "
+	}
+	content += focusIndicator + FormatKeyValue("Count", m.countInput.View()) + "\n"
+	content += MutedStyle.Render("    Number of images to generate (1-5)") + "\n\n"
+
+	content += HelpStyle.Render("Tab/↑↓: Navigate • ←→: Change picker • Enter: Continue • Esc: Back")
+
+	box := FocusedBoxStyle.Width(76).Render(content)
+
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Center,
+		box,
+	)
+}
+
+// Step 6: Output Path
 func (m *GenerateFlowModel) updateOutputStep(msg tea.Msg) (*GenerateFlowModel, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -692,7 +978,7 @@ func (m *GenerateFlowModel) viewOutputStep() string {
 		m.outputInput.SetValue(defaultPath)
 	}
 
-	content := TitleStyle.Render("Generate Image - Step 5/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 6/8") + "\n\n" +
 		SubtitleStyle.Render("Specify Output Path") + "\n\n" +
 		"Output file: " + m.outputInput.View() + "\n\n" +
 		MutedStyle.Render("The image will be saved to this location") + "\n\n" +
@@ -709,7 +995,7 @@ func (m *GenerateFlowModel) viewOutputStep() string {
 	)
 }
 
-// Step 6: Command Preview
+// Step 7: Command Preview
 func (m *GenerateFlowModel) buildCommand() {
 	// Build the size string
 	var size string
@@ -732,6 +1018,29 @@ func (m *GenerateFlowModel) buildCommand() {
 	// Add style if not "None"
 	if m.styles[m.selectedStyle].value != "" {
 		cmdParts = append(cmdParts, fmt.Sprintf("--style %s", m.styles[m.selectedStyle].value))
+	}
+
+	// Add advanced options
+	if m.negativePromptInput.Value() != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--negative \"%s\"", m.negativePromptInput.Value()))
+	}
+	if m.seedInput.Value() != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--seed %s", m.seedInput.Value()))
+	}
+	if m.aspectRatios[m.selectedAspectRatio].value != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--aspect-ratio %s", m.aspectRatios[m.selectedAspectRatio].value))
+	}
+	if m.imageSizes[m.selectedImageSize].value != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--image-size %s", m.imageSizes[m.selectedImageSize].value))
+	}
+	if m.outputFormats[m.selectedOutputFormat].value != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--output-format %s", m.outputFormats[m.selectedOutputFormat].value))
+	}
+	if m.cfgScaleInput.Value() != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--cfg-scale %s", m.cfgScaleInput.Value()))
+	}
+	if m.countInput.Value() != "" && m.countInput.Value() != "1" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--count %s", m.countInput.Value()))
 	}
 
 	// Add output path
@@ -760,7 +1069,7 @@ func (m *GenerateFlowModel) viewCommandStep() string {
 	provider := m.providers[m.selectedProvider]
 	apiDisplay := strings.ToUpper(provider.api)
 
-	content := TitleStyle.Render("Generate Image - Step 6/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 7/8") + "\n\n" +
 		SubtitleStyle.Render("Verify Your Command") + "\n\n" +
 		FormatKeyValue("Provider", provider.name) + "\n" +
 		FormatKeyValue("API", apiDisplay) + "\n" +
@@ -786,7 +1095,7 @@ func (m *GenerateFlowModel) viewCommandStep() string {
 func (m *GenerateFlowModel) viewProgressStep() string {
 	spinner := SpinnerFrames[int(time.Now().Unix())%len(SpinnerFrames)]
 
-	content := TitleStyle.Render("Generate Image - Step 7/7") + "\n\n" +
+	content := TitleStyle.Render("Generate Image - Step 8/8") + "\n\n" +
 		SubtitleStyle.Render("Generating...") + "\n\n" +
 		SuccessStyle.Render(spinner) + " " + m.progressMsg + "\n\n" +
 		m.progressBar.View() + "\n\n" +
@@ -917,11 +1226,13 @@ func (m *GenerateFlowModel) renderHelp() string {
 		FormatKeyValue("Ctrl+C", "Quit") + "\n\n" +
 		SubtitleStyle.Render("Generation Workflow") + "\n\n" +
 		"1. Enter a detailed prompt\n" +
-		"2. Choose an AI model (Gemini is free!)\n" +
+		"2. Choose an AI provider (Gemini is free!)\n" +
 		"3. Select image size\n" +
 		"4. Pick a style (optional)\n" +
-		"5. Specify output path\n" +
-		"6. Watch the progress\n\n" +
+		"5. Advanced options (negative prompt, seed, etc.)\n" +
+		"6. Specify output path\n" +
+		"7. Preview command\n" +
+		"8. Watch the progress\n\n" +
 		HelpStyle.Render("Press Esc to close this help")
 
 	box := FocusedBoxStyle.Width(70).Render(helpContent)
@@ -1225,16 +1536,38 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 		logger.LogDebug("TUI: Selected provider index=%d, id=%q, name=%q",
 			m.selectedProvider, provider.id, provider.name)
 
-		// Build options
+		// Parse advanced options
+		var seed int64
+		if m.seedInput.Value() != "" {
+			fmt.Sscanf(m.seedInput.Value(), "%d", &seed)
+		}
+
+		var cfgScale float64
+		if m.cfgScaleInput.Value() != "" {
+			fmt.Sscanf(m.cfgScaleInput.Value(), "%f", &cfgScale)
+		}
+
+		var count int
+		if m.countInput.Value() != "" {
+			fmt.Sscanf(m.countInput.Value(), "%d", &count)
+		}
+
+		// Build options with advanced parameters
 		options := models.GenerateOptions{
 			Model:          provider.model,
 			Size:           size,
 			Style:          m.styles[m.selectedStyle].value,
-			NegativePrompt: "", // Could add in future
+			NegativePrompt: m.negativePromptInput.Value(),
+			Seed:           seed,
+			AspectRatio:    m.aspectRatios[m.selectedAspectRatio].value,
+			ImageSize:      m.imageSizes[m.selectedImageSize].value,
+			OutputFormat:   m.outputFormats[m.selectedOutputFormat].value,
+			CfgScale:       cfgScale,
+			NumberOfImages: count,
 		}
 
-		logger.LogDebug("TUI: Options built - Provider=%q, Model=%q, Size=%q, Style=%q",
-			provider.id, options.Model, options.Size, options.Style)
+		logger.LogDebug("TUI: Options built - Provider=%q, Model=%q, Size=%q, Style=%q, Seed=%d",
+			provider.id, options.Model, options.Size, options.Style, seed)
 
 		// Save error context for potential retry
 		m.errorContext.prompt = m.promptTextarea.Value()

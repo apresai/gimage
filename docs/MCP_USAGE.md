@@ -51,6 +51,7 @@ The Gemini free tier includes:
 **For advanced users**:
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
 - **AWS Bedrock**: 4 authentication modes (Bearer Token/Access Keys/Profile/IAM Role)
+- **xAI Grok**: `GROK_API_KEY` environment variable (Aurora-powered, ~$0.07/image)
 
 See [Authentication Guide](../README.md#configuration) for complete details.
 
@@ -121,6 +122,12 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
+- **Advanced controls**:
+  - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+  - Native resolution (Gemini 3 Pro: 1K, 2K, 4K)
+  - Output format (Vertex AI: PNG, JPEG, WebP)
+  - CFG scale (Bedrock: 1.0-10.0 for creativity control)
+  - Batch generation (1-5 images at once)
 
 **Example Prompts:**
 ```
@@ -128,6 +135,10 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 "Create an artistic interpretation of a futuristic city at night"
 "Generate an anime-style character with blue hair and a sword"
 "Make me an image of a sunset, but avoid showing any people or buildings"
+"Generate a 16:9 wide landscape using Gemini 3 Pro"
+"Create 3 variations of a fantasy dragon in flight"
+"Generate an abstract art image with maximum creativity (CFG scale 10)"
+"Generate a portrait in WebP format for web optimization"
 ```
 
 ### 🖼️ Image Processing
@@ -406,6 +417,9 @@ export VERTEX_PROJECT="your-gcp-project"
 "Generate an image using Imagen 4 model with 2048x2048 resolution showing a hyper-realistic dragon"
 "Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
 "Generate an image using gemini-2.5-flash-image to use the free tier"
+"Generate a 16:9 landscape using Gemini 3 Pro aspect ratio control"
+"Generate an image in WebP format using Vertex AI for smaller file size"
+"Generate an abstract image with CFG scale 10 using Nova Canvas for maximum creativity"
 ```
 
 ### Reproducible Generation
@@ -448,9 +462,18 @@ Claude can chain multiple operations:
 
 4. **Try different models** - Each has strengths
    - Gemini 2.5 Flash: FREE tier, fast, great for quick iterations
-   - Gemini 3 Pro: Best for text, diagrams, and native 4K
-   - Imagen 4: Highest quality photo-realistic images
-   - Nova Canvas: AWS integration, good balance of quality/price
+   - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
+   - Imagen 4: Highest quality photo-realistic images, output format control
+   - Nova Canvas: AWS integration, CFG scale for creativity control
+
+5. **Use provider-specific features**:
+   - Gemini 3 Pro: Aspect ratio (16:9 for landscapes) and native resolution (4K for detail)
+   - Vertex AI: Output format (WebP for web optimization)
+   - Bedrock: CFG scale (higher values for more creative/abstract results)
+
+6. **Batch generation** - Use count parameter for variations
+   - "Generate 3 variations of..." instead of calling multiple times
+   - Faster and more efficient than sequential generation
 
 ### Image Processing
 

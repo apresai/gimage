@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4, or AWS Bedrock Nova Canvas
+- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4, AWS Bedrock Nova Canvas, or xAI Grok
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -17,7 +17,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - Pure Go 1.22+ (zero C dependencies for portability)
 - Image processing: `github.com/disintegration/imaging`
 - CLI: Cobra + Viper
-- APIs: Gemini API, Vertex AI, AWS Bedrock
+- APIs: Gemini API, Vertex AI, AWS Bedrock, xAI Grok
 
 ## Build Commands
 
@@ -100,6 +100,7 @@ type ImageGenerator interface {
 - **Gemini API** (REST) - Free tier, fastest setup
 - **Vertex AI** - Express Mode (REST) or Full Mode (SDK)
 - **AWS Bedrock** - REST or SDK modes
+- **xAI Grok** (REST) - Aurora-powered image generation
 
 ### Backend Selection Logic
 
@@ -108,6 +109,7 @@ Model name implies backend (auto-detect):
 - `gemini-3-pro-image-preview` → gemini (native 4K, $0.134/image)
 - `imagen-4` → vertex
 - `amazon.nova-canvas-v1:0` → bedrock
+- `grok-2-image` → grok (~$0.07/image)
 
 Optional `--api` flag overrides auto-detection.
 
@@ -121,6 +123,7 @@ Map informal names to exact model IDs:
 | "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
 | "imagen", "imagen-4" | `imagen-4` | vertex | Highest quality, $0.04/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.04-$0.08/image |
+| "grok", "grok-2", "xai", "aurora" | `grok-2-image` | grok | Aurora-powered, ~$0.07/image |
 
 **Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
 
@@ -289,6 +292,11 @@ gimage auth setup     # Interactive setup wizard for providers
 3. **SDK with Profile**: `AWS_PROFILE` → Named profile from `~/.aws/credentials`
 4. **SDK with IAM Role**: Automatic → EC2, Lambda, ECS task roles
 
+**xAI Grok**:
+- Single credential: `GROK_API_KEY`
+- REST client with Bearer token authentication
+- Get API key at: https://console.x.ai
+
 **Why Both REST and SDK?**
 - REST: Simple API keys, quick setup, perfect for local development
 - SDK: IAM roles, profiles, workload identity - critical for Lambda/EC2/GCP deployments
@@ -313,6 +321,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **aws_region**: us-east-1
 **aws_profile**: default
 **aws_bedrock_api_key**: bearer-token-here
+**grok_api_key**: xai-5zM...
 **default_api**: gemini
 **default_model**: gemini-3-pro-image-preview
 **log_level**: info
@@ -339,7 +348,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 
 **Environment Variable Priority**:
 - Environment variables override config file (by design)
-- Set `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, etc.
+- Set `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, `GROK_API_KEY`, etc.
 - Use `gimage auth status` to check for conflicts
 
 **Warning About Conflicts**:
