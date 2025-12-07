@@ -103,10 +103,10 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 				return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
 			}
 		} else {
-			// Full Mode - SDK client with service account
-			client, err := generate.NewVertexSDKClient(ctx, project, location)
+			// Full Mode - Unified SDK client with ADC/service account
+			client, err := generate.NewVertexUnifiedClient(ctx, project, location)
 			if err != nil {
-				return errorResponse(500, fmt.Sprintf("Failed to create Vertex SDK client: %v", err)), nil
+				return errorResponse(500, fmt.Sprintf("Failed to create Vertex unified client: %v", err)), nil
 			}
 			defer client.Close()
 

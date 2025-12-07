@@ -491,10 +491,10 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 			generatedImage, err = client.GenerateImage(ctx, prompt, options)
 		} else {
-			// Full Mode - Use SDK client with service account
-			printVerbose("Using Vertex AI Full Mode (service account authentication)")
+			// Full Mode - Use unified SDK client with ADC/service account
+			printVerbose("Using Vertex AI Full Mode (ADC/service account authentication)")
 
-			client, err := generate.NewVertexSDKClient(ctx, project, location)
+			client, err := generate.NewVertexUnifiedClient(ctx, project, location)
 			if err != nil {
 				return fmt.Errorf("failed to create Vertex AI client: %w", err)
 			}

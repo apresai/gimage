@@ -273,10 +273,10 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
 				} else {
-					// Full Mode - Use SDK client
-					client, err := generate.NewVertexSDKClient(ctx, project, location)
+					// Full Mode - Use unified SDK client
+					client, err := generate.NewVertexUnifiedClient(ctx, project, location)
 					if err != nil {
-						return nil, fmt.Errorf("failed to create Vertex AI SDK client: %w\nPlease run: gimage auth vertex", err)
+						return nil, fmt.Errorf("failed to create Vertex AI unified client: %w\nPlease run: gimage auth vertex", err)
 					}
 					defer client.Close()
 

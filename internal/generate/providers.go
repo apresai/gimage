@@ -227,7 +227,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 				return NewVertexRESTClient(apiKey, project, location)
 			}
 			ctx := context.Background()
-			return NewVertexSDKClient(ctx, project, location)
+			return NewVertexUnifiedClient(ctx, project, location)
 		},
 	})
 
@@ -285,7 +285,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 				return NewVertexRESTClient(apiKey, project, location)
 			}
 			ctx := context.Background()
-			return NewVertexSDKClient(ctx, project, location)
+			return NewVertexUnifiedClient(ctx, project, location)
 		},
 	})
 
@@ -343,7 +343,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 				return NewVertexRESTClient(apiKey, project, location)
 			}
 			ctx := context.Background()
-			return NewVertexSDKClient(ctx, project, location)
+			return NewVertexUnifiedClient(ctx, project, location)
 		},
 	})
 
@@ -401,7 +401,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 				return NewVertexRESTClient(apiKey, project, location)
 			}
 			ctx := context.Background()
-			return NewVertexSDKClient(ctx, project, location)
+			return NewVertexUnifiedClient(ctx, project, location)
 		},
 	})
 
