@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.92] - 2025-12-27
+
+### Security
+- Fixed 3 vulnerabilities in `golang.org/x/crypto` (SSH DoS issues)
+  - GO-2025-4135: Malformed constraint denial of service in ssh/agent
+  - GO-2025-4134: Unbounded memory consumption in ssh
+  - GO-2025-4116: Potential denial of service in ssh/agent
+- Updated `golang.org/x/crypto` from v0.39.0 to v0.46.0
+
+### Changed
+- Updated all dependencies to latest versions:
+  - `google.golang.org/genai`: v1.37.0 → v1.40.0 (Google AI SDK)
+  - `aws-lambda-go`: v1.50.0 → v1.51.1
+  - `aws-sdk-go-v2`: v1.40.1 → v1.41.0 (and all sub-packages)
+  - `aws-sdk-go-v2/service/s3`: v1.93.0 → v1.95.0
+  - `spf13/cobra`: v1.10.1 → v1.10.2
+  - `golang.org/x/image`: v0.24.0 → v0.34.0
+  - `golang.org/x/term`: v0.36.0 → v0.38.0
+  - `golang.org/x/net`: v0.41.0 → v0.48.0
+  - `golang.org/x/text`: v0.28.0 → v0.32.0
+  - `google.golang.org/grpc`: v1.73.0 → v1.78.0
+  - `google.golang.org/protobuf`: v1.36.6 → v1.36.11
+  - OpenTelemetry: v1.36.0 → v1.39.0
+  - Charmbracelet packages updated to latest
+
 ## [1.2.91] - 2025-12-07
 
 ### Changed
