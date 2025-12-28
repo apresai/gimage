@@ -45,7 +45,7 @@ gimage/
 ├── cmd/lambda/              # Lambda entrypoint
 ├── internal/
 │   ├── imaging/             # Image processing operations
-│   ├── generate/            # AI image generation (Gemini, Vertex, Bedrock)
+│   ├── generate/            # AI image generation (Gemini, Vertex, Bedrock, Grok)
 │   ├── config/              # Configuration & authentication
 │   ├── cli/                 # CLI commands
 │   ├── mcp/                 # MCP server implementation
@@ -80,12 +80,30 @@ This project uses **pure Go with zero C dependencies**:
 4. Default values (lowest)
 
 ### API Client Pattern
-All backends (Gemini, Vertex, Bedrock) implement common interface:
+All backends (Gemini, Vertex, Bedrock, Grok) implement common interface:
 ```go
 type ImageGenerator interface {
     GenerateImage(ctx context.Context, prompt string, options GenerateOptions) (*GeneratedImage, error)
     Close() error
 }
+```
+
+### Provider Registry (Single Source of Truth)
+The `ProviderRegistry` in `internal/generate/providers.go` is the central system for managing providers:
+- `apiRegistry` map holds API metadata (display names, descriptions, pricing, display order)
+- `registerAllProviders()` registers all provider/model combinations with aliases
+- CLI and TUI dynamically derive their displays from the registry
+- Adding a new API only requires updating `apiRegistry` - UI auto-updates
+
+```go
+// Example: apiRegistry entry
+"grok": {
+    ID:          "grok",
+    DisplayName: "xAI Grok",
+    Description: "xAI's Aurora-powered image generation",
+    PricingNote: "Paid: ~$0.07 per image",
+    Order:       4,
+},
 ```
 
 ### Error Handling
@@ -146,6 +164,44 @@ Map informal names to exact model IDs:
 4. Add comprehensive error handling
 5. Create unit tests with fixtures from `test/fixtures/` (DO NOT MODIFY)
 6. Benchmark critical operations
+
+### Adding a New Provider/Backend
+
+When adding a new AI provider (like Grok, Bedrock, etc.), update these locations:
+
+**Core Implementation** (required):
+1. `internal/generate/<provider>.go` - Client implementation (implement `ImageGenerator` interface)
+2. `internal/generate/providers.go` - Two changes:
+   - Add entry to `apiRegistry` map (display name, description, pricing, order)
+   - Register provider in `registerAllProviders()` with aliases
+
+**Config System** (required):
+3. `internal/config/config.go` - Add fields for new credentials (e.g., `GrokAPIKey`)
+4. `internal/config/auth.go` - Add `Has<Provider>Credentials()` function
+5. `internal/generate/providers.go` - Add credential gathering in `gatherCredentials()`
+
+**Dynamic UI** (automatic - no changes needed!):
+- CLI `--list-providers` - Uses `registry.ListAPIs()` and `GroupAuthStatusByAPI()`
+- TUI settings menu - Uses same registry methods
+- TUI about page - Uses same registry methods
+- TUI help text - Uses same registry methods
+
+**MCP Server** (usually automatic):
+6. `internal/mcp/tools/generate.go` - Usually works automatically via provider registry
+7. `internal/mcp/tools/models.go` - May need update if `list_models` has special logic
+
+**Documentation** (update all):
+8. `CLAUDE.md` - Model name resolution table, authentication section
+9. `README.md` - Supported backends list
+10. `COMMANDS.md` - Generate command examples with new provider
+11. `docs/MCP_TOOLS.md` - MCP tool documentation
+12. `docs/MCP_USAGE.md` - Usage examples
+
+**Tests**:
+13. `test/integration/generate_e2e_test.go` - Add E2E test for new provider
+14. Unit tests for client implementation
+
+**Architecture Note**: The `apiRegistry` in `providers.go` is the single source of truth for API metadata. The CLI and TUI dynamically derive their displays from this registry, preventing configuration drift. When adding a new API, just add it to `apiRegistry` and the UI will automatically include it.
 
 ## CLI Standards
 
@@ -237,7 +293,7 @@ If `--output` is omitted, commands auto-generate descriptive output paths:
 - Test CLI flag parsing
 
 **Integration Tests (manual, costs money)**:
-- Real API calls to Gemini/Vertex/Bedrock
+- Real API calls to Gemini/Vertex/Bedrock/Grok
 - Run manually: `go test -tags=integration`
 - **DO NOT MOCK cloud provider APIs** - mocks provide zero value
 
@@ -526,7 +582,7 @@ See `lambda.md` for complete guide.
 Core development phases:
 1. Project initialization
 2. Image processing core
-3. AI API integrations (Gemini → Vertex → Bedrock)
+3. AI API integrations (Gemini → Vertex → Bedrock → Grok)
 4. CLI commands
 5. Configuration system
 6. Testing suite

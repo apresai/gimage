@@ -17,7 +17,7 @@ import (
 
 const (
 	grokBaseURL      = "https://api.x.ai/v1"
-	grokDefaultModel = "grok-2-image"
+	grokDefaultModel = "grok-2-image-1212" // Versioned model name works more reliably
 )
 
 // GrokClient handles interactions with the xAI Grok API for image generation
@@ -190,6 +190,13 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) (*
 	// Detect image format from data
 	format := detectImageFormat(rawImageData)
 
+	// Get actual image dimensions from the data
+	width, height, err := GetImageDimensionsFromBytes(rawImageData)
+	if err != nil {
+		// Fallback to 0,0 which will skip dimension enforcement
+		width, height = 0, 0
+	}
+
 	// Build metadata
 	metadata := map[string]string{
 		"model":     request.Model,
@@ -201,8 +208,8 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) (*
 	return &models.GeneratedImage{
 		Data:     rawImageData,
 		Format:   format,
-		Width:    1024, // Grok doesn't expose dimensions, assume 1024x1024
-		Height:   1024,
+		Width:    width,
+		Height:   height,
 		Metadata: metadata,
 	}, nil
 }

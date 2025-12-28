@@ -76,6 +76,47 @@ type ModelCapabilities struct {
 // Helper function for creating float64 pointers
 func float64Ptr(f float64) *float64 { return &f }
 
+// APIInfo contains metadata about an API backend
+type APIInfo struct {
+	ID          string // "gemini", "vertex", "bedrock", "grok"
+	DisplayName string // "Gemini API (Google AI Studio)"
+	Description string // Brief description
+	PricingNote string // e.g., "Free tier: 500 images/day"
+	Order       int    // Display order (lower = first)
+}
+
+// apiRegistry maps API IDs to their metadata (single source of truth)
+var apiRegistry = map[string]APIInfo{
+	"gemini": {
+		ID:          "gemini",
+		DisplayName: "Gemini API (Google AI Studio)",
+		Description: "Direct access via Google AI Studio",
+		PricingNote: "Free tier: 500 images/day",
+		Order:       1,
+	},
+	"vertex": {
+		ID:          "vertex",
+		DisplayName: "Vertex AI (Google Cloud)",
+		Description: "Google Cloud's enterprise AI platform",
+		PricingNote: "Paid: $0.02-0.06 per image",
+		Order:       2,
+	},
+	"bedrock": {
+		ID:          "bedrock",
+		DisplayName: "AWS Bedrock",
+		Description: "Amazon's managed AI service",
+		PricingNote: "Paid: $0.04-0.08 per image",
+		Order:       3,
+	},
+	"grok": {
+		ID:          "grok",
+		DisplayName: "xAI Grok",
+		Description: "xAI's Aurora-powered image generation",
+		PricingNote: "Paid: ~$0.07 per image",
+		Order:       4,
+	},
+}
+
 // ProviderRegistry manages all available providers
 type ProviderRegistry struct {
 	providers map[string]*Provider
@@ -410,7 +451,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		ID:          "grok/grok-2-image",
 		Name:        "Grok 2 Image (via xAI)",
 		API:         "grok",
-		ModelID:     "grok-2-image",
+		ModelID:     "grok-2-image-1212", // Versioned model name works more reliably
 		Description: "xAI's Aurora-powered image generation model",
 		RequiredEnvVars: []EnvVar{
 			{
@@ -538,6 +579,53 @@ func (r *ProviderRegistry) ListByAPI(api string) []*Provider {
 		}
 	}
 	return providers
+}
+
+// GetAPIInfo returns metadata for an API (single source of truth)
+func (r *ProviderRegistry) GetAPIInfo(api string) (APIInfo, bool) {
+	info, ok := apiRegistry[api]
+	return info, ok
+}
+
+// ListAPIs returns all unique APIs in display order
+func (r *ProviderRegistry) ListAPIs() []APIInfo {
+	// Collect unique APIs from registered providers
+	seenAPIs := make(map[string]bool)
+	for _, p := range r.providers {
+		seenAPIs[p.API] = true
+	}
+
+	// Build list of API info for APIs that have providers
+	apis := make([]APIInfo, 0, len(seenAPIs))
+	for api := range seenAPIs {
+		if info, ok := apiRegistry[api]; ok {
+			apis = append(apis, info)
+		}
+	}
+
+	// Sort by Order field
+	for i := 0; i < len(apis)-1; i++ {
+		for j := i + 1; j < len(apis); j++ {
+			if apis[i].Order > apis[j].Order {
+				apis[i], apis[j] = apis[j], apis[i]
+			}
+		}
+	}
+
+	return apis
+}
+
+// GroupAuthStatusByAPI groups auth statuses by API in display order
+func (r *ProviderRegistry) GroupAuthStatusByAPI() map[string][]AuthStatus {
+	statuses := r.GetAuthStatus()
+	grouped := make(map[string][]AuthStatus)
+
+	for _, status := range statuses {
+		api := status.Provider.API
+		grouped[api] = append(grouped[api], status)
+	}
+
+	return grouped
 }
 
 // CheckAuth checks if a provider has all required credentials

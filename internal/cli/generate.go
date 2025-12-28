@@ -839,61 +839,41 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 // printAvailableProviders prints the list of available providers with auth status
 func printAvailableProviders() error {
 	registry := generate.GetProviderRegistry()
-	statuses := registry.GetAuthStatus()
 
 	fmt.Println("Available Providers:")
 	fmt.Println(strings.Repeat("─", 80))
 	fmt.Println()
 
-	// Group by API
-	geminiProviders := []generate.AuthStatus{}
-	vertexProviders := []generate.AuthStatus{}
-	bedrockProviders := []generate.AuthStatus{}
+	// Get providers grouped by API dynamically
+	grouped := registry.GroupAuthStatusByAPI()
+	apis := registry.ListAPIs()
 
-	for _, status := range statuses {
-		switch status.Provider.API {
-		case "gemini":
-			geminiProviders = append(geminiProviders, status)
-		case "vertex":
-			vertexProviders = append(vertexProviders, status)
-		case "bedrock":
-			bedrockProviders = append(bedrockProviders, status)
+	// Print providers for each API in order
+	for _, apiInfo := range apis {
+		providers := grouped[apiInfo.ID]
+		if len(providers) > 0 {
+			fmt.Printf("%s:\n", apiInfo.DisplayName)
+			for _, status := range providers {
+				printProviderStatus(status)
+			}
+			fmt.Println()
 		}
-	}
-
-	// Print Gemini providers
-	if len(geminiProviders) > 0 {
-		fmt.Println("Gemini API (Google AI Studio):")
-		for _, status := range geminiProviders {
-			printProviderStatus(status)
-		}
-		fmt.Println()
-	}
-
-	// Print Vertex providers
-	if len(vertexProviders) > 0 {
-		fmt.Println("Vertex AI (Google Cloud):")
-		for _, status := range vertexProviders {
-			printProviderStatus(status)
-		}
-		fmt.Println()
-	}
-
-	// Print Bedrock providers
-	if len(bedrockProviders) > 0 {
-		fmt.Println("AWS Bedrock:")
-		for _, status := range bedrockProviders {
-			printProviderStatus(status)
-		}
-		fmt.Println()
 	}
 
 	fmt.Println(strings.Repeat("─", 80))
 	fmt.Println("\nUsage:")
 	fmt.Println("  gimage generate \"prompt\" --provider <provider-id>")
+
+	// Generate examples dynamically from first provider of each API
 	fmt.Println("\nExamples:")
-	fmt.Println("  gimage generate \"sunset\" --provider gemini/flash-2.5")
-	fmt.Println("  gimage generate \"portrait\" --provider vertex/imagen-4")
+	for _, apiInfo := range apis {
+		providers := grouped[apiInfo.ID]
+		if len(providers) > 0 {
+			// Use first provider from this API as example
+			fmt.Printf("  gimage generate \"prompt\" --provider %s\n", providers[0].Provider.ID)
+		}
+	}
+
 	fmt.Println("\nTo configure authentication:")
 	fmt.Println("  gimage auth setup <provider-id>")
 

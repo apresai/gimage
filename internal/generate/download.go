@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image"
@@ -306,6 +307,16 @@ func GetImageDimensions(path string) (width, height int, err error) {
 		return 0, 0, fmt.Errorf("failed to decode image config: %w", err)
 	}
 
+	return config.Width, config.Height, nil
+}
+
+// GetImageDimensionsFromBytes returns image dimensions from raw bytes
+func GetImageDimensionsFromBytes(data []byte) (width, height int, err error) {
+	reader := bytes.NewReader(data)
+	config, _, err := image.DecodeConfig(reader)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to decode image config: %w", err)
+	}
 	return config.Width, config.Height, nil
 }
 

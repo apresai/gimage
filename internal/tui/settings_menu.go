@@ -2,7 +2,10 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/apresai/gimage/internal/config"
+	"github.com/apresai/gimage/internal/generate"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -256,34 +259,40 @@ func (m *SettingsMenuModel) viewConfig() string {
 }
 
 func (m *SettingsMenuModel) viewAPIStatus() string {
-	hasGemini := config.HasGeminiCredentials()
-	hasVertex := config.HasVertexCredentials()
-	hasBedrock := config.HasBedrockCredentials()
+	registry := generate.GetProviderRegistry()
+	grouped := registry.GroupAuthStatusByAPI()
+	apis := registry.ListAPIs()
 
-	geminiStatus := redNo()
-	vertexStatus := redNo()
-	bedrockStatus := redNo()
+	// Build status content dynamically
+	var statusLines []string
+	for _, apiInfo := range apis {
+		providers := grouped[apiInfo.ID]
+		// Check if any provider for this API is configured
+		hasAuth := false
+		for _, status := range providers {
+			if status.Configured {
+				hasAuth = true
+				break
+			}
+		}
 
-	if hasGemini {
-		geminiStatus = greenYes()
-	}
-	if hasVertex {
-		vertexStatus = greenYes()
-	}
-	if hasBedrock {
-		bedrockStatus = greenYes()
+		statusIcon := redNo()
+		statusText := "Not configured"
+		if hasAuth {
+			statusIcon = greenYes()
+			statusText = "Configured"
+		}
+
+		statusLines = append(statusLines,
+			FormatKeyValue(apiInfo.DisplayName, statusIcon+" "+statusText)+"\n"+
+				MutedStyle.Render("  "+apiInfo.PricingNote)+"\n")
 	}
 
 	breadcrumb := MutedStyle.Render("Settings > Check API Keys Status")
 	content := breadcrumb + "\n\n" +
 		TitleStyle.Render("API Keys Status") + "\n\n" +
 		SubtitleStyle.Render("Authentication Status") + "\n\n" +
-		FormatKeyValue("Gemini API", geminiStatus+" "+(map[bool]string{true: "Configured", false: "Not configured"}[hasGemini])) + "\n" +
-		MutedStyle.Render("  Free tier: 500 images/day") + "\n\n" +
-		FormatKeyValue("Vertex AI", vertexStatus+" "+(map[bool]string{true: "Configured", false: "Not configured"}[hasVertex])) + "\n" +
-		MutedStyle.Render("  Paid: $0.02-0.06 per image") + "\n\n" +
-		FormatKeyValue("AWS Bedrock", bedrockStatus+" "+(map[bool]string{true: "Configured", false: "Not configured"}[hasBedrock])) + "\n" +
-		MutedStyle.Render("  Paid: $0.04-0.08 per image") + "\n\n" +
+		strings.Join(statusLines, "\n") + "\n" +
 		WarningStyle.Render("Setup: gimage auth <api>") + "\n\n" +
 		HelpStyle.Render("Esc: Back to settings menu • m: Main menu")
 
@@ -292,16 +301,23 @@ func (m *SettingsMenuModel) viewAPIStatus() string {
 }
 
 func (m *SettingsMenuModel) viewAbout() string {
+	registry := generate.GetProviderRegistry()
+	apis := registry.ListAPIs()
+
+	// Build model list dynamically
+	var modelLines []string
+	for _, apiInfo := range apis {
+		modelLines = append(modelLines, "• "+apiInfo.DisplayName)
+	}
+
 	breadcrumb := MutedStyle.Render("Settings > About gimage")
 	content := breadcrumb + "\n\n" +
 		TitleStyle.Render("About gimage") + "\n\n" +
 		SubtitleStyle.Render("AI Image Generation & Processing Tool") + "\n\n" +
 		"gimage is a powerful CLI and TUI for generating\n" +
 		"AI images and processing existing images.\n\n" +
-		SubtitleStyle.Render("Supported AI Models") + "\n\n" +
-		"• Gemini 2.5 Flash (Free tier)\n" +
-		"• Imagen 4 (Premium quality)\n" +
-		"• AWS Bedrock Nova Canvas\n\n" +
+		SubtitleStyle.Render("Supported AI Backends") + "\n\n" +
+		strings.Join(modelLines, "\n") + "\n\n" +
 		SubtitleStyle.Render("Image Processing") + "\n\n" +
 		"• Resize, Scale, Crop\n" +
 		"• Compress (JPEG quality)\n" +
@@ -345,13 +361,23 @@ func (m *SettingsMenuModel) renderHelp() string {
 		"Format: Markdown with key-value pairs\n\n" +
 		SubtitleStyle.Render("Setting Up API Keys") + "\n\n" +
 		"Use the CLI commands:\n" +
-		"  gimage auth gemini\n" +
-		"  gimage auth vertex\n" +
-		"  gimage auth bedrock\n\n" +
+		m.buildAuthCommandsList() + "\n" +
 		HelpStyle.Render("Press Esc to close")
 
 	box := FocusedBoxStyle.Width(70).Render(helpContent)
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
+}
+
+// buildAuthCommandsList generates auth command list dynamically from registry
+func (m *SettingsMenuModel) buildAuthCommandsList() string {
+	registry := generate.GetProviderRegistry()
+	apis := registry.ListAPIs()
+
+	var commands []string
+	for _, apiInfo := range apis {
+		commands = append(commands, "  gimage auth "+apiInfo.ID)
+	}
+	return strings.Join(commands, "\n")
 }
 
 func maskKey(key string) string {
