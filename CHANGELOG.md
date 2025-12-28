@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.99] - 2025-12-28
+
+### Added
+- GitHub Actions workflow for automated releases (GoReleaser, npm publishing via OIDC)
+- `make release` command for automated version tagging and release process
+- Token-free npm publishing using GitHub Actions OIDC trusted publishers
+
+### Changed
+- Release process now fully automated through GitHub Actions
+- Version calculation now uses git commit count: `1.2.$(git rev-list --count HEAD)`
+- Updated documentation with streamlined release instructions and OIDC setup guide
+
+
 ## [1.2.97] - 2025-12-27
 
 ### Changed
