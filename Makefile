@@ -1,4 +1,4 @@
-.PHONY: build build-all test test-coverage install clean lint benchmark info help build-lambda package-lambda deploy-lambda clean-lambda lambda-logs release update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
+.PHONY: build build-all test test-coverage install clean lint benchmark info help build-lambda package-lambda deploy-lambda clean-lambda lambda-logs release release-local update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
 
 # Binary name
 BINARY_NAME=gimage
@@ -58,7 +58,8 @@ help:
 	@echo "  version          - Display current version"
 	@echo "  sync-version     - Sync version to package.json"
 	@echo "  update-changelog - Update CHANGELOG.md"
-	@echo "  release          - Create and publish new release"
+	@echo "  release          - Tag and push (GitHub Actions does the rest)"
+	@echo "  release-local    - Full local release (requires tokens)"
 	@echo "  info             - Display version and release notes"
 	@echo ""
 	@echo "🔧 SDK Commands:"
@@ -364,10 +365,51 @@ update-changelog:
 	fi
 	@bash scripts/update-changelog.sh $(VERSION)
 
-## release: Create and publish a new release
+## release: Create and publish a new release (via GitHub Actions)
 release:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  Creating Release v$(VERSION)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "Step 1: Updating CHANGELOG.md..."
+	@$(MAKE) update-changelog
+	@echo ""
+	@echo "Step 2: Syncing version to package.json files..."
+	@$(MAKE) sync-version
+	@echo ""
+	@echo "Step 3: Checking for uncommitted changes..."
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "✓ Found changes, committing..."; \
+		git add CHANGELOG.md package.json npm/package.json; \
+		git commit -m "Release v$(VERSION)"; \
+		git push origin main; \
+		echo "✓ Changes committed and pushed"; \
+	else \
+		echo "✓ No changes to commit"; \
+	fi
+	@echo ""
+	@echo "Step 4: Creating git tag v$(VERSION)..."
+	@git tag -a v$(VERSION) -m "Release v$(VERSION)" || (echo "✗ Tag already exists" && exit 1)
+	@git push origin v$(VERSION)
+	@echo "✓ Tag v$(VERSION) created and pushed"
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  ✓ Tag v$(VERSION) pushed - GitHub Actions will handle the rest!"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "GitHub Actions will:"
+	@echo "  1. Build binaries for all platforms"
+	@echo "  2. Create GitHub release"
+	@echo "  3. Update Homebrew tap"
+	@echo "  4. Publish to npm"
+	@echo ""
+	@echo "Monitor progress: https://github.com/apresai/gimage/actions"
+	@echo ""
+
+## release-local: Create release locally (without GitHub Actions)
+release-local:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Creating Local Release v$(VERSION)"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@echo "Step 1: Updating CHANGELOG.md..."

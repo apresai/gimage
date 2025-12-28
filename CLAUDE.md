@@ -511,47 +511,41 @@ wg.Wait()
 
 ## Release Process
 
-**Use `make release` for all releases.** It automates everything:
+**Use `make release` for all releases.** It tags and pushes, then GitHub Actions handles the rest:
 
 ```bash
 make release
 ```
 
-**What it does (6 steps):**
+**What it does:**
 1. Updates CHANGELOG.md with current date
 2. Syncs version to `package.json` and `npm/package.json`
 3. Commits and pushes changes to main
 4. Creates and pushes git tag `v$(VERSION)`
-5. Runs GoReleaser (builds binaries, creates GitHub release, updates Homebrew tap)
-6. Publishes npm package `@apresai/gimage-mcp`
+5. **GitHub Actions automatically:**
+   - Runs GoReleaser (builds binaries, creates GitHub release, updates Homebrew tap)
+   - Publishes npm package via OIDC (no token needed!)
 
 **Version calculation:**
 - Auto-calculated: `1.2.$(git rev-list --count HEAD)`
 - Override with: `VERSION=1.3.0 make release`
 
-**Required environment:**
-- `GITHUB_TOKEN` - Auto-detected from `gh auth token` if not set
+**Required secrets (in GitHub repo settings):**
+- `GITHUB_TOKEN` - Automatic (provided by GitHub Actions)
 - `HOMEBREW_TAP_TOKEN` - Required for Homebrew tap updates
-- `NPM_TOKEN` - Granular access token for npm publishing (90-day max expiration)
-- `goreleaser` - Must be installed
 
-**NPM Token Setup:**
-1. Create at https://www.npmjs.com/settings/~/tokens → "Generate New Token" → "Granular Access Token"
-2. Configure: Read/write permission, select `@apresai/gimage-mcp` package, enable "Bypass 2FA", 90-day expiration
-3. Add to `~/.npmrc`: `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`
-4. Store token in environment (e.g., `~/.secrets/shell.zsh`)
+**npm Publishing - Token-Free via OIDC:**
+npm uses GitHub Actions OIDC trusted publishing - no npm token required!
 
-**Never manually:**
-- Create tags
-- Push tags
-- Run goreleaser directly
-- Publish to npm directly
+One-time setup on npmjs.com:
+1. Go to https://www.npmjs.com/package/@apresai/gimage-mcp/access
+2. Click "GitHub Actions" under Trusted Publishers
+3. Add: owner=`apresai`, repo=`gimage`, workflow=`release.yml`
 
-**No GitHub Actions** - All CI/CD runs locally via `make release`. This gives you:
-- Full control over when releases happen
-- No dependency on GitHub's infrastructure
-- Immediate feedback (not waiting for remote runners)
-- Same environment as local development
+**Alternative: Local release (if GitHub Actions unavailable):**
+```bash
+make release-local  # Requires GITHUB_TOKEN, HOMEBREW_TAP_TOKEN, NPM_TOKEN
+```
 
 ## Lambda Deployment
 

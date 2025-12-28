@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write  # Required for npm OIDC trusted publishing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'  # Includes npm 11.6+ with OIDC support
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      # npm OIDC Trusted Publishing - NO TOKEN REQUIRED
+      # Prerequisites: Configure trusted publisher on npmjs.com:
+      #   1. Go to https://www.npmjs.com/package/@apresai/gimage-mcp/access
+      #   2. Add GitHub Actions as trusted publisher
+      #   3. Set: owner=apresai, repo=gimage, workflow=release.yml
+      - name: Publish to npm (OIDC - no token)
+        working-directory: ./npm
+        run: npm publish --access public
