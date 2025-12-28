@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.95] - 2025-12-27
+
+### Changed
+- Improved CI/CD documentation with npm token setup requirements and granular access token configuration
+- Updated MCP server documentation references and links
+
+
 ## [1.2.93] - 2025-12-27
 
 ### Changed
