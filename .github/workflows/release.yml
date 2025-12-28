@@ -12,6 +12,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: apresai  # Access HOMEBREW_TAP_TOKEN from this environment
     steps:
       - name: Checkout
         uses: actions/checkout@v4
