@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.93] - 2025-12-27
 
 ### Changed
-- 
+- Configured npm granular access token for CI/CD publishing
+- Updated `.npmrc` to use `NPM_TOKEN` environment variable
+- Verified full `make release` pipeline (GitHub + Homebrew + npm)
 
 
 ## [1.2.92] - 2025-12-27

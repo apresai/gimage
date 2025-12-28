@@ -1,9 +1,9 @@
 # Gimage MCP Server Implementation Plan
 
-**Version**: 1.0.0
+**Version**: 1.2.x (see CHANGELOG.md for current version)
 **Target Runtime**: Go 1.22+
 **MCP Protocol**: Model Context Protocol (stdio transport)
-**Deployment**: npm package + direct binary distribution
+**Deployment**: npm package (`@apresai/gimage-mcp`) + Homebrew (`apresai/tap/gimage`)
 
 ---
 

@@ -476,8 +476,14 @@ make release
 **Required environment:**
 - `GITHUB_TOKEN` - Auto-detected from `gh auth token` if not set
 - `HOMEBREW_TAP_TOKEN` - Required for Homebrew tap updates
+- `NPM_TOKEN` - Granular access token for npm publishing (90-day max expiration)
 - `goreleaser` - Must be installed
-- `npm` - Must be logged in for publishing
+
+**NPM Token Setup:**
+1. Create at https://www.npmjs.com/settings/~/tokens → "Generate New Token" → "Granular Access Token"
+2. Configure: Read/write permission, select `@apresai/gimage-mcp` package, enable "Bypass 2FA", 90-day expiration
+3. Add to `~/.npmrc`: `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`
+4. Store token in environment (e.g., `~/.secrets/shell.zsh`)
 
 **Never manually:**
 - Create tags

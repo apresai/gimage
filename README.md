@@ -848,7 +848,6 @@ make package-lambda
 - **OpenAPI Specification**: [openapi.yaml](openapi.yaml)
 - **Integration Guide**: [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
 - **Deployment Guide**: [lambda.md](lambda.md)
-- **Implementation Status**: [LAMBDA_STATUS.md](LAMBDA_STATUS.md)
 
 ### Community
 - **GitHub Issues**: https://github.com/apresai/gimage/issues
