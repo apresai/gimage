@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.97] - 2025-12-27
+
+### Changed
+- Build number incremented to 1.2.97 (automatic versioning from git commit count)
+
+
 ## [1.2.95] - 2025-12-27
 
 ### Changed
