@@ -362,20 +362,16 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				absOutput = output
 			}
 
-			// Get provider info for pricing display
+			// Get provider info for pricing display using shared helper
 			provider, _ := registry.ResolveProvider(modelName)
 			var modelDisplayName string
 			var pricingInfo string
 
 			if provider != nil {
 				modelDisplayName = provider.Name
-				if provider.Pricing.FreeTier {
-					pricingInfo = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
-				} else if provider.Pricing.CostPerImage != nil {
-					pricingInfo = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
-				} else {
-					pricingInfo = "Variable"
-				}
+				// Use shared pricing helper for consistent pricing display
+				pricing := generate.GetProviderPricing(provider, imageSize, size)
+				pricingInfo = pricing.Display
 			} else {
 				modelDisplayName = modelName
 				pricingInfo = "Unknown"

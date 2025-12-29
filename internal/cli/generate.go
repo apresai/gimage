@@ -90,6 +90,8 @@ func formatImageSize(bytes int64) string {
 // Standardized Output Functions
 // ============================================================================
 // These functions ensure consistent output format across all providers.
+// Uses shared pricing helpers from generate.GetProviderPricing() for consistency
+// with MCP server output.
 
 // printProviderHeader prints the standard provider selection header
 // Format: "Using: <Provider Name>"
@@ -101,50 +103,15 @@ func printProviderHeader(provider *generate.Provider) {
 // printProviderPricing prints the standard pricing information
 // Format: "Pricing: $X.XXXX/image" or "Pricing: FREE (limit)"
 func printProviderPricing(provider *generate.Provider, imageSize, dimensions string) {
-	pricingDisplay := "Variable"
-
-	if provider.Pricing.FreeTier {
-		pricingDisplay = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
-	} else if provider.Pricing.CostPerImage != nil {
-		cost := *provider.Pricing.CostPerImage
-
-		// Handle variable pricing models
-		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-			cost = getGemini3ProCost(imageSize)
-			pricingDisplay = fmt.Sprintf("$%.4f/image (%s)", cost, imageSizeLabel(imageSize))
-		} else if strings.Contains(provider.ModelID, "nova-canvas") {
-			cost = getNovaCanvasCost(dimensions)
-			w, h := parseDimensionsForCost(dimensions)
-			if w > 1024 || h > 1024 {
-				pricingDisplay = fmt.Sprintf("$%.4f/image (>1024px)", cost)
-			} else {
-				pricingDisplay = fmt.Sprintf("$%.4f/image (≤1024px)", cost)
-			}
-		} else {
-			pricingDisplay = fmt.Sprintf("$%.4f/image", cost)
-		}
-	}
-
-	printInfo("Pricing: %s", pricingDisplay)
+	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
+	printInfo("Pricing: %s", pricing.Display)
 }
 
 // printCostWarning prints a warning if the provider is expensive (>$0.05/image)
 func printCostWarning(provider *generate.Provider, imageSize, dimensions string) {
-	if provider.Pricing.FreeTier || provider.Pricing.CostPerImage == nil {
-		return
-	}
-
-	cost := *provider.Pricing.CostPerImage
-
-	// Handle variable pricing
-	if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-		cost = getGemini3ProCost(imageSize)
-	} else if strings.Contains(provider.ModelID, "nova-canvas") {
-		cost = getNovaCanvasCost(dimensions)
-	}
-
-	if cost > 0.05 {
-		fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, cost)
+	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
+	if pricing.IsExpensive {
+		fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, pricing.Cost)
 	}
 }
 
@@ -162,68 +129,13 @@ func printSuccessDetails(provider *generate.Provider, output string, imageData [
 	printInfo("  Size: %s", formatImageSize(int64(len(imageData))))
 	printInfo("  Dimensions: %dx%d", width, height)
 
-	// Cost info
-	if provider.Pricing.FreeTier {
-		printInfo("  Cost: FREE (within %s)", provider.Pricing.FreeTierLimit)
-	} else if provider.Pricing.CostPerImage != nil {
-		cost := *provider.Pricing.CostPerImage
-
-		// Handle variable pricing
-		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-			cost = getGemini3ProCost(imageSize)
-			printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
-		} else if strings.Contains(provider.ModelID, "nova-canvas") {
-			cost = getNovaCanvasCost(dimensions)
-			w, h := parseDimensionsForCost(dimensions)
-			if w > 1024 || h > 1024 {
-				printInfo("  Cost: $%.4f (>1024px)", cost)
-			} else {
-				printInfo("  Cost: $%.4f (≤1024px)", cost)
-			}
-		} else {
-			printInfo("  Cost: $%.4f", cost)
-		}
+	// Cost info using shared pricing helper
+	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
+	if pricing.IsFree {
+		printInfo("  Cost: %s", pricing.Display)
+	} else if pricing.Cost > 0 {
+		printInfo("  Cost: %s", pricing.Display)
 	}
-}
-
-// getGemini3ProCost returns the cost for Gemini 3 Pro based on image size
-// Pricing: $0.134 for 1K/2K, $0.24 for 4K
-func getGemini3ProCost(imageSize string) float64 {
-	if strings.ToUpper(imageSize) == "4K" {
-		return 0.24
-	}
-	return 0.134 // Default for 1K/2K or unspecified
-}
-
-// getNovaCanvasCost returns the cost for Nova Canvas based on image dimensions
-// Pricing: $0.04 for ≤1024x1024, $0.08 for >1024x1024
-func getNovaCanvasCost(size string) float64 {
-	width, height := parseDimensionsForCost(size)
-	if width > 1024 || height > 1024 {
-		return 0.08
-	}
-	return 0.04
-}
-
-// parseDimensionsForCost parses "WIDTHxHEIGHT" string for cost calculation
-func parseDimensionsForCost(size string) (int, int) {
-	if size == "" {
-		return 1024, 1024
-	}
-	parts := strings.Split(size, "x")
-	if len(parts) != 2 {
-		return 1024, 1024
-	}
-	var width, height int
-	fmt.Sscanf(parts[0], "%d", &width)
-	fmt.Sscanf(parts[1], "%d", &height)
-	if width <= 0 {
-		width = 1024
-	}
-	if height <= 0 {
-		height = 1024
-	}
-	return width, height
 }
 
 var generateCmd = &cobra.Command{
