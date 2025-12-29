@@ -86,6 +86,106 @@ func formatImageSize(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
+// ============================================================================
+// Standardized Output Functions
+// ============================================================================
+// These functions ensure consistent output format across all providers.
+
+// printProviderHeader prints the standard provider selection header
+// Format: "Using: <Provider Name>"
+// Note: Provider.Name already includes the API context (e.g., "via Gemini API")
+func printProviderHeader(provider *generate.Provider) {
+	printInfo("Using: %s", provider.Name)
+}
+
+// printProviderPricing prints the standard pricing information
+// Format: "Pricing: $X.XXXX/image" or "Pricing: FREE (limit)"
+func printProviderPricing(provider *generate.Provider, imageSize, dimensions string) {
+	pricingDisplay := "Variable"
+
+	if provider.Pricing.FreeTier {
+		pricingDisplay = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
+	} else if provider.Pricing.CostPerImage != nil {
+		cost := *provider.Pricing.CostPerImage
+
+		// Handle variable pricing models
+		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+			cost = getGemini3ProCost(imageSize)
+			pricingDisplay = fmt.Sprintf("$%.4f/image (%s)", cost, imageSizeLabel(imageSize))
+		} else if strings.Contains(provider.ModelID, "nova-canvas") {
+			cost = getNovaCanvasCost(dimensions)
+			w, h := parseDimensionsForCost(dimensions)
+			if w > 1024 || h > 1024 {
+				pricingDisplay = fmt.Sprintf("$%.4f/image (>1024px)", cost)
+			} else {
+				pricingDisplay = fmt.Sprintf("$%.4f/image (≤1024px)", cost)
+			}
+		} else {
+			pricingDisplay = fmt.Sprintf("$%.4f/image", cost)
+		}
+	}
+
+	printInfo("Pricing: %s", pricingDisplay)
+}
+
+// printCostWarning prints a warning if the provider is expensive (>$0.05/image)
+func printCostWarning(provider *generate.Provider, imageSize, dimensions string) {
+	if provider.Pricing.FreeTier || provider.Pricing.CostPerImage == nil {
+		return
+	}
+
+	cost := *provider.Pricing.CostPerImage
+
+	// Handle variable pricing
+	if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+		cost = getGemini3ProCost(imageSize)
+	} else if strings.Contains(provider.ModelID, "nova-canvas") {
+		cost = getNovaCanvasCost(dimensions)
+	}
+
+	if cost > 0.05 {
+		fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, cost)
+	}
+}
+
+// printGenerationTiming prints the generation timing
+// Format: "Generation completed in X.XXs"
+func printGenerationTiming(elapsed time.Duration) {
+	printInfo("Generation completed in %.2fs", elapsed.Seconds())
+}
+
+// printSuccessDetails prints the standard success block with all details
+func printSuccessDetails(provider *generate.Provider, output string, imageData []byte, width, height int, imageSize, dimensions string) {
+	printSuccess("Image generated successfully!")
+	printInfo("  Provider: %s", provider.Name)
+	printInfo("  File: %s", output)
+	printInfo("  Size: %s", formatImageSize(int64(len(imageData))))
+	printInfo("  Dimensions: %dx%d", width, height)
+
+	// Cost info
+	if provider.Pricing.FreeTier {
+		printInfo("  Cost: FREE (within %s)", provider.Pricing.FreeTierLimit)
+	} else if provider.Pricing.CostPerImage != nil {
+		cost := *provider.Pricing.CostPerImage
+
+		// Handle variable pricing
+		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+			cost = getGemini3ProCost(imageSize)
+			printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
+		} else if strings.Contains(provider.ModelID, "nova-canvas") {
+			cost = getNovaCanvasCost(dimensions)
+			w, h := parseDimensionsForCost(dimensions)
+			if w > 1024 || h > 1024 {
+				printInfo("  Cost: $%.4f (>1024px)", cost)
+			} else {
+				printInfo("  Cost: $%.4f (≤1024px)", cost)
+			}
+		} else {
+			printInfo("  Cost: $%.4f", cost)
+		}
+	}
+}
+
 // getGemini3ProCost returns the cost for Gemini 3 Pro based on image size
 // Pricing: $0.134 for 1K/2K, $0.24 for 4K
 func getGemini3ProCost(imageSize string) float64 {
@@ -357,6 +457,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	var generatedImage *models.GeneratedImage
+	var resolvedProvider *generate.Provider
+	var startTime time.Time
 	var err error
 
 	// Generate based on API selection
@@ -374,34 +476,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Get provider info and announce selection
 		registry := generate.GetProviderRegistry()
-		provider, _ := registry.ResolveProvider(modelName)
-		if provider != nil {
-			printInfo("Using: %s (%s API)", provider.Name, provider.API)
-			pricingDisplay := "Variable"
-			if provider.Pricing.FreeTier {
-				pricingDisplay = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
-			} else if provider.Pricing.CostPerImage != nil {
-				// Gemini 3 Pro has variable pricing based on image size
-				if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-					cost := getGemini3ProCost(imageSize)
-					pricingDisplay = fmt.Sprintf("$%.4f/image (%s)", cost, imageSizeLabel(imageSize))
-				} else {
-					pricingDisplay = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
-				}
-			}
-			printInfo("Pricing: %s", pricingDisplay)
-
-			// Warn if expensive (cost > $0.05)
-			if provider.Pricing.CostPerImage != nil {
-				cost := *provider.Pricing.CostPerImage
-				// Use actual cost for Gemini 3 Pro
-				if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-					cost = getGemini3ProCost(imageSize)
-				}
-				if cost > 0.05 {
-					fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, cost)
-				}
-			}
+		resolvedProvider, _ = registry.ResolveProvider(modelName)
+		if resolvedProvider != nil {
+			printProviderHeader(resolvedProvider)
+			printProviderPricing(resolvedProvider, imageSize, size)
+			printCostWarning(resolvedProvider, imageSize, size)
 		}
 
 		printInfo("Generating image...")
@@ -413,6 +492,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		}
 		defer client.Close()
 
+		startTime = time.Now()
 		generatedImage, err = client.GenerateImage(ctx, prompt, options)
 	} else if selectedAPI == "vertex" {
 		// Use Vertex AI - check for Express Mode (API key) or Full Mode (service account)
@@ -443,21 +523,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Get provider info and announce selection
 		registry := generate.GetProviderRegistry()
-		provider, _ := registry.ResolveProvider(modelName)
-		if provider != nil {
-			printInfo("Using: %s (%s API)", provider.Name, provider.API)
-			pricingDisplay := "Variable"
-			if provider.Pricing.FreeTier {
-				pricingDisplay = fmt.Sprintf("FREE (%s)", provider.Pricing.FreeTierLimit)
-			} else if provider.Pricing.CostPerImage != nil {
-				pricingDisplay = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
-			}
-			printInfo("Pricing: %s", pricingDisplay)
-
-			// Warn if expensive (cost > $0.05)
-			if provider.Pricing.CostPerImage != nil && *provider.Pricing.CostPerImage > 0.05 {
-				fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, *provider.Pricing.CostPerImage)
-			}
+		resolvedProvider, _ = registry.ResolveProvider(modelName)
+		if resolvedProvider != nil {
+			printProviderHeader(resolvedProvider)
+			printProviderPricing(resolvedProvider, imageSize, size)
+			printCostWarning(resolvedProvider, imageSize, size)
 		}
 
 		printInfo("Generating image...")
@@ -489,6 +559,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			}
 			defer client.Close()
 
+			startTime = time.Now()
 			generatedImage, err = client.GenerateImage(ctx, prompt, options)
 		} else {
 			// Full Mode - Use unified SDK client with ADC/service account
@@ -500,6 +571,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			}
 			defer client.Close()
 
+			startTime = time.Now()
 			generatedImage, err = client.GenerateImage(ctx, prompt, options)
 		}
 	} else if selectedAPI == "bedrock" {
@@ -516,39 +588,19 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Resolve provider alias and show info
 		registry := generate.GetProviderRegistry()
-		provider, err := registry.ResolveProvider(modelName)
+		resolvedProvider, err = registry.ResolveProvider(modelName)
 		if err != nil {
 			return fmt.Errorf("unknown provider/model: %s", modelName)
 		}
 
 		// Use the resolved full model ID
-		resolvedModelID := provider.ModelID
-		printVerbose("Resolved model ID: %s (Provider: %s)", resolvedModelID, provider.ID)
+		resolvedModelID := resolvedProvider.ModelID
+		printVerbose("Resolved model ID: %s (Provider: %s)", resolvedModelID, resolvedProvider.ID)
 
-		printVerbose("Provider: %s", provider.Name)
-		printVerbose("Model ID: %s", provider.ModelID)
-
-		// Show pricing info
-		if !provider.Pricing.FreeTier && provider.Pricing.CostPerImage != nil {
-			cost := *provider.Pricing.CostPerImage
-			// Nova Canvas has variable pricing based on size
-			if strings.Contains(provider.ModelID, "nova-canvas") {
-				cost = getNovaCanvasCost(size)
-				w, h := parseDimensionsForCost(size)
-				if w > 1024 || h > 1024 {
-					printVerbose("Cost: $%.4f/image (>1024px)", cost)
-				} else {
-					printVerbose("Cost: $%.4f/image (≤1024px)", cost)
-				}
-			} else {
-				printVerbose("Cost: $%.4f/image", cost)
-			}
-
-			// Warn if expensive (cost > $0.05)
-			if cost > 0.05 {
-				fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, cost)
-			}
-		}
+		// Show provider info using standardized output
+		printProviderHeader(resolvedProvider)
+		printProviderPricing(resolvedProvider, imageSize, size)
+		printCostWarning(resolvedProvider, imageSize, size)
 
 		// Update options to use resolved model ID (not alias)
 		bedrockOptions := options
@@ -562,10 +614,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			bearerToken = cfg.AWSBedrockAPIKey
 		}
 
+		printInfo("Generating image...")
+
 		if bearerToken != "" {
 			// Use REST client with bearer token
 			printVerbose("Using Bedrock REST API with bearer token authentication")
-			printInfo("Generating image with AWS Bedrock (REST API)...")
 
 			client, err := generate.NewBedrockRESTClient(bearerToken, region)
 			if err != nil {
@@ -573,11 +626,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			}
 			defer client.Close()
 
+			startTime = time.Now()
 			generatedImage, err = client.GenerateImage(ctx, prompt, bedrockOptions)
 		} else {
 			// Use SDK client with IAM/keys/profile
 			printVerbose("Using Bedrock SDK with IAM/keys/profile authentication")
-			printInfo("Generating image with AWS Bedrock (SDK)...")
 
 			client, err := generate.NewBedrockSDKClient(ctx, region)
 			if err != nil {
@@ -585,6 +638,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			}
 			defer client.Close()
 
+			startTime = time.Now()
 			generatedImage, err = client.GenerateImage(ctx, prompt, bedrockOptions)
 		}
 	} else if selectedAPI == "grok" {
@@ -602,22 +656,14 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Get provider info and announce selection
 		registry := generate.GetProviderRegistry()
-		provider, _ := registry.ResolveProvider(modelName)
-		if provider != nil {
-			printInfo("Using: %s (%s API)", provider.Name, provider.API)
-			pricingDisplay := "Variable"
-			if provider.Pricing.CostPerImage != nil {
-				pricingDisplay = fmt.Sprintf("$%.4f/image", *provider.Pricing.CostPerImage)
-			}
-			printInfo("Pricing: %s", pricingDisplay)
-
-			// Warn if expensive
-			if provider.Pricing.CostPerImage != nil && *provider.Pricing.CostPerImage > 0.05 {
-				fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, *provider.Pricing.CostPerImage)
-			}
+		resolvedProvider, _ = registry.ResolveProvider(modelName)
+		if resolvedProvider != nil {
+			printProviderHeader(resolvedProvider)
+			printProviderPricing(resolvedProvider, imageSize, size)
+			printCostWarning(resolvedProvider, imageSize, size)
 		}
 
-		printInfo("Generating image with xAI Grok...")
+		printInfo("Generating image...")
 
 		client, err := generate.NewGrokClient(key)
 		if err != nil {
@@ -630,6 +676,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			Model: modelName,
 		}
 
+		startTime = time.Now()
 		generatedImage, err = client.GenerateImage(ctx, prompt, grokOptions)
 	} else {
 		return fmt.Errorf("invalid API: %s (must be 'gemini', 'vertex', 'bedrock', or 'grok')", selectedAPI)
@@ -637,6 +684,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to generate image: %w", err)
+	}
+
+	// Print timing
+	if !startTime.IsZero() {
+		printGenerationTiming(time.Since(startTime))
 	}
 
 	// Defensive nil check (should never happen if error handling is correct)
@@ -655,44 +707,15 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save image: %w", err)
 	}
 
-	// Print success with cost tracking
-	printSuccess("Image generated successfully!")
-	printInfo("  File: %s", output)
-	printInfo("  Size: %s", formatImageSize(int64(len(generatedImage.Data))))
-	printInfo("  Dimensions: %dx%d", generatedImage.Width, generatedImage.Height)
-
-	// Log cost and token usage
-	modelNameUsed := model
-	if modelNameUsed == "" {
-		if selectedAPI == "gemini" {
-			modelNameUsed = generate.DefaultModel
-		} else {
-			modelNameUsed = "imagen-4.0-generate-001"
-		}
-	}
-
-	registry := generate.GetProviderRegistry()
-	if provider, err := registry.ResolveProvider(modelNameUsed); err == nil {
-		if provider.Pricing.FreeTier {
-			printInfo("  Cost: FREE (within %s)", provider.Pricing.FreeTierLimit)
-		} else if provider.Pricing.CostPerImage != nil {
-			// Gemini 3 Pro has variable pricing based on image size
-			if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-				cost := getGemini3ProCost(imageSize)
-				printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
-			} else if strings.Contains(provider.ModelID, "nova-canvas") {
-				// Nova Canvas has variable pricing based on dimensions
-				cost := getNovaCanvasCost(size)
-				w, h := parseDimensionsForCost(size)
-				if w > 1024 || h > 1024 {
-					printInfo("  Cost: $%.4f (>1024px)", cost)
-				} else {
-					printInfo("  Cost: $%.4f (≤1024px)", cost)
-				}
-			} else {
-				printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
-			}
-		}
+	// Print standardized success output
+	if resolvedProvider != nil {
+		printSuccessDetails(resolvedProvider, output, generatedImage.Data, generatedImage.Width, generatedImage.Height, imageSize, size)
+	} else {
+		// Fallback if provider wasn't resolved (shouldn't happen)
+		printSuccess("Image generated successfully!")
+		printInfo("  File: %s", output)
+		printInfo("  Size: %s", formatImageSize(int64(len(generatedImage.Data))))
+		printInfo("  Dimensions: %dx%d", generatedImage.Width, generatedImage.Height)
 	}
 
 	return nil
@@ -741,22 +764,12 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		return fmt.Errorf("authentication required")
 	}
 
-	// Show provider info
-	printInfo("Using provider: %s", provider.Name)
-	if provider.Pricing.FreeTier {
-		printInfo("Pricing: FREE (%s)", provider.Pricing.FreeTierLimit)
-	} else if provider.Pricing.CostPerImage != nil {
-		cost := *provider.Pricing.CostPerImage
-		printInfo("Pricing: $%.4f per image", cost)
-
-		// Warn if expensive
-		if cost > 0.05 {
-			fmt.Fprintf(os.Stderr, "⚠️  This will cost $%.4f per image\n", cost)
-		}
-	}
+	// Show provider info using standardized output
+	printProviderHeader(provider)
+	printProviderPricing(provider, imageSize, size)
+	printCostWarning(provider, imageSize, size)
 
 	// Create client
-	printInfo("Creating client for %s...", provider.API)
 	client, err := registry.CreateClient(provider.ID)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
@@ -790,8 +803,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		return fmt.Errorf("failed to generate image: %w", err)
 	}
 
-	elapsed := time.Since(startTime)
-	printInfo("Generation completed in %.2fs", elapsed.Seconds())
+	printGenerationTiming(time.Since(startTime))
 
 	// Determine output path
 	if output == "" {
@@ -804,34 +816,8 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		return fmt.Errorf("failed to save image: %w", err)
 	}
 
-	// Print success with details
-	printSuccess("Image generated successfully!")
-	printInfo("  Provider: %s", provider.Name)
-	printInfo("  File: %s", output)
-	printInfo("  Size: %s", formatImageSize(int64(len(generatedImage.Data))))
-	printInfo("  Dimensions: %dx%d", generatedImage.Width, generatedImage.Height)
-
-	// Show cost info
-	if provider.Pricing.FreeTier {
-		printInfo("  Cost: FREE (within daily limit)")
-	} else if provider.Pricing.CostPerImage != nil {
-		// Gemini 3 Pro has variable pricing based on image size
-		if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
-			cost := getGemini3ProCost(imageSize)
-			printInfo("  Cost: $%.4f (%s)", cost, imageSizeLabel(imageSize))
-		} else if strings.Contains(provider.ModelID, "nova-canvas") {
-			// Nova Canvas has variable pricing based on dimensions
-			cost := getNovaCanvasCost(size)
-			w, h := parseDimensionsForCost(size)
-			if w > 1024 || h > 1024 {
-				printInfo("  Cost: $%.4f (>1024px)", cost)
-			} else {
-				printInfo("  Cost: $%.4f (≤1024px)", cost)
-			}
-		} else {
-			printInfo("  Cost: $%.4f", *provider.Pricing.CostPerImage)
-		}
-	}
+	// Print standardized success output
+	printSuccessDetails(provider, output, generatedImage.Data, generatedImage.Width, generatedImage.Height, imageSize, size)
 
 	return nil
 }

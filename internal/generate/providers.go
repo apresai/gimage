@@ -791,11 +791,14 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"flash":                      "gemini/flash-2.5",
 		"gemini-2.5":                 "gemini/flash-2.5",
 		"gemini-2.5-flash":           "gemini/flash-2.5",
+		"gemini-2.5-flash-image":     "gemini/flash-2.5",
 		// Vertex/Bedrock aliases
 		"imagen":                     "vertex/imagen-4",
 		"imagen-4":                   "vertex/imagen-4",
+		"imagen-4.0-generate-001":    "vertex/imagen-4",
 		"nova":                       "bedrock/nova-canvas",
 		"nova-canvas":                "bedrock/nova-canvas",
+		"amazon.nova-canvas-v1:0":    "bedrock/nova-canvas",
 		// Grok aliases
 		"grok":                       "grok/grok-2-image",
 		"grok-2":                     "grok/grok-2-image",
