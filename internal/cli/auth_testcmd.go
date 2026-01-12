@@ -145,7 +145,7 @@ func testProvider(registry *generate.ProviderRegistry, provider *generate.Provid
 			Size:  "256x256", // Small size for testing
 		}
 
-		_, err := client.GenerateImage(ctx, "simple test image", options)
+		_, err = client.GenerateImage(ctx, "simple test image", options)
 		if err != nil {
 			fmt.Printf("✗ Failed: %v\n", err)
 			if testVerbose {

@@ -17,14 +17,15 @@ var resizeCmd = &cobra.Command{
 	Long: `Resize an image to specific dimensions using high-quality Lanczos resampling.
 
 Examples:
-  gimage resize --input input.jpg --width 800 --height 600
-  gimage resize -i input.png -w 1920 -h 1080 --output resized.png`,
+  gimage resize --input input.jpg --width 800 --height 600 --mode crop
+  gimage resize -i input.png -w 1920 -h 1080 --mode fit -o resized.png`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flag values
 		inputPath, _ := cmd.Flags().GetString("input")
 		width, _ := cmd.Flags().GetInt("width")
 		height, _ := cmd.Flags().GetInt("height")
 		outputPath, _ := cmd.Flags().GetString("output")
+		mode, _ := cmd.Flags().GetString("mode")
 
 		// Validate required flags
 		if inputPath == "" {
@@ -50,14 +51,16 @@ Examples:
 			return fmt.Errorf("input file does not exist: %s", inputPath)
 		}
 
-		// Resize the image
-		printInfo("Resizing %s to %dx%d...", inputPath, width, height)
-		printVerbose("Input: %s", inputPath)
-		printVerbose("Output: %s", outputPath)
-		printVerbose("Dimensions: %dx%d", width, height)
-
 		ctx := context.Background()
-		err := imaging.ResizeImage(ctx, inputPath, outputPath, width, height)
+		var err error
+		if mode == "fit" {
+			printInfo("Resizing %s to fit within %dx%d (preserving aspect ratio)...", inputPath, width, height)
+			err = imaging.ResizeFit(ctx, inputPath, outputPath, width, height)
+		} else {
+			printInfo("Resizing %s to %dx%d (crop/fill, preserving aspect ratio)...", inputPath, width, height)
+			err = imaging.ResizeFill(ctx, inputPath, outputPath, width, height)
+		}
+
 		if err != nil {
 			return fmt.Errorf("resize failed: %w", err)
 		}
@@ -84,6 +87,7 @@ func init() {
 	resizeCmd.Flags().Int("width", 0, "target width in pixels (required)")
 	resizeCmd.Flags().Int("height", 0, "target height in pixels (required)")
 	resizeCmd.Flags().StringP("output", "o", "", "output file path (default: input_resized_WxH.ext)")
+	resizeCmd.Flags().String("mode", "crop", "Resize mode: crop (fills size), fit (fits inside) (default: crop)")
 
 	resizeCmd.MarkFlagRequired("input")
 	resizeCmd.MarkFlagRequired("width")

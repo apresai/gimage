@@ -71,7 +71,7 @@ func NewGrokClient(apiKey string) (*GrokClient, error) {
 }
 
 // GenerateImage generates an image from a text prompt using the Grok API
-func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	if prompt == "" {
 		return nil, fmt.Errorf("prompt cannot be empty")
 	}
@@ -110,11 +110,18 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 		return nil, err
 	}
 
-	return result.(*models.GeneratedImage), nil
+	if err != nil {
+		if isCircuitBreakerError(err) {
+			return nil, fmt.Errorf("API circuit breaker is open (too many failures): %w", err)
+		}
+		return nil, err
+	}
+
+	return result.([]*models.GeneratedImage), nil
 }
 
 // doRequest performs the actual HTTP request to the Grok API
-func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) (*models.GeneratedImage, error) {
+func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) ([]*models.GeneratedImage, error) {
 	// Marshal request body
 	requestBody, err := json.Marshal(request)
 	if err != nil {
@@ -166,52 +173,60 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) (*
 		return nil, fmt.Errorf("no images returned from API")
 	}
 
-	// Get the first image
-	imageData := grokResp.Data[0]
+	var generatedImages []*models.GeneratedImage
 
-	var rawImageData []byte
+	for i, imageData := range grokResp.Data {
+		var rawImageData []byte
 
-	// Handle base64 response
-	if imageData.B64JSON != "" {
-		rawImageData, err = base64.StdEncoding.DecodeString(imageData.B64JSON)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode base64 image: %w", err)
+		// Handle base64 response
+		if imageData.B64JSON != "" {
+			rawImageData, err = base64.StdEncoding.DecodeString(imageData.B64JSON)
+			if err != nil {
+				continue // Skip if decode fails
+			}
+		} else if imageData.URL != "" {
+			// Download from URL if base64 not available
+			rawImageData, err = downloadImage(ctx, imageData.URL)
+			if err != nil {
+				continue // Skip if download fails
+			}
+		} else {
+			continue // Skip if no data
 		}
-	} else if imageData.URL != "" {
-		// Download from URL if base64 not available
-		rawImageData, err = downloadImage(ctx, imageData.URL)
+
+		// Detect image format from data
+		format := detectImageFormat(rawImageData)
+
+		// Get actual image dimensions from the data
+		width, height, err := GetImageDimensionsFromBytes(rawImageData)
 		if err != nil {
-			return nil, fmt.Errorf("failed to download image: %w", err)
+			// Fallback to 0,0 which will skip dimension enforcement
+			width, height = 0, 0
 		}
-	} else {
-		return nil, fmt.Errorf("no image data in response")
+
+		// Build metadata
+		metadata := map[string]string{
+			"model":     request.Model,
+			"prompt":    request.Prompt,
+			"api":       "grok",
+			"generated": time.Now().UTC().Format(time.RFC3339),
+			"candidate": fmt.Sprintf("%d", i),
+		}
+
+		generatedImages = append(generatedImages, &models.GeneratedImage{
+			Data:     rawImageData,
+			Format:   format,
+			Width:    width,
+			Height:   height,
+			Metadata: metadata,
+		})
 	}
 
-	// Detect image format from data
-	format := detectImageFormat(rawImageData)
-
-	// Get actual image dimensions from the data
-	width, height, err := GetImageDimensionsFromBytes(rawImageData)
-	if err != nil {
-		// Fallback to 0,0 which will skip dimension enforcement
-		width, height = 0, 0
+	if len(generatedImages) == 0 {
+		return nil, fmt.Errorf("no images returned from API")
 	}
 
-	// Build metadata
-	metadata := map[string]string{
-		"model":     request.Model,
-		"prompt":    request.Prompt,
-		"api":       "grok",
-		"generated": time.Now().UTC().Format(time.RFC3339),
-	}
-
-	return &models.GeneratedImage{
-		Data:     rawImageData,
-		Format:   format,
-		Width:    width,
-		Height:   height,
-		Metadata: metadata,
-	}, nil
+	return generatedImages, nil
 }
 
 // handleHTTPError converts HTTP errors to user-friendly messages

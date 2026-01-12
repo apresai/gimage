@@ -81,7 +81,7 @@ func NewVertexUnifiedClient(ctx context.Context, project, location string) (*Ver
 }
 
 // GenerateImage generates an image using Vertex AI unified SDK
-func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Validate prompt
 	if err := ValidatePrompt(prompt); err != nil {
 		return nil, err
@@ -154,38 +154,47 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 
 	c.log.Debug("Got %d generated images", len(resp.GeneratedImages))
 
-	// Extract image data from response
-	generatedImg := resp.GeneratedImages[0]
+	// Parse dimensions from options
+	width, height := ParseSizeString(options.Size)
 
-	var imageData []byte
-	var format string = "png"
+	var generatedImages []*models.GeneratedImage
+	for i, generatedImg := range resp.GeneratedImages {
+		var imageData []byte
+		var format string = "png"
 
-	if generatedImg.Image != nil && generatedImg.Image.ImageBytes != nil {
-		imageData = generatedImg.Image.ImageBytes
-		format = extractFormatFromMimeType(generatedImg.Image.MIMEType)
-		c.log.Debug("Image data: %d bytes, format=%s", len(imageData), format)
-	} else {
-		return nil, fmt.Errorf("no image data found in response")
+		if generatedImg.Image != nil && generatedImg.Image.ImageBytes != nil {
+			imageData = generatedImg.Image.ImageBytes
+			format = extractFormatFromMimeType(generatedImg.Image.MIMEType)
+			c.log.Debug("Image data for image %d: %d bytes, format=%s", i, len(imageData), format)
+		} else {
+			c.log.Debug("No image data found for image %d in response, skipping", i)
+			continue
+		}
+
+		generatedImages = append(generatedImages, &models.GeneratedImage{
+			Data:   imageData,
+			Format: format,
+			Width:  width,
+			Height: height,
+			Metadata: map[string]string{
+				"model":       modelName,
+				"prompt":      prompt,
+				"style":       options.Style,
+				"api":         "vertex-unified",
+				"project":     c.project,
+				"location":    c.location,
+				"generated":   time.Now().UTC().Format(time.RFC3339),
+				"candidate":   fmt.Sprintf("%d", i),
+				"resize_mode": options.ResizeMode,
+			},
+		})
 	}
 
-	// Parse dimensions from options
-	width, height := parseDimensions(options.Size)
+	if len(generatedImages) == 0 {
+		return nil, fmt.Errorf("no valid images found in response")
+	}
 
-	return &models.GeneratedImage{
-		Data:   imageData,
-		Format: format,
-		Width:  width,
-		Height: height,
-		Metadata: map[string]string{
-			"model":     modelName,
-			"prompt":    prompt,
-			"style":     options.Style,
-			"api":       "vertex-unified",
-			"project":   c.project,
-			"location":  c.location,
-			"generated": time.Now().UTC().Format(time.RFC3339),
-		},
-	}, nil
+	return generatedImages, nil
 }
 
 // ValidateCredentials checks if the Vertex AI credentials are valid

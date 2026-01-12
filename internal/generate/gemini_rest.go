@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +46,7 @@ func NewGeminiRESTClient(apiKey string) (*GeminiRESTClient, error) {
 }
 
 // GenerateImage generates an image using Gemini REST API
-func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Validate prompt
 	if err := ValidatePrompt(prompt); err != nil {
 		return nil, err
@@ -73,7 +72,7 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 		})
 
 		if err == nil {
-			return result.(*models.GeneratedImage), nil
+			return result.([]*models.GeneratedImage), nil
 		}
 
 		lastErr = err
@@ -113,12 +112,12 @@ func isGemini3Pro(modelName string) bool {
 }
 
 // generateWithRetry performs a single generation attempt using REST API
-func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
 	// Parse dimensions from options
-	width, height := parseDimensions(options.Size)
+	width, height := ParseSizeString(options.Size)
 
 	c.log.Debug("Building request for model: %s", modelName)
 	c.log.Debug("Full prompt: %s", fullPrompt)
@@ -140,13 +139,19 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			c.log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
+		// Set negative prompt if provided (Gemini 3 Pro support)
+		if options.NegativePrompt != "" {
+			imageConfig.NegativePrompt = options.NegativePrompt
+			c.log.Debug("Using negativePrompt: %s", options.NegativePrompt)
+		}
+
 		// Set aspectRatio - use explicit value, infer from Size, or default to 1:1
 		if options.AspectRatio != "" {
 			imageConfig.AspectRatio = options.AspectRatio
 			c.log.Debug("Using explicit aspectRatio: %s", imageConfig.AspectRatio)
 		} else if options.Size != "" && width > 0 && height > 0 {
 			// Infer aspect ratio from Size dimensions for Gemini 3 Pro
-			imageConfig.AspectRatio = inferAspectRatio(width, height)
+			imageConfig.AspectRatio = InferAspectRatio(width, height, nil)
 			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, imageConfig.AspectRatio)
 		} else if imageConfig.ImageSize != "" {
 			// Default to 1:1 when imageSize is specified but no aspectRatio
@@ -170,11 +175,26 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			c.log.Debug("Using aspectRatio for Gemini Flash: %s", options.AspectRatio)
 		} else if options.Size != "" && width > 0 && height > 0 {
 			// Infer aspect ratio from Size dimensions
-			aspectRatio := inferAspectRatio(width, height)
+			aspectRatio := InferAspectRatio(width, height, nil)
 			imageConfig := &geminiImageConfig{AspectRatio: aspectRatio}
 			genConfig.ImageConfig = imageConfig
 			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, aspectRatio)
 		}
+	}
+
+	// Set common generation config (seed and count)
+	if options.Seed != 0 {
+		genConfig.Seed = &options.Seed
+		c.log.Debug("Using seed: %d", options.Seed)
+	}
+
+	if options.NumberOfImages > 1 {
+		count := options.NumberOfImages
+		if count > 4 {
+			count = 4 // Gemini API max candidates is typically 4
+		}
+		genConfig.CandidateCount = &count
+		c.log.Debug("Using candidateCount: %d", count)
 	}
 
 	// Build request payload using Gemini's generateContent API format
@@ -255,75 +275,71 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		c.log.Debug("No candidates in response")
 		return nil, fmt.Errorf("no image generated from prompt")
 	}
+	var generatedImages []*models.GeneratedImage
+	c.log.Debug("Successfully generated %d potential image(s)", len(response.Candidates))
 
-	candidate := response.Candidates[0]
-	if candidate.Content.Parts == nil || len(candidate.Content.Parts) == 0 {
-		c.log.Debug("No parts in candidate content")
-		return nil, fmt.Errorf("no content parts in response")
-	}
+	// Loop through all candidates and extract images
+	for i, candidate := range response.Candidates {
+		if candidate.Content.Parts == nil || len(candidate.Content.Parts) == 0 {
+			c.log.Debug("Candidate %d has no parts, skipping", i)
+			continue
+		}
 
-	// Find the image part (should have inline_data)
-	var imageData []byte
-	var mimeType string
-	found := false
+		var candidateData []byte
+		var candidateMimeType string
+		foundPart := false
 
-	for i, part := range candidate.Content.Parts {
-		c.log.Debug("Part %d: has InlineData=%v", i, part.InlineData != nil)
-		if part.InlineData != nil && part.InlineData.Data != "" {
-			// Decode base64 image data
-			imageData, err = base64.StdEncoding.DecodeString(part.InlineData.Data)
-			if err != nil {
-				c.log.Debug("Failed to decode base64 from part %d: %v", i, err)
-				return nil, fmt.Errorf("failed to decode base64 image data: %w", err)
+		for _, part := range candidate.Content.Parts {
+			if part.InlineData != nil && part.InlineData.Data != "" {
+				data, err := base64.StdEncoding.DecodeString(part.InlineData.Data)
+				if err != nil {
+					c.log.Debug("Failed to decode base64 from candidate %d: %v", i, err)
+					continue
+				}
+				candidateData = data
+				candidateMimeType = part.InlineData.MimeType
+				foundPart = true
+				break
 			}
-			mimeType = part.InlineData.MimeType
-			found = true
-			c.log.Debug("Found image data in part %d: %d bytes, mime=%s", i, len(imageData), mimeType)
-			break
 		}
-	}
 
-	if !found {
-		c.log.Debug("No inline_data found in any parts")
-		return nil, fmt.Errorf("no image data found in response")
-	}
-
-	// Determine format from MIME type
-	format := "png"
-	if mimeType != "" {
-		switch mimeType {
-		case "image/jpeg":
-			format = "jpg"
-		case "image/png":
-			format = "png"
-		case "image/webp":
-			format = "webp"
+		if !foundPart {
+			c.log.Debug("No image data found in candidate %d, skipping", i)
+			continue
 		}
+
+		// Determine format for this candidate
+		candFormat := extractFormatFromMimeType(candidateMimeType)
+
+		// Determine dimensions
+		finalWidth, finalHeight := width, height
+		if isGemini3Pro(modelName) && options.ImageSize != "" {
+			finalWidth, finalHeight = 0, 0
+		}
+
+		generatedImages = append(generatedImages, &models.GeneratedImage{
+			Data:   candidateData,
+			Format: candFormat,
+			Width:  finalWidth,
+			Height: finalHeight,
+			Metadata: map[string]string{
+				"model":       modelName,
+				"prompt":      prompt,
+				"style":       options.Style,
+				"api":         "gemini-rest",
+				"imageSize":   options.ImageSize,
+				"seed":        fmt.Sprintf("%d", options.Seed),
+				"candidate":   fmt.Sprintf("%d", i),
+				"resize_mode": options.ResizeMode,
+			},
+		})
 	}
 
-	c.log.Debug("Successfully generated image: %d bytes, format=%s", len(imageData), format)
-
-	// For Gemini 3 Pro with native imageSize (1K, 2K, 4K), preserve the native resolution
-	// by setting width/height to 0, which skips dimension enforcement in SaveImage
-	finalWidth, finalHeight := width, height
-	if isGemini3Pro(modelName) && options.ImageSize != "" {
-		finalWidth, finalHeight = 0, 0
-		c.log.Debug("Preserving native %s resolution from Gemini 3 Pro", options.ImageSize)
+	if len(generatedImages) == 0 {
+		return nil, fmt.Errorf("no valid images found in response")
 	}
 
-	return &models.GeneratedImage{
-		Data:   imageData,
-		Format: format,
-		Width:  finalWidth,
-		Height: finalHeight,
-		Metadata: map[string]string{
-			"model":     modelName,
-			"prompt":    prompt,
-			"style":     options.Style,
-			"api":       "gemini-rest",
-			"imageSize": options.ImageSize,
-		},
-	}, nil
+	return generatedImages, nil
 }
 
 // handleHTTPError handles HTTP error responses from the API
@@ -364,8 +380,8 @@ func (c *GeminiRESTClient) Close() error {
 
 // Request/Response structs for Gemini REST API (generateContent format)
 type geminiGenerateContentRequest struct {
-	Contents         []geminiContent          `json:"contents"`
-	GenerationConfig *geminiGenerationConfig  `json:"generationConfig,omitempty"`
+	Contents         []geminiContent         `json:"contents"`
+	GenerationConfig *geminiGenerationConfig `json:"generationConfig,omitempty"`
 }
 
 type geminiContent struct {
@@ -374,7 +390,7 @@ type geminiContent struct {
 }
 
 type geminiPart struct {
-	Text       string           `json:"text,omitempty"`
+	Text       string            `json:"text,omitempty"`
 	InlineData *geminiInlineData `json:"inlineData,omitempty"`
 }
 
@@ -384,17 +400,20 @@ type geminiInlineData struct {
 }
 
 type geminiGenerationConfig struct {
-	ResponseModalities []string          `json:"responseModalities,omitempty"`
-	Temperature        *float64          `json:"temperature,omitempty"`
-	TopP               *float64          `json:"topP,omitempty"`
-	TopK               *int              `json:"topK,omitempty"`
+	ResponseModalities []string           `json:"responseModalities,omitempty"`
+	Temperature        *float64           `json:"temperature,omitempty"`
+	TopP               *float64           `json:"topP,omitempty"`
+	TopK               *int               `json:"topK,omitempty"`
+	CandidateCount     *int               `json:"candidateCount,omitempty"`
+	Seed               *int64             `json:"seed,omitempty"`
 	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"` // For Gemini 3 Pro
 }
 
 // geminiImageConfig configures image generation for Gemini 3 Pro
 type geminiImageConfig struct {
-	AspectRatio string `json:"aspectRatio,omitempty"` // e.g., "16:9", "1:1", "4:3"
-	ImageSize   string `json:"imageSize,omitempty"`   // "1K", "2K", "4K" (uppercase required)
+	AspectRatio    string `json:"aspectRatio,omitempty"`    // e.g., "16:9", "1:1", "4:3"
+	ImageSize      string `json:"imageSize,omitempty"`      // "1K", "2K", "4K" (uppercase required)
+	NegativePrompt string `json:"negativePrompt,omitempty"` // Gemini 3 Pro support
 }
 
 type geminiGenerateContentResponse struct {
@@ -414,72 +433,6 @@ func buildPromptWithOptions(prompt string, options models.GenerateOptions) strin
 		enhanced = fmt.Sprintf("%s, %s style", enhanced, options.Style)
 	}
 	return enhanced
-}
-
-// parseDimensions parses "WIDTHxHEIGHT" string
-func parseDimensions(size string) (int, int) {
-	if size == "" {
-		return 1024, 1024
-	}
-
-	parts := strings.Split(size, "x")
-	if len(parts) != 2 {
-		return 1024, 1024
-	}
-
-	width, err := strconv.Atoi(parts[0])
-	if err != nil || width <= 0 {
-		return 1024, 1024
-	}
-
-	height, err := strconv.Atoi(parts[1])
-	if err != nil || height <= 0 {
-		return 1024, 1024
-	}
-
-	return width, height
-}
-
-// inferAspectRatio determines the best matching aspect ratio for given dimensions
-// Supported ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3
-func inferAspectRatio(width, height int) string {
-	if width <= 0 || height <= 0 {
-		return "1:1"
-	}
-
-	ratio := float64(width) / float64(height)
-
-	// Define aspect ratios with their numeric values
-	type aspectRatio struct {
-		name  string
-		value float64
-	}
-
-	ratios := []aspectRatio{
-		{"1:1", 1.0},
-		{"16:9", 16.0 / 9.0},   // 1.778
-		{"9:16", 9.0 / 16.0},   // 0.5625
-		{"4:3", 4.0 / 3.0},     // 1.333
-		{"3:4", 3.0 / 4.0},     // 0.75
-		{"3:2", 3.0 / 2.0},     // 1.5
-		{"2:3", 2.0 / 3.0},     // 0.667
-		{"5:4", 5.0 / 4.0},     // 1.25
-		{"4:5", 4.0 / 5.0},     // 0.8
-	}
-
-	// Find closest match
-	closestRatio := ratios[0]
-	smallestDiff := abs(ratio - closestRatio.value)
-
-	for _, r := range ratios[1:] {
-		diff := abs(ratio - r.value)
-		if diff < smallestDiff {
-			smallestDiff = diff
-			closestRatio = r
-		}
-	}
-
-	return closestRatio.name
 }
 
 // abs returns the absolute value of a float64

@@ -64,7 +64,7 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 }
 
 // GenerateImage generates an image using Vertex AI REST API
-func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Validate prompt
 	if err := ValidatePrompt(prompt); err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 		})
 
 		if err == nil {
-			return result.(*models.GeneratedImage), nil
+			return result.([]*models.GeneratedImage), nil
 		}
 
 		lastErr = err
@@ -125,7 +125,7 @@ func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 }
 
 // generateWithRetry performs a single generation attempt using REST API
-func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
@@ -136,31 +136,9 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Determine aspect ratio from size
 	aspectRatio := "1:1" // Default
 	if options.Size != "" {
-		width, height := parseDimensions(options.Size)
+		width, height := ParseSizeString(options.Size)
 		c.log.Debug("Requested dimensions: %dx%d", width, height)
-
-		// Calculate aspect ratio
-		if width == height {
-			aspectRatio = "1:1"
-		} else if width > height {
-			ratio := float64(width) / float64(height)
-			if ratio >= 1.7 && ratio <= 1.9 {
-				aspectRatio = "16:9"
-			} else if ratio >= 1.4 && ratio <= 1.6 {
-				aspectRatio = "3:2"
-			} else {
-				aspectRatio = "4:3"
-			}
-		} else {
-			ratio := float64(height) / float64(width)
-			if ratio >= 1.7 && ratio <= 1.9 {
-				aspectRatio = "9:16"
-			} else if ratio >= 1.4 && ratio <= 1.6 {
-				aspectRatio = "2:3"
-			} else {
-				aspectRatio = "3:4"
-			}
-		}
+		aspectRatio = InferAspectRatio(width, height, nil)
 	}
 
 	c.log.Debug("Using aspect ratio: %s", aspectRatio)
@@ -181,8 +159,8 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			},
 		},
 		"parameters": map[string]interface{}{
-			"sampleCount":  sampleCount,
-			"aspectRatio":  aspectRatio,
+			"sampleCount": sampleCount,
+			"aspectRatio": aspectRatio,
 		},
 	}
 
@@ -287,58 +265,48 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return nil, fmt.Errorf("no image generated from prompt")
 	}
 
-	prediction := response.Predictions[0]
+	var generatedImages []*models.GeneratedImage
+	// Loop through predictions
+	for i, prediction := range response.Predictions {
+		if prediction.BytesBase64Encoded == "" {
+			continue
+		}
 
-	// Check for base64 encoded image
-	var imageData []byte
-	var mimeType string
-
-	if prediction.BytesBase64Encoded != "" {
 		// Decode base64 image data
-		imageData, err = base64.StdEncoding.DecodeString(prediction.BytesBase64Encoded)
+		imageData, err := base64.StdEncoding.DecodeString(prediction.BytesBase64Encoded)
 		if err != nil {
-			c.log.Debug("Failed to decode base64: %v", err)
-			return nil, fmt.Errorf("failed to decode base64 image data: %w", err)
+			c.log.Debug("Failed to decode image %d: %v", i, err)
+			continue
 		}
-		mimeType = prediction.MimeType
-		c.log.Debug("Successfully decoded image: %d bytes, mime=%s", len(imageData), mimeType)
-	} else {
-		c.log.Debug("No image data found in prediction")
-		return nil, fmt.Errorf("no image data found in response")
+
+		format := "png"
+		if prediction.MimeType != "" {
+			format = extractFormatFromMimeType(prediction.MimeType)
+		}
+
+		// Parse dimensions from options
+		width, height := ParseSizeString(options.Size)
+
+		generatedImages = append(generatedImages, &models.GeneratedImage{
+			Data:   imageData,
+			Format: format,
+			Width:  width,
+			Height: height,
+			Metadata: map[string]string{
+				"model":       modelName,
+				"prompt":      prompt,
+				"size":        options.Size,
+				"candidate":   fmt.Sprintf("%d", i),
+				"resize_mode": options.ResizeMode,
+			},
+		})
 	}
 
-	// Determine format from MIME type
-	format := "png"
-	if mimeType != "" {
-		switch mimeType {
-		case "image/jpeg":
-			format = "jpg"
-		case "image/png":
-			format = "png"
-		case "image/webp":
-			format = "webp"
-		}
+	if len(generatedImages) == 0 {
+		return nil, fmt.Errorf("no valid images found in response")
 	}
 
-	// Parse dimensions from options
-	width, height := parseDimensions(options.Size)
-
-	c.log.Debug("Successfully generated image: %d bytes, format=%s", len(imageData), format)
-
-	return &models.GeneratedImage{
-		Data:   imageData,
-		Format: format,
-		Width:  width,
-		Height: height,
-		Metadata: map[string]string{
-			"model":    modelName,
-			"prompt":   prompt,
-			"style":    options.Style,
-			"api":      "imagen-genai",
-			"project":  c.projectID,
-			"location": c.location,
-		},
-	}, nil
+	return generatedImages, nil
 }
 
 // handleHTTPError handles HTTP error responses from the API
@@ -381,7 +349,7 @@ func (c *VertexRESTClient) Close() error {
 
 // Request/Response structs for Vertex AI REST API
 type vertexPredictResponse struct {
-	Predictions []vertexPrediction `json:"predictions"`
+	Predictions []vertexPrediction     `json:"predictions"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 

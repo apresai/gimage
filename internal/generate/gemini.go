@@ -57,7 +57,7 @@ func (c *GeminiClient) SetModel(model string) {
 
 // GenerateImage generates an image from a text prompt using the Gemini API
 // It implements retry logic with exponential backoff for transient failures
-func (c *GeminiClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *GeminiClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	if prompt == "" {
 		return nil, fmt.Errorf("prompt cannot be empty")
 	}
@@ -109,7 +109,7 @@ func (c *GeminiClient) GenerateImage(ctx context.Context, prompt string, options
 }
 
 // generateWithRetry performs a single generation attempt
-func (c *GeminiClient) generateWithRetry(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *GeminiClient) generateWithRetry(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Build the generation config
 	numberOfImages := 1
 	if options.NumberOfImages > 0 && options.NumberOfImages <= 4 {
@@ -135,51 +135,56 @@ func (c *GeminiClient) generateWithRetry(ctx context.Context, prompt string, opt
 	}
 
 	// Extract image data from response
-	if len(resp.GeneratedImages) == 0 {
+	var images []*models.GeneratedImage
+
+	for i, generatedImg := range resp.GeneratedImages {
+		// Get the image data
+		var imageData []byte
+		var imageFormat string
+
+		if generatedImg.Image != nil && generatedImg.Image.ImageBytes != nil {
+			imageData = generatedImg.Image.ImageBytes
+			imageFormat = extractFormatFromMimeType(generatedImg.Image.MIMEType)
+		} else {
+			continue // Skip if no data
+		}
+
+		// Parse dimensions from size option (e.g., "1024x1024")
+		width, height := parseSizeString(options.Size)
+
+		// Build metadata
+		metadata := map[string]string{
+			"model":     options.Model,
+			"prompt":    prompt,
+			"size":      options.Size,
+			"style":     options.Style,
+			"generated": time.Now().UTC().Format(time.RFC3339),
+			"api":       "gemini",
+			"candidate": fmt.Sprintf("%d", i),
+		}
+
+		if options.Seed != 0 {
+			metadata["seed"] = fmt.Sprintf("%d", options.Seed)
+		}
+
+		if options.NegativePrompt != "" {
+			metadata["negative_prompt"] = options.NegativePrompt
+		}
+
+		images = append(images, &models.GeneratedImage{
+			Data:     imageData,
+			Format:   imageFormat,
+			Width:    width,
+			Height:   height,
+			Metadata: metadata,
+		})
+	}
+
+	if len(images) == 0 {
 		return nil, fmt.Errorf("no images returned from API")
 	}
 
-	generatedImg := resp.GeneratedImages[0]
-
-	// Get the image data
-	var imageData []byte
-	var imageFormat string
-
-	if generatedImg.Image != nil && generatedImg.Image.ImageBytes != nil {
-		imageData = generatedImg.Image.ImageBytes
-		imageFormat = extractFormatFromMimeType(generatedImg.Image.MIMEType)
-	} else {
-		return nil, fmt.Errorf("no image data found in response")
-	}
-
-	// Parse dimensions from size option (e.g., "1024x1024")
-	width, height := parseSizeString(options.Size)
-
-	// Build metadata
-	metadata := map[string]string{
-		"model":      options.Model,
-		"prompt":     prompt,
-		"size":       options.Size,
-		"style":      options.Style,
-		"generated":  time.Now().UTC().Format(time.RFC3339),
-		"api":        "gemini",
-	}
-
-	if options.Seed != 0 {
-		metadata["seed"] = fmt.Sprintf("%d", options.Seed)
-	}
-
-	if options.NegativePrompt != "" {
-		metadata["negative_prompt"] = options.NegativePrompt
-	}
-
-	return &models.GeneratedImage{
-		Data:     imageData,
-		Format:   imageFormat,
-		Width:    width,
-		Height:   height,
-		Metadata: metadata,
-	}, nil
+	return images, nil
 }
 
 // ValidateCredentials checks if the API credentials are valid
@@ -271,10 +276,10 @@ func extractFormatFromMimeType(mimeType string) string {
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) &&
 		(s == substr ||
-		 len(s) > len(substr) &&
-		 (s[:len(substr)] == substr ||
-		  s[len(s)-len(substr):] == substr ||
-		  containsMiddle(s, substr)))
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsMiddle(s, substr)))
 }
 
 func containsMiddle(s, substr string) bool {

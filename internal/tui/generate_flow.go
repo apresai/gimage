@@ -23,28 +23,28 @@ import (
 type GenerateStep int
 
 const (
-	StepPrompt GenerateStep = iota
-	StepProvider  // Select provider (was StepModel)
+	StepPrompt   GenerateStep = iota
+	StepProvider              // Select provider (was StepModel)
 	StepSize
 	StepStyle
-	StepAdvanced  // NEW: Advanced options (negative prompt, seed, aspect ratio, etc.)
+	StepAdvanced // NEW: Advanced options (negative prompt, seed, aspect ratio, etc.)
 	StepOutput
-	StepCommand  // Show command preview before generating
+	StepCommand // Show command preview before generating
 	StepProgress
-	StepProviderRetry  // Select a different provider if first one fails
+	StepProviderRetry // Select a different provider if first one fails
 	StepResult
 )
 
 // Provider selection item
 type providerOption struct {
-	id          string // e.g., "gemini/flash-2.5"
-	name        string // e.g., "Gemini 2.5 Flash (via Gemini API)"
-	api         string // e.g., "gemini", "vertex", "bedrock"
-	model       string // e.g., "gemini-2.5-flash-image"
-	cost        string // formatted cost string
-	free        bool
-	configured  bool   // whether authentication is set up
-	missing     []string // missing credentials
+	id         string // e.g., "gemini/flash-2.5"
+	name       string // e.g., "Gemini 2.5 Flash (via Gemini API)"
+	api        string // e.g., "gemini", "vertex", "bedrock"
+	model      string // e.g., "gemini-2.5-flash-image"
+	cost       string // formatted cost string
+	free       bool
+	configured bool     // whether authentication is set up
+	missing    []string // missing credentials
 }
 
 // Size selection item
@@ -90,9 +90,9 @@ type GenerateFlowModel struct {
 	promptTextarea textarea.Model
 
 	// Step 2: Provider selection
-	providers         []providerOption
-	selectedProvider  int
-	providerRegistry  *generate.ProviderRegistry
+	providers        []providerOption
+	selectedProvider int
+	providerRegistry *generate.ProviderRegistry
 
 	// Step 3: Size selection
 	sizes        []sizeOption
@@ -106,17 +106,17 @@ type GenerateFlowModel struct {
 	selectedStyle int
 
 	// Step 5: Advanced options (NEW)
-	negativePromptInput textinput.Model
-	seedInput           textinput.Model
-	aspectRatios        []aspectRatioOption
-	selectedAspectRatio int
-	imageSizes          []imageSizeOption
-	selectedImageSize   int
-	outputFormats       []outputFormatOption
+	negativePromptInput  textinput.Model
+	seedInput            textinput.Model
+	aspectRatios         []aspectRatioOption
+	selectedAspectRatio  int
+	imageSizes           []imageSizeOption
+	selectedImageSize    int
+	outputFormats        []outputFormatOption
 	selectedOutputFormat int
-	cfgScaleInput       textinput.Model
-	countInput          textinput.Model
-	advancedFocusIndex  int // Track which field is focused (0-6)
+	cfgScaleInput        textinput.Model
+	countInput           textinput.Model
+	advancedFocusIndex   int // Track which field is focused (0-6)
 
 	// Step 6: Output path
 	outputInput textinput.Model
@@ -136,12 +136,12 @@ type GenerateFlowModel struct {
 	err            error
 
 	// Provider retry state
-	retryProviders        []providerOption
-	selectedRetryProvider int
-	customProviderInput   textinput.Model
-	showCustomProviderInput  bool
-	lastGenerationError   string
-	providerRetryInput    textinput.Model
+	retryProviders          []providerOption
+	selectedRetryProvider   int
+	customProviderInput     textinput.Model
+	showCustomProviderInput bool
+	lastGenerationError     string
+	providerRetryInput      textinput.Model
 
 	// Error context for retry
 	errorContext struct {
@@ -289,17 +289,17 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	providerRetryInput.Width = 70
 
 	return &GenerateFlowModel{
-		currentStep:           StepPrompt,
-		promptTextarea:        ta,
-		providers:             providerOpts,
-		selectedProvider:      0,
-		providerRegistry:      registry,
-		sizes:                 sizeOpts,
-		selectedSize:          0,
-		customWidth:           widthInput,
-		customHeight:          heightInput,
-		styles:                styleOpts,
-		selectedStyle:         0,
+		currentStep:      StepPrompt,
+		promptTextarea:   ta,
+		providers:        providerOpts,
+		selectedProvider: 0,
+		providerRegistry: registry,
+		sizes:            sizeOpts,
+		selectedSize:     0,
+		customWidth:      widthInput,
+		customHeight:     heightInput,
+		styles:           styleOpts,
+		selectedStyle:    0,
 		// Advanced options
 		negativePromptInput:  negativePromptInput,
 		seedInput:            seedInput,
@@ -848,7 +848,7 @@ func (m *GenerateFlowModel) focusAdvancedInput() {
 		m.cfgScaleInput.Focus()
 	case 6:
 		m.countInput.Focus()
-	// 2, 3, 4 are pickers - no focus needed
+		// 2, 3, 4 are pickers - no focus needed
 	}
 }
 
@@ -1615,7 +1615,7 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 		defer client.Close()
 
 		// Generate the image
-		result, err := client.GenerateImage(ctx, m.promptTextarea.Value(), options)
+		results, err := client.GenerateImage(ctx, m.promptTextarea.Value(), options)
 		if err != nil {
 			errMsg := fmt.Sprintf("Generation failed: %v", err)
 			logger.LogError("%s", errMsg)
@@ -1629,14 +1629,51 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 
 		logger.LogInfo("Image generated successfully")
 
-		// Save the generated image to disk
-		outputPath := m.outputInput.Value()
-		logger.LogInfo("Saving image to %s", outputPath)
-		if err := generate.SaveImage(result, outputPath); err != nil {
-			errMsg := fmt.Sprintf("failed to save image: %v", err)
+		// Save the generated image(s) to disk
+		var (
+			outputPath string // Final path for the primary image (for TUI display)
+			saveErr    error
+		)
+
+		if len(results) == 0 {
+			saveErr = fmt.Errorf("no images returned by provider")
+		} else {
+			// Determine base output path
+			baseOutputPath := m.outputInput.Value()
+			if baseOutputPath == "" {
+				baseOutputPath = generate.GenerateOutputPath(results[0].Format)
+			}
+
+			// Save all images
+			for i, img := range results {
+				currentOutputPath := baseOutputPath
+				if len(results) > 1 {
+					// For multiple images, append _N before the extension
+					ext := strings.ToLower(img.Format)
+					if !strings.HasPrefix(ext, ".") {
+						ext = "." + ext
+					}
+					base := strings.TrimSuffix(baseOutputPath, filepath.Ext(baseOutputPath))
+					currentOutputPath = fmt.Sprintf("%s_%d%s", base, i+1, ext)
+				}
+
+				if err := generate.SaveImage(img, currentOutputPath); err != nil {
+					saveErr = fmt.Errorf("failed to save image %d: %w", i+1, err)
+					break
+				}
+
+				// The first image saved is considered the primary for TUI display
+				if i == 0 {
+					outputPath = currentOutputPath
+				}
+			}
+		}
+
+		if saveErr != nil {
+			errMsg := fmt.Sprintf("failed to save image(s): %v", saveErr)
 			logger.LogError("%s", errMsg)
-			logger.LogErrorContext("Image Save Error", err, map[string]string{
-				"output_path": outputPath,
+			logger.LogErrorContext("Image Save Error", saveErr, map[string]string{
+				"output_path": outputPath, // May be empty if save failed early
 				"model":       options.Model,
 			})
 			return generationCompleteMsg{err: fmt.Errorf("%s", errMsg)}

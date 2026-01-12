@@ -12,6 +12,7 @@ type GenerateOptions struct {
 	CfgScale       float64 // Guidance scale for Bedrock Nova Canvas (1.0-10.0, default 7.0)
 	NumberOfImages int     // Number of images to generate (1-4, default 1)
 	OutputFormat   string  // Output format: "png", "jpeg", "webp" (default varies by API)
+	ResizeMode     string  // "stretch", "fit", "crop" (default "crop")
 }
 
 // GeneratedImage represents the result of an AI image generation request

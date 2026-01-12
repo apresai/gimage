@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/apresai/gimage/internal/config"
@@ -18,7 +19,7 @@ import (
 func RegisterGenerateImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "generate_image",
-		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, AWS Bedrock). Call list_models first to see available providers with pricing. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default FREE provider (Gemini 2.5 Flash, 500/day, 1024x1024). For higher quality, use model='imagen-4' (Imagen 4 via Vertex AI, $0.04/image, up to 2048x2048). Supports styles (photorealistic, artistic, anime), negative prompts, and seeds for reproducibility. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
+		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, AWS Bedrock). Call list_models first to see available providers with pricing. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Supports styles (photorealistic, artistic, anime), negative prompts, and seeds for reproducibility. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: false, // Creates new files but doesn't modify existing ones
 			IdempotentHint:  false, // Each call generates a different image
@@ -96,7 +97,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				},
 				"count": map[string]interface{}{
 					"type":        "integer",
-					"description": "Number of images to generate (1-5). Currently only the first image is saved.",
+					"description": "Number of images to generate (1-5). Images will be saved with _1, _2 suffixes.",
 					"minimum":     1,
 					"maximum":     5,
 					"default":     1,
@@ -223,8 +224,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			ctx := context.Background()
 
 			// Generate based on backend
-			var generatedImage *models.GeneratedImage
-			var err error
+			var generatedImages []*models.GeneratedImage
 
 			if selectedAPI == "gemini" {
 				// Use Gemini REST client
@@ -239,7 +239,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				}
 				defer client.Close()
 
-				generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+				generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 				if err != nil {
 					return nil, fmt.Errorf("image generation failed: %w", err)
 				}
@@ -268,7 +268,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					}
 					defer client.Close()
 
-					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 					if err != nil {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
@@ -280,7 +280,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					}
 					defer client.Close()
 
-					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 					if err != nil {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
@@ -305,7 +305,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					}
 					defer client.Close()
 
-					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 					if err != nil {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
@@ -317,7 +317,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					}
 					defer client.Close()
 
-					generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 					if err != nil {
 						return nil, fmt.Errorf("image generation failed: %w", err)
 					}
@@ -343,7 +343,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				}
 				defer client.Close()
 
-				generatedImage, err = client.GenerateImage(ctx, prompt, opts)
+				generatedImages, err = client.GenerateImage(ctx, prompt, opts)
 				if err != nil {
 					return nil, fmt.Errorf("image generation failed: %w", err)
 				}
@@ -351,15 +351,33 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("unsupported API: %s", selectedAPI)
 			}
 
-			// Save the generated image
-			if err := generate.SaveImage(generatedImage, output); err != nil {
-				return nil, fmt.Errorf("failed to save image: %w", err)
-			}
+			// Save the generated image(s)
+			var savedPaths []string
+			for i, img := range generatedImages {
+				// Determine output path for this specific image
+				var currentOutput string
+				if len(generatedImages) > 1 {
+					// Add suffix for multiple images (e.g., image_1.png, image_2.png)
+					ext := strings.ToLower(img.Format)
+					if !strings.HasPrefix(ext, ".") {
+						ext = "." + ext
+					}
+					base := strings.TrimSuffix(output, filepath.Ext(output))
+					currentOutput = fmt.Sprintf("%s_%d%s", base, i+1, ext)
+				} else {
+					currentOutput = output
+				}
 
-			// Get absolute output path
-			absOutput, err := filepath.Abs(output)
-			if err != nil {
-				absOutput = output
+				if err := generate.SaveImage(img, currentOutput); err != nil {
+					return nil, fmt.Errorf("failed to save image %d: %w", i+1, err)
+				}
+
+				// Get absolute output path
+				absOutput, err := filepath.Abs(currentOutput)
+				if err != nil {
+					absOutput = currentOutput
+				}
+				savedPaths = append(savedPaths, absOutput)
 			}
 
 			// Get provider info for pricing display using shared helper
@@ -380,7 +398,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			// Build result with comprehensive information
 			result := map[string]interface{}{
 				"success":       true,
-				"output_path":   absOutput,
+				"output_path":   savedPaths[0],
+				"saved_paths":   savedPaths,
+				"count":         len(generatedImages),
 				"size":          size,
 				"model":         modelName,
 				"model_display": modelDisplayName,
@@ -390,7 +410,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			}
 
 			// Create user-friendly message
-			msg := fmt.Sprintf("Generated using %s (%s)", modelDisplayName, pricingInfo)
+			msg := fmt.Sprintf("Generated %d image(s) using %s (%s)", len(generatedImages), modelDisplayName, pricingInfo)
 			result["message"] = msg
 
 			// Add warning if we had to fall back to a different location
@@ -398,7 +418,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				result["warning"] = pathWarning
 			}
 
-			log.Debug("Generation complete in %s: %s", time.Since(startTime), absOutput)
+			log.Debug("Generation complete in %s: %d images saved", time.Since(startTime), len(generatedImages))
 
 			return result, nil
 		},

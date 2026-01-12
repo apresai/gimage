@@ -91,7 +91,12 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 ```json
 {
   "success": true,
-  "output_path": "/absolute/path/to/generated_1234567890.png",
+  "output_path": "/absolute/path/to/generated_1.png",
+  "saved_paths": [
+    "/absolute/path/to/generated_1.png",
+    "/absolute/path/to/generated_2.png"
+  ],
+  "count": 2,
   "size": "1024x1024",
   "model": "gemini-3-pro-image-preview",
   "prompt": "a sunset over mountains"

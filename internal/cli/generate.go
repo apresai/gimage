@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -121,10 +122,8 @@ func printGenerationTiming(elapsed time.Duration) {
 	printInfo("Generation completed in %.2fs", elapsed.Seconds())
 }
 
-// printSuccessDetails prints the standard success block with all details
+// printSuccessDetails prints the standard success block for a single image
 func printSuccessDetails(provider *generate.Provider, output string, imageData []byte, width, height int, imageSize, dimensions string) {
-	printSuccess("Image generated successfully!")
-	printInfo("  Provider: %s", provider.Name)
 	printInfo("  File: %s", output)
 	printInfo("  Size: %s", formatImageSize(int64(len(imageData))))
 	printInfo("  Dimensions: %dx%d", width, height)
@@ -237,11 +236,12 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	style, _ := cmd.Flags().GetString("style")
 	negative, _ := cmd.Flags().GetString("negative")
 	seed, _ := cmd.Flags().GetInt64("seed")
-	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale")      // For Bedrock Nova Canvas
-	count, _ := cmd.Flags().GetInt("count")                  // Number of images to generate
+	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale") // For Bedrock Nova Canvas
+	count, _ := cmd.Flags().GetInt("count")            // Number of images to generate
 	outputFormat, _ := cmd.Flags().GetString("output-format")
 	listModels, _ := cmd.Flags().GetBool("list-models")
 	listProviders, _ := cmd.Flags().GetBool("list-providers")
+	resizeMode, _ := cmd.Flags().GetString("resize-mode")
 
 	// Handle --list-providers flag
 	if listProviders {
@@ -272,20 +272,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	// Handle new provider system if --provider is specified
 	if providerID != "" {
 		return runGenerateWithProvider(cmd, prompt, providerID, output, size, style, negative, seed)
-	}
-
-	// Build generate options
-	options := models.GenerateOptions{
-		Model:          model,
-		Size:           size,
-		ImageSize:      imageSize,   // For Gemini 3 Pro: 1K, 2K, 4K
-		AspectRatio:    aspectRatio, // For Gemini 3 Pro: 1:1, 16:9, etc.
-		Style:          style,
-		NegativePrompt: negative,
-		Seed:           seed,
-		CfgScale:       cfgScale,       // For Bedrock Nova Canvas (1.0-10.0)
-		NumberOfImages: count,          // Number of images to generate (1-5)
-		OutputFormat:   outputFormat,   // For all APIs: png, jpeg, webp
 	}
 
 	// Determine which API to use
@@ -368,10 +354,25 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var generatedImage *models.GeneratedImage
+	var generatedImages []*models.GeneratedImage
 	var resolvedProvider *generate.Provider
 	var startTime time.Time
 	var err error
+
+	// Create unified generation options
+	options := models.GenerateOptions{
+		Model:          model,
+		Size:           size,
+		ImageSize:      imageSize,
+		AspectRatio:    aspectRatio,
+		Style:          style,
+		NegativePrompt: negative,
+		Seed:           seed,
+		CfgScale:       cfgScale,
+		NumberOfImages: count,
+		OutputFormat:   outputFormat,
+		ResizeMode:     resizeMode,
+	}
 
 	// Generate based on API selection
 	if selectedAPI == "gemini" {
@@ -404,8 +405,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		}
 		defer client.Close()
 
+		// Update model name in options if needed
+		options.Model = modelName
+
 		startTime = time.Now()
-		generatedImage, err = client.GenerateImage(ctx, prompt, options)
+		generatedImages, err = client.GenerateImage(ctx, prompt, options)
 	} else if selectedAPI == "vertex" {
 		// Use Vertex AI - check for Express Mode (API key) or Full Mode (service account)
 
@@ -472,7 +476,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			defer client.Close()
 
 			startTime = time.Now()
-			generatedImage, err = client.GenerateImage(ctx, prompt, options)
+			generatedImages, err = client.GenerateImage(ctx, prompt, options)
 		} else {
 			// Full Mode - Use unified SDK client with ADC/service account
 			printVerbose("Using Vertex AI Full Mode (ADC/service account authentication)")
@@ -484,7 +488,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			defer client.Close()
 
 			startTime = time.Now()
-			generatedImage, err = client.GenerateImage(ctx, prompt, options)
+			generatedImages, err = client.GenerateImage(ctx, prompt, options)
 		}
 	} else if selectedAPI == "bedrock" {
 		// Use AWS Bedrock API - choose between REST (bearer token) or SDK (IAM/keys)
@@ -539,7 +543,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			defer client.Close()
 
 			startTime = time.Now()
-			generatedImage, err = client.GenerateImage(ctx, prompt, bedrockOptions)
+			generatedImages, err = client.GenerateImage(ctx, prompt, bedrockOptions)
 		} else {
 			// Use SDK client with IAM/keys/profile
 			printVerbose("Using Bedrock SDK with IAM/keys/profile authentication")
@@ -551,7 +555,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			defer client.Close()
 
 			startTime = time.Now()
-			generatedImage, err = client.GenerateImage(ctx, prompt, bedrockOptions)
+			generatedImages, err = client.GenerateImage(ctx, prompt, bedrockOptions)
 		}
 	} else if selectedAPI == "grok" {
 		// Use xAI Grok API
@@ -589,7 +593,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		}
 
 		startTime = time.Now()
-		generatedImage, err = client.GenerateImage(ctx, prompt, grokOptions)
+		generatedImages, err = client.GenerateImage(ctx, prompt, grokOptions)
 	} else {
 		return fmt.Errorf("invalid API: %s (must be 'gemini', 'vertex', 'bedrock', or 'grok')", selectedAPI)
 	}
@@ -604,30 +608,48 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Defensive nil check (should never happen if error handling is correct)
-	if generatedImage == nil {
-		return fmt.Errorf("internal error: generated image is nil but no error was returned - please report this bug")
+	if len(generatedImages) == 0 {
+		return fmt.Errorf("internal error: no images generated but no error was returned - please report this bug")
 	}
 
-	// Determine output path
-	if output == "" {
-		output = generate.GenerateOutputPath(generatedImage.Format)
-	}
-
-	// Save image
-	printInfo("Saving image to: %s", output)
-	if err := generate.SaveImage(generatedImage, output); err != nil {
-		return fmt.Errorf("failed to save image: %w", err)
-	}
-
-	// Print standardized success output
+	printSuccess("Generated %d image(s) successfully!", len(generatedImages))
 	if resolvedProvider != nil {
-		printSuccessDetails(resolvedProvider, output, generatedImage.Data, generatedImage.Width, generatedImage.Height, imageSize, size)
-	} else {
-		// Fallback if provider wasn't resolved (shouldn't happen)
-		printSuccess("Image generated successfully!")
-		printInfo("  File: %s", output)
-		printInfo("  Size: %s", formatImageSize(int64(len(generatedImage.Data))))
-		printInfo("  Dimensions: %dx%d", generatedImage.Width, generatedImage.Height)
+		printInfo("  Provider: %s", resolvedProvider.Name)
+	}
+
+	// Save all generated images
+	for i, img := range generatedImages {
+		// Determine output path for this specific image
+		var currentOutput string
+		if output != "" {
+			if len(generatedImages) > 1 {
+				// Add suffix for multiple images (e.g., image_1.png, image_2.png)
+				ext := strings.ToLower(img.Format)
+				if !strings.HasPrefix(ext, ".") {
+					ext = "." + ext
+				}
+				base := strings.TrimSuffix(output, filepath.Ext(output))
+				currentOutput = fmt.Sprintf("%s_%d%s", base, i+1, ext)
+			} else {
+				currentOutput = output
+			}
+		} else {
+			currentOutput = generate.GenerateOutputPath(img.Format)
+		}
+
+		printInfo("Saving image %d to: %s", i+1, currentOutput)
+		if err := generate.SaveImage(img, currentOutput); err != nil {
+			return fmt.Errorf("failed to save image %d: %w", i+1, err)
+		}
+
+		// Print standardized success output for this image
+		if resolvedProvider != nil {
+			printSuccessDetails(resolvedProvider, currentOutput, img.Data, img.Width, img.Height, imageSize, size)
+		} else {
+			printInfo("  File: %s", currentOutput)
+			printInfo("  Size: %s", formatImageSize(int64(len(img.Data))))
+			printInfo("  Dimensions: %dx%d", img.Width, img.Height)
+		}
 	}
 
 	return nil
@@ -700,9 +722,9 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		Style:          style,
 		NegativePrompt: negative,
 		Seed:           seed,
-		CfgScale:       cfgScale,       // For Bedrock Nova Canvas (1.0-10.0)
-		NumberOfImages: count,          // Number of images to generate (1-5)
-		OutputFormat:   outputFormat,   // For all APIs: png, jpeg, webp
+		CfgScale:       cfgScale,     // For Bedrock Nova Canvas (1.0-10.0)
+		NumberOfImages: count,        // Number of images to generate (1-5)
+		OutputFormat:   outputFormat, // For all APIs: png, jpeg, webp
 	}
 
 	// Generate image
@@ -710,26 +732,45 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	ctx := context.Background()
 
 	startTime := time.Now()
-	generatedImage, err := client.GenerateImage(ctx, prompt, options)
+	generatedImages, err := client.GenerateImage(ctx, prompt, options)
 	if err != nil {
 		return fmt.Errorf("failed to generate image: %w", err)
 	}
 
 	printGenerationTiming(time.Since(startTime))
 
-	// Determine output path
-	if output == "" {
-		output = generate.GenerateOutputPath(generatedImage.Format)
+	if len(generatedImages) == 0 {
+		return fmt.Errorf("no images generated")
 	}
 
-	// Save image
-	printInfo("Saving image to: %s", output)
-	if err := generate.SaveImage(generatedImage, output); err != nil {
-		return fmt.Errorf("failed to save image: %w", err)
-	}
+	printSuccess("Generated %d image(s) successfully!", len(generatedImages))
+	printInfo("  Provider: %s", provider.Name)
 
-	// Print standardized success output
-	printSuccessDetails(provider, output, generatedImage.Data, generatedImage.Width, generatedImage.Height, imageSize, size)
+	// Save all generated images
+	for i, img := range generatedImages {
+		var currentOutput string
+		if output != "" {
+			if len(generatedImages) > 1 {
+				ext := strings.ToLower(img.Format)
+				if !strings.HasPrefix(ext, ".") {
+					ext = "." + ext
+				}
+				base := strings.TrimSuffix(output, filepath.Ext(output))
+				currentOutput = fmt.Sprintf("%s_%d%s", base, i+1, ext)
+			} else {
+				currentOutput = output
+			}
+		} else {
+			currentOutput = generate.GenerateOutputPath(img.Format)
+		}
+
+		printInfo("Saving image %d to: %s", i+1, currentOutput)
+		if err := generate.SaveImage(img, currentOutput); err != nil {
+			return fmt.Errorf("failed to save image %d: %w", i+1, err)
+		}
+
+		printSuccessDetails(provider, currentOutput, img.Data, img.Width, img.Height, imageSize, size)
+	}
 
 	return nil
 }
@@ -1245,6 +1286,7 @@ func init() {
 	generateCmd.Flags().Float64("cfg-scale", 0, "Guidance scale for Nova Canvas (1.0-10.0, default 7.0)")
 	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (1-5, default 1)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
+	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
 
 	// Bind to viper for config file support
 	viper.BindPFlag("generate.api", generateCmd.Flags().Lookup("api"))

@@ -14,12 +14,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/apresai/gimage/internal/config"
 	"github.com/apresai/gimage/internal/generate"
 	gimageimaging "github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/disintegration/imaging"
 )
 
@@ -61,7 +61,7 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 		return errorResponse(400, fmt.Sprintf("Invalid model: %v", err)), nil
 	}
 
-	var generatedImage *models.GeneratedImage
+	var generatedImages []*models.GeneratedImage
 
 	// Generate based on API
 	if api == "gemini" {
@@ -76,7 +76,7 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 		}
 		defer client.Close()
 
-		generatedImage, err = client.GenerateImage(ctx, req.Prompt, options)
+		generatedImages, err = client.GenerateImage(ctx, req.Prompt, options)
 		if err != nil {
 			return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
 		}
@@ -98,7 +98,7 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 			}
 			defer client.Close()
 
-			generatedImage, err = client.GenerateImage(ctx, req.Prompt, options)
+			generatedImages, err = client.GenerateImage(ctx, req.Prompt, options)
 			if err != nil {
 				return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
 			}
@@ -110,7 +110,7 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 			}
 			defer client.Close()
 
-			generatedImage, err = client.GenerateImage(ctx, req.Prompt, options)
+			generatedImages, err = client.GenerateImage(ctx, req.Prompt, options)
 			if err != nil {
 				return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
 			}
@@ -118,6 +118,11 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 	} else {
 		return errorResponse(400, fmt.Sprintf("Unsupported API: %s", api)), nil
 	}
+
+	if len(generatedImages) == 0 {
+		return errorResponse(500, "No images generated"), nil
+	}
+	generatedImage := generatedImages[0]
 
 	// Create response
 	return h.createImageResponse(ctx, generatedImage.Data, generatedImage.Format, generatedImage.Width, generatedImage.Height, req.ResponseFormat)

@@ -6,7 +6,7 @@ Complete reference for all gimage commands, flags, and options.
 
 - [Global Flags](#global-flags)
 - [generate](#generate) - Generate images from text using AI
-- [resize](#resize) - Resize images to dimensions
+- [resize](#resize) - Resize images (strictly preserves aspect ratio)
 - [scale](#scale) - Scale images by factor
 - [crop](#crop) - Crop images to regions
 - [compress](#compress) - Compress images
@@ -219,16 +219,17 @@ gimage resize [input] [width] [height] [flags]
 
 ### Flags
 
-| Flag           | Type   | Description      | Default                 |
-| -------------- | ------ | ---------------- | ----------------------- |
-| `-o, --output` | string | Output file path | `<input>_resized.<ext>` |
+| Flag           | Type   | Description                | Default                 |
+| -------------- | ------ | -------------------------- | ----------------------- |
+| `-o, --output` | string | Output file path           | `<input>_resized.<ext>` |
+| `--mode`       | string | Resize mode: `crop`, `fit` | `crop`                  |
 
 ### Examples
 
 **Basic resize:**
 
 ```bash
-gimage resize photo.jpg 800 600
+gimage resize photo.jpg 800 600 --mode crop
 ```
 
 **Resize with custom output:**
@@ -245,7 +246,9 @@ gimage resize image.jpg 150 150 --output thumbnail.jpg
 
 ### Notes
 
-- Maintains aspect ratio if only one dimension specified
+- Strictly preserves aspect ratio in all modes
+- `crop` (default): Fills the target size by cropping the excess
+- `fit`: Fits the entire image within the target size (adds padding)
 - Uses Lanczos resampling for highest quality
 - Preserves transparency for PNG images
 - Output format matches input unless specified

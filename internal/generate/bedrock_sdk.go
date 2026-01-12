@@ -29,7 +29,7 @@ type BedrockSDKClient struct {
 
 // NovaCanvasRequest represents the Nova Canvas API request format
 type NovaCanvasRequest struct {
-	TaskType              string                     `json:"taskType"`
+	TaskType              string                      `json:"taskType"`
 	TextToImageParams     NovaCanvasTextToImageParams `json:"textToImageParams"`
 	ImageGenerationConfig NovaCanvasImageConfig       `json:"imageGenerationConfig"`
 }
@@ -105,7 +105,7 @@ func NewBedrockSDKClient(ctx context.Context, region string) (*BedrockSDKClient,
 }
 
 // GenerateImage generates an image using AWS Bedrock Nova Canvas
-func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error) {
+func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	startTime := time.Now()
 
 	// Build request payload
@@ -165,46 +165,55 @@ func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, opt
 			return nil, fmt.Errorf("no images generated")
 		}
 
-		// Decode base64 image
-		imageData, err := base64.StdEncoding.DecodeString(novaResponse.Images[0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode image: %w", err)
-		}
-
 		// Parse dimensions
-		width, height := parseDimensions(options.Size)
+		requestedWidth, requestedHeight := ParseSizeString(options.Size)
 
 		// Build response
-		generatedImage := &models.GeneratedImage{
-			Data:   imageData,
-			Format: "png",
-			Width:  width,
-			Height: height,
-			Metadata: map[string]string{
-				"model":   modelID,
-				"prompt":  prompt,
-				"size":    options.Size,
-				"seed":    fmt.Sprintf("%d", request.ImageGenerationConfig.Seed),
-				"quality": request.ImageGenerationConfig.Quality,
-			},
+		var generatedImages []*models.GeneratedImage
+		for i, imgStr := range novaResponse.Images {
+			imageData, err := base64.StdEncoding.DecodeString(imgStr)
+			if err != nil {
+				c.logger.Debug().Int("index", i).Err(err).Msg("Failed to decode image, skipping")
+				continue
+			}
+
+			generatedImages = append(generatedImages, &models.GeneratedImage{
+				Data:   imageData,
+				Format: "png",
+				Width:  requestedWidth,
+				Height: requestedHeight,
+				Metadata: map[string]string{
+					"model":       modelID,
+					"prompt":      prompt,
+					"size":        options.Size,
+					"seed":        fmt.Sprintf("%d", request.ImageGenerationConfig.Seed),
+					"quality":     request.ImageGenerationConfig.Quality,
+					"candidate":   fmt.Sprintf("%d", i),
+					"resize_mode": options.ResizeMode,
+				},
+			})
+		}
+
+		if len(generatedImages) == 0 {
+			return nil, fmt.Errorf("no valid images generated")
 		}
 
 		if c.verbose {
 			c.logger.Info().
 				Str("model", modelID).
 				Dur("duration", time.Since(startTime)).
-				Int("image_size_kb", len(imageData)/1024).
-				Msg("Image generated successfully")
+				Int("count", len(generatedImages)).
+				Msg("Images generated successfully")
 		}
 
-		return generatedImage, nil
+		return generatedImages, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return result.(*models.GeneratedImage), nil
+	return result.([]*models.GeneratedImage), nil
 }
 
 // buildRequest builds the Nova Canvas request from options
@@ -214,16 +223,9 @@ func (c *BedrockSDKClient) buildRequest(prompt string, options models.GenerateOp
 		return nil, fmt.Errorf("prompt cannot be empty")
 	}
 
-	// Parse dimensions
-	width, height := parseDimensions(options.Size)
-
-	// Validate dimensions (Nova Canvas supports 512-2048, multiples of 64)
-	if width < 512 || width > 2048 || width%64 != 0 {
-		return nil, fmt.Errorf("invalid width: %d (must be 512-2048, multiple of 64)", width)
-	}
-	if height < 512 || height > 2048 || height%64 != 0 {
-		return nil, fmt.Errorf("invalid height: %d (must be 512-2048, multiple of 64)", height)
-	}
+	// Parse and normalize dimensions (Nova Canvas supports 512-2048, multiples of 64)
+	requestedWidth, requestedHeight := ParseSizeString(options.Size)
+	apiWidth, apiHeight := NormalizeDimensions(requestedWidth, requestedHeight, BedrockConstraints)
 
 	// Validate seed if provided (Nova Canvas supports 0-858993459)
 	if options.Seed < 0 || options.Seed > 858993459 {
@@ -270,8 +272,8 @@ func (c *BedrockSDKClient) buildRequest(prompt string, options models.GenerateOp
 		ImageGenerationConfig: NovaCanvasImageConfig{
 			NumberOfImages: numberOfImages,
 			Quality:        quality,
-			Height:         height,
-			Width:          width,
+			Height:         apiHeight,
+			Width:          apiWidth,
 			CfgScale:       cfgScale,
 		},
 	}

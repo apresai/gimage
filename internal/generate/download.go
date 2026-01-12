@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/apresai/gimage/internal/imaging"
@@ -100,17 +101,30 @@ func SaveImage(img *models.GeneratedImage, outputPath string) error {
 
 		// Check if dimensions match requested size
 		if actualWidth != img.Width || actualHeight != img.Height {
-			fmt.Fprintf(os.Stderr, "Note: Model returned %dx%d, enforcing to %dx%d\n",
-				actualWidth, actualHeight, img.Width, img.Height)
+			mode := img.Metadata["resize_mode"]
+			if mode == "" {
+				mode = "crop" // Default to high-quality crop
+			}
+
+			fmt.Fprintf(os.Stderr, "Note: Model returned %dx%d, enforcing to %dx%d (mode: %s)\n",
+				actualWidth, actualHeight, img.Width, img.Height, mode)
 
 			// Resize to match requested dimensions using imaging package
-			resizedImg, err := imaginglib.Open(outputPath)
+			srcImg, err := imaginglib.Open(outputPath)
 			if err != nil {
 				return fmt.Errorf("failed to open image for resize enforcement: %w", err)
 			}
 
-			// Resize to exact requested dimensions
-			resizedImg = imaginglib.Resize(resizedImg, img.Width, img.Height, imaginglib.Lanczos)
+			var resizedImg *image.NRGBA
+			switch strings.ToLower(mode) {
+			case "fit":
+				resizedImg = imaginglib.Fit(srcImg, img.Width, img.Height, imaginglib.Lanczos)
+			case "crop", "fill":
+				resizedImg = imaginglib.Fill(srcImg, img.Width, img.Height, imaginglib.Center, imaginglib.Lanczos)
+			default:
+				// Default to crop if mode is unknown or explicitly "stretch"
+				resizedImg = imaginglib.Fill(srcImg, img.Width, img.Height, imaginglib.Center, imaginglib.Lanczos)
+			}
 
 			// Save with the target format
 			if err := imaging.SaveImageWithFormat(resizedImg, outputPath, targetFormat); err != nil {

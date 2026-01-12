@@ -20,7 +20,7 @@ const (
 
 // ImageGenerator is the common interface for all image generation clients
 type ImageGenerator interface {
-	GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) (*models.GeneratedImage, error)
+	GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error)
 	Close() error
 }
 
@@ -719,10 +719,10 @@ func (r *ProviderRegistry) CreateClient(providerID string) (ImageGenerator, erro
 
 // AuthStatus represents the authentication status of a provider
 type AuthStatus struct {
-	Provider    *Provider
-	Configured  bool
-	Missing     []string
-	Source      string // "env" or "config" or "both"
+	Provider   *Provider
+	Configured bool
+	Missing    []string
+	Source     string // "env" or "config" or "both"
 }
 
 // GetAuthStatus returns detailed auth status for all providers
@@ -787,24 +787,24 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"pro-3":                      "gemini/pro-3",
 		"gemini-3-pro-image-preview": "gemini/pro-3",
 		// Explicit aliases for Gemini 2.5 Flash (free tier)
-		"gemini-flash":               "gemini/flash-2.5",
-		"flash":                      "gemini/flash-2.5",
-		"gemini-2.5":                 "gemini/flash-2.5",
-		"gemini-2.5-flash":           "gemini/flash-2.5",
-		"gemini-2.5-flash-image":     "gemini/flash-2.5",
+		"gemini-flash":           "gemini/flash-2.5",
+		"flash":                  "gemini/flash-2.5",
+		"gemini-2.5":             "gemini/flash-2.5",
+		"gemini-2.5-flash":       "gemini/flash-2.5",
+		"gemini-2.5-flash-image": "gemini/flash-2.5",
 		// Vertex/Bedrock aliases
-		"imagen":                     "vertex/imagen-4",
-		"imagen-4":                   "vertex/imagen-4",
-		"imagen-4.0-generate-001":    "vertex/imagen-4",
-		"nova":                       "bedrock/nova-canvas",
-		"nova-canvas":                "bedrock/nova-canvas",
-		"amazon.nova-canvas-v1:0":    "bedrock/nova-canvas",
+		"imagen":                  "vertex/imagen-4",
+		"imagen-4":                "vertex/imagen-4",
+		"imagen-4.0-generate-001": "vertex/imagen-4",
+		"nova":                    "bedrock/nova-canvas",
+		"nova-canvas":             "bedrock/nova-canvas",
+		"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
 		// Grok aliases
-		"grok":                       "grok/grok-2-image",
-		"grok-2":                     "grok/grok-2-image",
-		"grok-2-image":               "grok/grok-2-image",
-		"xai":                        "grok/grok-2-image",
-		"aurora":                     "grok/grok-2-image",
+		"grok":         "grok/grok-2-image",
+		"grok-2":       "grok/grok-2-image",
+		"grok-2-image": "grok/grok-2-image",
+		"xai":          "grok/grok-2-image",
+		"aurora":       "grok/grok-2-image",
 	}
 
 	if providerID, ok := aliases[input]; ok {

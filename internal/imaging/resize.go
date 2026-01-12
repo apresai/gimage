@@ -9,7 +9,8 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-// ResizeImage resizes an image to specific dimensions using high-quality Lanczos resampling.
+// ResizeImage resizes an image to exactly the specified dimensions by cropping/filling
+// to preserve the original aspect ratio (High-quality Lanczos resampling).
 //
 // Parameters:
 //   - ctx: context for cancellation support
@@ -17,9 +18,6 @@ import (
 //   - outputPath: path to save resized image
 //   - width: target width in pixels
 //   - height: target height in pixels
-//
-// The image will be resized to exactly the specified dimensions. If you want to preserve
-// aspect ratio, use ResizeFit or calculate one dimension based on the other.
 //
 // Progress reporting can be provided via context using progress.WithReporter.
 //
@@ -29,8 +27,14 @@ import (
 //   - dimensions are not positive
 //   - output cannot be written
 func ResizeImage(ctx context.Context, inputPath, outputPath string, width, height int) error {
+	return ResizeFill(ctx, inputPath, outputPath, width, height)
+}
+
+// ResizeFill resizes an image to exactly the specified dimensions by filling the area
+// and cropping the excess (center-aligned), preserving the aspect ratio.
+func ResizeFill(ctx context.Context, inputPath, outputPath string, width, height int) error {
 	reporter := progress.FromContext(ctx)
-	reporter.Start(ctx, fmt.Sprintf("Resizing image to %dx%d", width, height))
+	reporter.Start(ctx, fmt.Sprintf("Resizing image (crop/fill) to %dx%d", width, height))
 	// Validate dimensions
 	if width <= 0 {
 		err := fmt.Errorf("width must be positive, got %d", width)
@@ -70,9 +74,9 @@ func ResizeImage(ctx context.Context, inputPath, outputPath string, width, heigh
 	default:
 	}
 
-	// Resize using Lanczos resampling (high quality)
-	reporter.Update(2, 3, "Resizing image")
-	resized := imaging.Resize(img, width, height, imaging.Lanczos)
+	// Resize using Fill (center crop) to preserve aspect ratio
+	reporter.Update(2, 3, "Resizing image (preserving aspect ratio)")
+	resized := imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
 
 	// Check for cancellation
 	select {

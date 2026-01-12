@@ -29,7 +29,7 @@ Production-ready serverless REST API for web applications and remote processing.
 
 ### 🛠️ Image Processing
 
-- **Resize** - Change image dimensions with high-quality resampling
+- **Resize** - Change image dimensions while preserving aspect ratio (crop or fit)
 - **Scale** - Scale images by factor (2x, 0.5x, etc.)
 - **Crop** - Extract specific regions from images
 - **Compress** - Reduce file size while maintaining quality
@@ -174,8 +174,8 @@ gimage generate --prompt "your prompt here"
 All image processing commands use explicit flags for clarity:
 
 ```bash
-# Resize to specific dimensions
-gimage resize --input photo.jpg --width 800 --height 600
+# Resize to specific dimensions (strictly preserves aspect ratio)
+gimage resize --input photo.jpg --width 800 --height 600 --mode crop
 
 # Scale to 50% size
 gimage scale --input photo.jpg --factor 0.5
@@ -190,7 +190,7 @@ gimage compress --input photo.jpg --quality 85
 gimage convert --input photo.png --format jpg
 
 # Use --output to specify custom output path
-gimage resize --input photo.jpg --width 800 --height 600 --output resized.jpg
+gimage resize --input photo.jpg --width 800 --height 600 --mode crop --output resized.jpg
 
 # Add --verbose for detailed progress
 gimage convert --input photo.png --format webp --verbose
