@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Added
+- Shared pricing helper for consistent variable pricing display across CLI and TUI
+- Dynamic provider registry for extensible backend management
+
+### Changed
+- Standardized CLI output format across all image generation providers (Gemini, Vertex AI, Bedrock, Grok)
+- Fixed Grok image generation reliability issues
+- Updated all Go dependencies to latest versions:
+  - `google.golang.org/genai`: v1.40.0 → v1.41.0 (Google AI SDK)
+  - `aws-sdk-go-v2`: v1.41.0 → v1.41.1 (and all sub-packages)
+  - `golang.org/x/term`: v0.38.0 → v0.39.0
+  - `golang.org/x/text`: v0.32.0 → v0.33.0
+  - `golang.org/x/sys`: v0.39.0 → v0.40.0
+  - `googleapis/enterprise-certificate-proxy`: v0.3.7 → v0.3.9
 
 ## [1.2.99] - 2025-12-28
 

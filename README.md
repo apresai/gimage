@@ -5,17 +5,21 @@
 ## 🚀 Three Ways to Use Gimage
 
 ### 1. Command-Line Tool (CLI)
+
 A single binary with zero dependencies for local image operations on your computer.
 
 ### 2. MCP Server for AI Assistants
+
 Run as an MCP (Model Context Protocol) server for seamless integration with Claude Desktop and other AI assistants.
 
 ### 3. Cloud API (AWS Lambda)
+
 Production-ready serverless REST API for web applications and remote processing.
 
 ## What Can You Do with Gimage?
 
 ### 🎨 AI Image Generation
+
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
 - Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas, Grok 2 Image
 - Control size, style, quality, aspect ratio, and use negative prompts
@@ -24,6 +28,7 @@ Production-ready serverless REST API for web applications and remote processing.
 - Batch generation: create multiple images at once
 
 ### 🛠️ Image Processing
+
 - **Resize** - Change image dimensions with high-quality resampling
 - **Scale** - Scale images by factor (2x, 0.5x, etc.)
 - **Crop** - Extract specific regions from images
@@ -31,11 +36,13 @@ Production-ready serverless REST API for web applications and remote processing.
 - **Convert** - Transform between formats (PNG, JPG, WebP, GIF, TIFF, BMP)
 
 ### ⚡ Batch Processing (MCP Server Only)
+
 - Process multiple images concurrently via MCP server
 - Optimized for AI assistants (Claude Desktop)
 - CLI users: use shell scripts or `find` + `xargs`
 
 ### 🔌 Integration Options
+
 - **Claude Desktop**: Run as MCP server
 - **Web Applications**: REST API via AWS Lambda
 - **Serverless**: AWS Lambda on ARM64/Graviton2
@@ -106,6 +113,7 @@ gimage auth test gemini
 ```
 
 **Get API Keys:**
+
 - **Gemini API**: https://aistudio.google.com/app/apikey (FREE tier: 500 images/day with gemini-2.5-flash-image, no credit card)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
@@ -133,8 +141,8 @@ gimage generate "abstract art" --size 1024x1024 --style photorealistic
 # Use Vertex AI Imagen 4 (auto-detects vertex API)
 gimage generate "beautiful landscape" --model imagen-4
 
-# Use AWS Bedrock Nova Canvas with premium quality
-gimage generate "futuristic robot" --model nova-canvas --quality premium
+# Use AWS Bedrock Nova Canvas with premium quality (via style flag)
+gimage generate "futuristic robot" --model nova-canvas --style premium
 
 # Use negative prompts to avoid unwanted elements
 gimage generate "forest scene" --negative "people, buildings"
@@ -148,7 +156,7 @@ gimage generate "abstract art" --model nova-canvas --cfg-scale 10
 # Generate multiple images at once (1-5 images)
 gimage generate "fantasy landscape" --count 3
 
-# Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+# Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
 gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
 
 # Control output format with Vertex AI (png, jpeg, webp)
@@ -193,11 +201,13 @@ gimage convert --input photo.png --format webp --verbose
 **Batch operations are available only through the MCP server** for use with AI assistants like Claude.
 
 For CLI users who need batch processing:
+
 - Use shell scripts with loops
 - Use `find` + `xargs` for parallel processing
 - Example: `find photos/ -name "*.jpg" | xargs -P 4 -I {} gimage resize --input {} --width 800 --height 600`
 
 MCP server batch tools (for AI assistants):
+
 - `batch_resize` - Concurrent image resizing
 - `batch_compress` - Concurrent compression
 - `batch_convert` - Concurrent format conversion
@@ -207,6 +217,7 @@ See [MCP documentation](#mcp-server-for-ai-assistants) for details.
 ## Configuration
 
 ### Authentication Priority (Highest to Lowest)
+
 1. **Command-line flags** (highest priority)
 2. **Environment variables** (`GEMINI_API_KEY`, `VERTEX_API_KEY`, etc.)
 3. **Config file** (`~/.gimage/config.md`)
@@ -219,6 +230,7 @@ See [MCP documentation](#mcp-server-for-ai-assistants) for details.
 Location: `~/.gimage/config.md` (created automatically by `gimage auth` commands)
 
 **Security Notes**:
+
 - File permissions: 0600 (only you can read/write)
 - Contains PLAINTEXT API keys
 - **NEVER commit to version control**
@@ -226,10 +238,11 @@ Location: `~/.gimage/config.md` (created automatically by `gimage auth` commands
 - Use `gimage auth status` to check for conflicting credentials
 
 Format (markdown with `**key**: value`):
+
 ```markdown
 # Gimage Configuration
 
-⚠️  SECURITY WARNING ⚠️
+⚠️ SECURITY WARNING ⚠️
 This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 
 **gemini_api_key**: your-gemini-key
@@ -252,11 +265,13 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 ### Environment Variables (Recommended)
 
 **Gemini API**:
+
 ```bash
 export GEMINI_API_KEY="your-key"
 ```
 
 **Vertex AI** (3 authentication modes):
+
 ```bash
 # Option 1: Express Mode (REST) - Simplest
 export VERTEX_API_KEY="your-key"
@@ -272,6 +287,7 @@ export VERTEX_PROJECT="your-project-id"
 ```
 
 **AWS Bedrock** (4 authentication modes):
+
 ```bash
 # Option 1: REST API with Bearer Token
 export AWS_BEARER_TOKEN_BEDROCK="your-bearer-token"
@@ -293,11 +309,13 @@ export AWS_REGION="us-east-1"  # Optional, defaults to instance region
 ```
 
 **xAI Grok**:
+
 ```bash
 export GROK_API_KEY="xai-your-key"
 ```
 
 **Check credential conflicts**:
+
 ```bash
 gimage auth status  # Shows which credentials are active and their sources
 ```
@@ -305,12 +323,15 @@ gimage auth status  # Shows which credentials are active and their sources
 ## Available Models
 
 ### Gemini API (Google AI Studio)
+
 - **`gemini-3-pro-image-preview`** (default)
+
   - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
   - Native 4K resolution, sharp text rendering
   - Best for: Professional work, text-heavy images, diagrams
 
 - **`gemini-2.5-flash-image`** (FREE tier, recommended for beginners)
+
   - FREE: 500 images/day, no credit card required
   - Resolution: up to 1024x1024
   - Fast generation (~2-3 seconds)
@@ -321,12 +342,15 @@ gimage auth status  # Shows which credentials are active and their sources
   - Preview model with experimental features
 
 ### Vertex AI (Google Cloud) - Paid
+
 - **`imagen-4`** (newest, highest quality)
+
   - Pricing: $0.04/image
   - Resolution: up to 2048x2048
   - Best for: Professional work, final production images
 
 - **`imagen-3.0-generate-002`** (Imagen 3)
+
   - Pricing: $0.04/image
   - Resolution: up to 1536x1536
   - High quality, production-ready
@@ -336,18 +360,21 @@ gimage auth status  # Shows which credentials are active and their sources
   - Optimized for speed
 
 ### AWS Bedrock - Paid
+
 - **`amazon.nova-canvas-v1:0`** (Nova Canvas)
   - Resolution: up to 1408x1408
   - Pricing: $0.04/image (up to 1024x1024), $0.08/image (larger)
   - Best for: AWS-integrated applications
 
 ### xAI Grok - Paid
+
 - **`grok-2-image`** (Aurora-powered)
   - Pricing: ~$0.07/image
   - Best for: Creative and artistic images
   - Note: Does not support size, style, or negative prompt parameters
 
 **View all models with live pricing:**
+
 ```bash
 gimage generate --list-models
 # or
@@ -363,17 +390,21 @@ All processing operations preserve format by default, or you can specify output 
 ## Advanced Features
 
 ### Styles (Generation)
+
 - `photorealistic` - Realistic photos
 - `artistic` - Artistic interpretations
 - `anime` - Anime/manga style
 
 ### Quality Settings
+
 - Compression quality: 1-100 (default: 90)
 - Resampling: Lanczos algorithm (highest quality)
 - Transparency: Preserved for PNG, white background for JPEG
 
 ### Batch Processing (MCP Server Only)
+
 Batch operations are available exclusively through the MCP server for AI assistants:
+
 - `batch_resize` - Concurrent image resizing
 - `batch_compress` - Concurrent compression
 - `batch_convert` - Concurrent format conversion
@@ -383,24 +414,28 @@ CLI users can use shell scripts with `find` + `xargs` for parallel processing.
 ## Use Cases
 
 ### For Designers & Artists
+
 - Rapid prototyping of visual concepts
 - Generate variations of ideas
 - Quick image editing and optimization
 - Batch resize for different platforms
 
 ### For Developers
+
 - Generate placeholder images for apps
 - Automate image processing pipelines
 - Integrate AI generation into workflows
 - Test with reproducible images (seeds)
 
 ### For Content Creators
+
 - Create social media graphics
 - Generate blog post illustrations
 - Batch optimize images for web
 - Convert formats for different platforms
 
 ### For AI/ML Engineers
+
 - Generate training data
 - Create synthetic datasets
 - Automate image augmentation
@@ -419,6 +454,7 @@ There are two ways to install gimage for use with Claude Desktop. Choose based o
 **Use this if:** You want both CLI access AND MCP server functionality from a single installation.
 
 **Step 1: Install gimage via Homebrew**
+
 ```bash
 brew install apresai/tap/gimage
 gimage --version  # Verify installation
@@ -440,6 +476,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 ```
 
 **Why this method?**
+
 - ✅ Single installation serves both CLI and MCP
 - ✅ Easy updates: `brew upgrade apresai/tap/gimage`
 - ✅ Directly calls the `gimage` binary in your PATH
@@ -450,6 +487,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 **Use this if:** You're on Windows, don't use Homebrew, or only want MCP functionality (no CLI needed).
 
 **Step 1: Install via npm**
+
 ```bash
 npm install -g @apresai/gimage-mcp
 ```
@@ -457,6 +495,7 @@ npm install -g @apresai/gimage-mcp
 **Step 2: Configure Claude Desktop MCP**
 
 Edit your Claude Desktop config file:
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -473,6 +512,7 @@ Edit your Claude Desktop config file:
 ```
 
 **Why this method?**
+
 - ✅ Works on Windows (Homebrew method doesn't)
 - ✅ npm-based workflow (familiar to Node.js users)
 - ✅ `npx` automatically downloads/runs the correct version
@@ -480,6 +520,7 @@ Edit your Claude Desktop config file:
 - ⚠️ If you want CLI access too, you'll need to install via Homebrew separately
 
 **Configuration difference explained:**
+
 - **Homebrew**: Uses `"command": "gimage"` - directly calls the binary in your PATH
 - **npm**: Uses `"command": "npx"` - npx finds and runs the npm-installed package
 
@@ -490,6 +531,7 @@ Edit your Claude Desktop config file:
 **Prerequisites:** Install gimage via Homebrew first (see Method 1, Step 1).
 
 **One-command setup:**
+
 ```bash
 claude mcp add-json gimage '{"command": "gimage", "args": ["serve"]}'
 ```
@@ -513,6 +555,7 @@ gimage auth test gemini
 ```
 
 The MCP server automatically uses credentials from:
+
 1. **Environment variables** - `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, `GROK_API_KEY`, etc. (RECOMMENDED for security)
 2. **Config file** - `~/.gimage/config.md` (created by `gimage auth setup` commands)
 
@@ -533,46 +576,52 @@ After installation and authentication, restart Claude Desktop. You can then use 
 
 The MCP server exposes 10 tools for AI assistants:
 
-| Tool | Purpose |
-|------|---------|
-| `generate_image` | AI image generation from text |
-| `resize_image` | Resize to specific dimensions |
-| `scale_image` | Scale by factor (maintain aspect ratio) |
-| `crop_image` | Crop to specific region |
-| `compress_image` | Reduce file size with quality control |
-| `convert_image` | Convert between formats |
-| `batch_resize` | Resize multiple images concurrently |
-| `batch_compress` | Compress multiple images |
-| `batch_convert` | Convert multiple images to new format |
-| `list_models` | List available AI models |
+| Tool             | Purpose                                 |
+| ---------------- | --------------------------------------- |
+| `generate_image` | AI image generation from text           |
+| `resize_image`   | Resize to specific dimensions           |
+| `scale_image`    | Scale by factor (maintain aspect ratio) |
+| `crop_image`     | Crop to specific region                 |
+| `compress_image` | Reduce file size with quality control   |
+| `convert_image`  | Convert between formats                 |
+| `batch_resize`   | Resize multiple images concurrently     |
+| `batch_compress` | Compress multiple images                |
+| `batch_convert`  | Convert multiple images to new format   |
+| `list_models`    | List available AI models                |
 
 ### Troubleshooting MCP Server
 
 If the MCP server isn't working in Claude Desktop:
 
 1. **Verify gimage is installed and in PATH:**
+
    ```bash
    which gimage
    gimage --version
    ```
 
 2. **Test the serve command directly:**
+
    ```bash
    gimage serve --verbose
    ```
+
    This will show detailed logging to stderr. Press Ctrl+C to stop.
 
 3. **Verify API credentials are configured:**
+
    ```bash
    gimage auth status  # Check all configured credentials
    ```
 
 4. **Test image generation works outside MCP:**
+
    ```bash
    gimage generate "test image"
    ```
 
 5. **Check Claude Desktop logs** for error messages:
+
    - **macOS**: `~/Library/Logs/Claude/`
    - **Linux**: `~/.config/Claude/logs/`
 
@@ -600,6 +649,7 @@ For comprehensive guides and examples:
 See [COMMANDS.md](COMMANDS.md) for complete command reference and detailed usage examples.
 
 **Available commands**:
+
 - `generate` - AI image generation from text prompts
 - `resize` - Resize images to specific dimensions
 - `scale` - Scale images by a factor
@@ -611,6 +661,7 @@ See [COMMANDS.md](COMMANDS.md) for complete command reference and detailed usage
 - `tui` - Launch interactive terminal UI
 
 **Removed commands** (use alternatives):
+
 - `batch` - Use MCP server or shell scripts (see [Batch Processing](#batch-processing))
 - `config` - Use `auth` commands for configuration
 
@@ -662,6 +713,7 @@ resp, _ := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 ### Documentation
 
 Complete documentation, examples, and API reference:
+
 - **SDK Repository**: [github.com/apresai/gimage-go-sdk](https://github.com/apresai/gimage-go-sdk)
 - **GoDoc**: [pkg.go.dev/github.com/apresai/gimage-go-sdk](https://pkg.go.dev/github.com/apresai/gimage-go-sdk)
 - **Examples**: See the SDK repository for working examples
@@ -711,6 +763,7 @@ See [lambda.md](lambda.md) for manual deployment guide with AWS CLI.
 ### Deployment Tool
 
 The `gimage-deploy` CLI tool (separate project) provides complete deployment management:
+
 - One-command deployment to AWS Lambda
 - API Gateway configuration with API keys
 - Monitoring (logs, metrics, health checks)
@@ -723,40 +776,42 @@ See the `gimage-deploy` directory for the deployment management tool.
 
 All operations available via REST API:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/generate` | POST | AI image generation |
-| `/resize` | POST | Resize to dimensions |
-| `/scale` | POST | Scale by factor |
-| `/crop` | POST | Crop region |
-| `/compress` | POST | Compress with quality |
-| `/convert` | POST | Convert format |
-| `/batch` | POST | Process multiple images |
-| `/health` | GET | Health check |
-| `/docs` | GET | **Interactive Swagger UI documentation** |
-| `/openapi.yaml` | GET | OpenAPI specification |
+| Endpoint        | Method | Purpose                                  |
+| --------------- | ------ | ---------------------------------------- |
+| `/generate`     | POST   | AI image generation                      |
+| `/resize`       | POST   | Resize to dimensions                     |
+| `/scale`        | POST   | Scale by factor                          |
+| `/crop`         | POST   | Crop region                              |
+| `/compress`     | POST   | Compress with quality                    |
+| `/convert`      | POST   | Convert format                           |
+| `/batch`        | POST   | Process multiple images                  |
+| `/health`       | GET    | Health check                             |
+| `/docs`         | GET    | **Interactive Swagger UI documentation** |
+| `/openapi.yaml` | GET    | OpenAPI specification                    |
 
 **Try the API**: After deployment, visit `https://your-api-url/prod/docs` for interactive documentation!
 
 ### Integration Examples
 
 **TypeScript/JavaScript:**
+
 ```typescript
-const response = await fetch('https://your-api-url/generate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+const response = await fetch("https://your-api-url/generate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    prompt: 'a sunset over mountains',
-    size: '1024x1024',
-    response_format: 's3_url'
-  })
+    prompt: "a sunset over mountains",
+    size: "1024x1024",
+    response_format: "s3_url",
+  }),
 });
 
 const result = await response.json();
-console.log('Image URL:', result.s3_url);
+console.log("Image URL:", result.s3_url);
 ```
 
 **Python:**
+
 ```python
 import requests
 
@@ -771,6 +826,7 @@ print(f"Resized: {result['width']}x{result['height']}")
 ```
 
 **Go:**
+
 ```go
 client := gimage.NewClient("https://your-api-url", apiKey)
 result, err := client.GenerateImage(gimage.GenerateRequest{
@@ -828,11 +884,13 @@ make package-lambda
 ## Requirements
 
 ### CLI
+
 - **None!** Single static binary with zero dependencies
 - Works on: macOS, Linux, Windows (x86_64, ARM64)
 - No Python, no Node.js, no system libraries required
 
 ### Lambda API
+
 - AWS Account
 - AWS CLI configured
 - Node.js 20+ (for CDK deployment)
@@ -841,15 +899,18 @@ make package-lambda
 ## Support & Documentation
 
 ### CLI
+
 - **Full Command Reference**: [COMMANDS.md](COMMANDS.md)
 - **Configuration Guide**: See `gimage auth --help`
 
 ### Lambda API
+
 - **OpenAPI Specification**: [openapi.yaml](openapi.yaml)
 - **Integration Guide**: [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
 - **Deployment Guide**: [lambda.md](lambda.md)
 
 ### Community
+
 - **GitHub Issues**: https://github.com/apresai/gimage/issues
 - **Discussions**: https://github.com/apresai/gimage/discussions
 
@@ -860,6 +921,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Credits
 
 Built with:
+
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
 - [Imaging](https://github.com/disintegration/imaging) - Image processing
 - [Google Gen AI SDK](https://github.com/googleapis/go-genai) - Gemini API

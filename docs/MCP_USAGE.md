@@ -7,11 +7,13 @@ Complete guide to using the gimage MCP server with Claude and other AI assistant
 ### 1. Install gimage MCP server
 
 **Option A: npm (Recommended)**
+
 ```bash
 npm install -g @apresai/gimage-mcp
 ```
 
 **Option B: Homebrew**
+
 ```bash
 brew install apresai/tap/gimage
 ```
@@ -25,11 +27,13 @@ Download from [GitHub Releases](https://github.com/apresai/gimage/releases)
 Before using the MCP server, you need to set up authentication for AI image generation.
 
 **Recommended: Use environment variables** for better security:
+
 ```bash
 export GEMINI_API_KEY="your-api-key-here"
 ```
 
 **Alternative: Interactive setup**:
+
 ```bash
 # Check current authentication status
 gimage auth status
@@ -44,11 +48,13 @@ gimage auth test
 **Get your free API key**: https://aistudio.google.com/app/apikey
 
 The Gemini free tier includes:
+
 - 500 image generations per day (gemini-2.5-flash-image)
 - No credit card required
 - Note: Gemini 3 Pro is a paid model ($0.134-$0.24/image)
 
 **For advanced users**:
+
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
 - **AWS Bedrock**: 4 authentication modes (Bearer Token/Access Keys/Profile/IAM Role)
 - **xAI Grok**: `GROK_API_KEY` environment variable (Aurora-powered, ~$0.07/image)
@@ -60,6 +66,7 @@ See [Authentication Guide](../README.md#configuration) for complete details.
 Edit your Claude Desktop MCP configuration file:
 
 **Configuration File Locations:**
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -99,11 +106,13 @@ Quit Claude Desktop completely and reopen it. The MCP server will start automati
 Try these prompts in Claude:
 
 **Image Generation:**
+
 - "Generate an image of a sunset over mountains"
 - "Create a photorealistic portrait of a wise old wizard"
 - "Generate an anime-style image of cherry blossoms in spring"
 
 **Image Processing:**
+
 - "Resize photo.jpg to 800x600 pixels"
 - "Compress all images in my photos folder to save space"
 - "Convert image.png to WebP format for web use"
@@ -117,19 +126,21 @@ Try these prompts in Claude:
 Generate stunning images from text descriptions using state-of-the-art AI models.
 
 **Capabilities:**
+
 - **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas
 - **Size options**: From 256x256 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
 - **Advanced controls**:
-  - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+  - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
   - Native resolution (Gemini 3 Pro: 1K, 2K, 4K)
   - Output format (Vertex AI: PNG, JPEG, WebP)
   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
   - Batch generation (1-5 images at once)
 
 **Example Prompts:**
+
 ```
 "Generate a 1024x1024 photorealistic image of a medieval castle on a hill"
 "Create an artistic interpretation of a futuristic city at night"
@@ -144,18 +155,22 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 ### 🖼️ Image Processing
 
 #### Resize
+
 Change image dimensions to exact pixel values.
 
 **Example Prompts:**
+
 ```
 "Resize landscape.jpg to 1920x1080"
 "Make photo.png exactly 800 pixels wide and 600 pixels tall"
 ```
 
 #### Scale
+
 Resize image proportionally by a factor.
 
 **Example Prompts:**
+
 ```
 "Scale photo.jpg to half its size"
 "Make image.png twice as large"
@@ -163,27 +178,33 @@ Resize image proportionally by a factor.
 ```
 
 #### Crop
+
 Extract a specific region from an image.
 
 **Example Prompts:**
+
 ```
 "Crop photo.jpg starting at position (100, 100) with width 800 and height 600"
 "Extract a 500x500 square from the center of the image"
 ```
 
 #### Compress
+
 Reduce file size while maintaining quality.
 
 **Example Prompts:**
+
 ```
 "Compress photo.jpg to 85% quality to save space"
 "Reduce the file size of all images in this directory"
 ```
 
 #### Convert
+
 Change image format (PNG, JPG, WebP, GIF, TIFF, BMP).
 
 **Example Prompts:**
+
 ```
 "Convert photo.png to JPEG format"
 "Change all images to WebP for better web performance"
@@ -194,6 +215,7 @@ Change image format (PNG, JPG, WebP, GIF, TIFF, BMP).
 Process multiple images concurrently for efficient workflows.
 
 **Example Prompts:**
+
 ```
 "Resize all images in the vacation-photos folder to 1920x1080"
 "Compress every image in my-photos directory to 85% quality"
@@ -201,6 +223,7 @@ Process multiple images concurrently for efficient workflows.
 ```
 
 **Features:**
+
 - Concurrent processing with multiple CPU cores
 - Progress reporting
 - Error handling (continues even if some files fail)
@@ -215,6 +238,7 @@ Process multiple images concurrently for efficient workflows.
 **Scenario**: You have a folder of photos that need to be optimized for web use.
 
 **Prompt**:
+
 ```
 "I have photos in the 'website-images' folder. Please:
 1. Resize them all to a maximum of 1920x1080
@@ -230,6 +254,7 @@ Claude will execute these operations in sequence.
 **Scenario**: Prepare an image for Instagram.
 
 **Prompt**:
+
 ```
 "Take photo.jpg and prepare it for Instagram:
 - Crop it to a square (1080x1080) from the center
@@ -242,6 +267,7 @@ Save it as instagram.jpg"
 **Scenario**: Generate multiple sizes of a product image.
 
 **Prompt**:
+
 ```
 "I have product.jpg. Create three versions:
 1. Large: 1200x1200 (save as product-large.jpg)
@@ -255,6 +281,7 @@ All should be compressed to 90% quality"
 **Scenario**: Generate multiple variations of an image.
 
 **Prompt**:
+
 ```
 "Generate 3 different versions of a fantasy landscape:
 1. A photorealistic mountain scene with a lake
@@ -274,23 +301,29 @@ Use 1024x1024 size for all"
 **Solutions**:
 
 1. **Verify gimage is installed**
+
    ```bash
    which gimage
    ```
+
    Should show the path to gimage binary.
 
 2. **Test manual startup**
+
    ```bash
    gimage serve
    ```
+
    Should start without errors. Press Ctrl+C to stop.
 
 3. **Check Claude Desktop configuration**
+
    - Verify JSON syntax is correct
    - Ensure file path matches your system
    - Check for typos in command/args
 
 4. **Restart Claude Desktop**
+
    - Quit completely (not just close window)
    - Reopen application
 
@@ -305,12 +338,15 @@ Use 1024x1024 size for all"
 **Solutions**:
 
 1. **Check authentication status**
+
    ```bash
    gimage auth status
    ```
+
    This shows which credentials are configured and their sources.
 
 2. **Verify API key is configured**
+
    ```bash
    # Use interactive setup
    gimage auth setup
@@ -320,18 +356,23 @@ Use 1024x1024 size for all"
    ```
 
 3. **Test credentials**
+
    ```bash
    gimage auth test
    ```
+
    This makes real API calls to verify your credentials work.
 
 4. **Test generation manually**
+
    ```bash
    gimage generate "test image"
    ```
+
    If this works, MCP server should work too.
 
 5. **Check API key validity**
+
    - Ensure key hasn't expired
    - Verify it's correctly copied (no extra spaces)
    - Get a new key if needed: https://aistudio.google.com/app/apikey
@@ -347,11 +388,13 @@ Use 1024x1024 size for all"
 **Solutions**:
 
 1. **Check file permissions**
+
    ```bash
    ls -la /path/to/image.jpg
    ```
 
 2. **Ensure write access to output directory**
+
    ```bash
    mkdir -p output-folder
    chmod 755 output-folder
@@ -401,18 +444,22 @@ export VERTEX_PROJECT="your-gcp-project"
 ### Using Different AI Models
 
 **Gemini Models**:
+
 - `gemini-3-pro-image-preview` (default, native 4K, sharp text, $0.134-$0.24/image)
 - `gemini-2.5-flash-image` (FREE, 500/day, up to 1024x1024)
 - `gemini-2.0-flash-preview-image-generation`
 
 **Vertex AI Models** (Premium Quality):
+
 - `imagen-4` (highest quality, $0.04/image, up to 2048x2048)
 - `imagen-3.0-generate-002` ($0.04/image)
 
 **AWS Bedrock Models**:
+
 - `amazon.nova-canvas-v1:0` ($0.04-$0.08/image, up to 1408x1408)
 
 **Examples**:
+
 ```
 "Generate an image using Imagen 4 model with 2048x2048 resolution showing a hyper-realistic dragon"
 "Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
@@ -451,22 +498,27 @@ Claude can chain multiple operations:
 ### Image Generation
 
 1. **Be specific** - Detailed prompts produce better results
+
    - ✅ "A photorealistic sunset over mountain peaks with orange and purple sky, reflection in a calm lake"
    - ❌ "Sunset"
 
 2. **Use style keywords** - Specify the artistic style
+
    - "photorealistic", "artistic", "anime", "painting", "sketch", etc.
 
 3. **Use negative prompts** - Exclude unwanted elements
+
    - "Generate a forest scene, but avoid showing any people, buildings, or modern objects"
 
 4. **Try different models** - Each has strengths
+
    - Gemini 2.5 Flash: FREE tier, fast, great for quick iterations
    - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
    - Imagen 4: Highest quality photo-realistic images, output format control
    - Nova Canvas: AWS integration, CFG scale for creativity control
 
 5. **Use provider-specific features**:
+
    - Gemini 3 Pro: Aspect ratio (16:9 for landscapes) and native resolution (4K for detail)
    - Vertex AI: Output format (WebP for web optimization)
    - Bedrock: CFG scale (higher values for more creative/abstract results)
@@ -478,15 +530,18 @@ Claude can chain multiple operations:
 ### Image Processing
 
 1. **Know your target** - Understand final use case
+
    - Web: 1920x1080 or smaller, WebP format, 85% quality
    - Print: Larger sizes, PNG/TIFF, 95-100% quality
    - Mobile: 750x1334, 80% quality
 
 2. **Batch similar operations** - More efficient
+
    - Process all images in a folder at once
    - Use consistent settings across related images
 
 3. **Preserve originals** - Always work on copies
+
    - Use explicit output paths
    - Create separate directories for processed images
 

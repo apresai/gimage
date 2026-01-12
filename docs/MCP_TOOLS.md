@@ -27,24 +27,25 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 ### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `prompt` | string | Yes | - | Text description of the image to generate |
-| `output` | string | No | Auto-generated | Output file path |
-| `size` | string | No | "1024x1024" | Image dimensions |
-| `model` | string | No | "gemini-3-pro-image-preview" | AI model to use |
-| `image_size` | string | No | - | Native resolution for Gemini 3 Pro: "1K", "2K", or "4K" |
-| `aspect_ratio` | string | No | - | Aspect ratio for Gemini 3 Pro: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3" |
-| `style` | string | No | - | Image style (photorealistic, artistic, anime) |
-| `negative` | string | No | - | Negative prompt (what to exclude) |
-| `seed` | integer | No | - | Random seed for reproducibility |
-| `cfg_scale` | float | No | - | CFG scale for Bedrock (1.0-10.0, higher = more creative) |
-| `count` | integer | No | 1 | Number of images to generate (1-5) |
-| `output_format` | string | No | - | Output format for Vertex AI: "png", "jpeg", or "webp" |
+| Parameter       | Type    | Required | Default                      | Description                                                                                    |
+| --------------- | ------- | -------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `prompt`        | string  | Yes      | -                            | Text description of the image to generate                                                      |
+| `output`        | string  | No       | Auto-generated               | Output file path                                                                               |
+| `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
+| `model`         | string  | No       | "gemini-3-pro-image-preview" | AI model to use                                                                                |
+| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3 Pro: "1K", "2K", or "4K"                                        |
+| `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3 Pro: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
+| `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
+| `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
+| `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
+| `cfg_scale`     | float   | No       | -                            | CFG scale for Bedrock (1.0-10.0, higher = more creative)                                       |
+| `count`         | integer | No       | 1                            | Number of images to generate (1-5)                                                             |
+| `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
 
 ### Supported Sizes
 
 **Gemini & Vertex AI:**
+
 - `256x256`
 - `512x512`
 - `1024x1024` (default)
@@ -53,6 +54,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - `2048x2048` (Vertex AI only)
 
 **AWS Bedrock (Nova Canvas):**
+
 - `1024x1024` (1:1 ratio)
 - `1280x720` (16:9 landscape)
 - `720x1280` (9:16 portrait)
@@ -65,18 +67,22 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 ### Supported Models
 
 **Google Gemini API:**
+
 - **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
 - **gemini-2.5-flash-image** (FREE, 500 images/day, up to 1024x1024)
 - **gemini-2.0-flash-preview-image-generation**
 
 **Google Vertex AI:**
+
 - **imagen-4** (highest quality, $0.04/image, up to 2048x2048)
 - **imagen-3.0-generate-002** (Imagen 3, $0.04/image)
 
 **AWS Bedrock:**
+
 - **amazon.nova-canvas-v1:0** (Nova Canvas, $0.04 for <=1024x1024, $0.08 for larger, up to 1408x1408)
 
 **xAI Grok:**
+
 - **grok-2-image** (Aurora-powered, ~$0.07/image, creative images)
   - Note: Grok does not support size, style, negative prompts, or seed parameters
 
@@ -95,66 +101,79 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 ### Examples
 
 **Basic generation (Gemini 3 Pro - default):**
+
 ```
 Generate an image of a sunset over mountains
 ```
 
 **With style:**
+
 ```
 Create a photorealistic image of a wise old wizard
 ```
 
 **Gemini 3 Pro with native 4K resolution:**
+
 ```
 Generate a 4K image of a detailed infographic about space exploration
 ```
 
 **Gemini 3 Pro with aspect ratio:**
+
 ```
 Generate a 16:9 wide landscape image of mountains at sunset
 ```
 
 **With size and negative prompt:**
+
 ```
 Generate a 1024x1792 image of a forest scene, but exclude any people or buildings
 ```
 
 **Vertex AI with output format:**
+
 ```
 Generate an image in WebP format of a modern architecture building
 ```
 
 **Bedrock with CFG scale:**
+
 ```
 Generate an abstract art image with CFG scale 10 for maximum creativity
 ```
 
 **Batch generation (multiple images):**
+
 ```
 Generate 3 variations of a fantasy castle
 ```
 
 **Reproducible generation:**
+
 ```
 Generate an image with seed 42 of abstract patterns
 ```
 
 **Using Gemini 2.5 Flash (FREE tier):**
+
 ```
 Generate an image of a cat using gemini-2.5-flash-image model to stay within free tier
 ```
 
 **AWS Bedrock Nova Canvas:**
+
 ```
 Generate an image of a futuristic cityscape using Nova Canvas model
 ```
 
 **Nova Canvas ultra-wide format:**
+
 ```
 Generate a 1173x640 panoramic landscape using Nova Canvas model
 ```
 
 **xAI Grok (Aurora-powered):**
+
 ```
 Generate a creative artistic image using grok-2-image model
 ```
@@ -171,12 +190,12 @@ Resizes an image to exact width and height using high-quality Lanczos resampling
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `input` | string | Yes | Input image file path |
-| `width` | integer | Yes | Target width in pixels (minimum: 1) |
-| `height` | integer | Yes | Target height in pixels (minimum: 1) |
-| `output` | string | No | Output file path (default: auto-generated) |
+| Parameter | Type    | Required | Description                                |
+| --------- | ------- | -------- | ------------------------------------------ |
+| `input`   | string  | Yes      | Input image file path                      |
+| `width`   | integer | Yes      | Target width in pixels (minimum: 1)        |
+| `height`  | integer | Yes      | Target height in pixels (minimum: 1)       |
+| `output`  | string  | No       | Output file path (default: auto-generated) |
 
 ### Returns
 
@@ -208,11 +227,11 @@ Scales an image proportionally by a multiplication factor. Use this when you wan
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `input` | string | Yes | Input image file path |
-| `factor` | number | Yes | Scale factor (0.1 to 10.0) |
-| `output` | string | No | Output file path (default: auto-generated) |
+| Parameter | Type   | Required | Description                                |
+| --------- | ------ | -------- | ------------------------------------------ |
+| `input`   | string | Yes      | Input image file path                      |
+| `factor`  | number | Yes      | Scale factor (0.1 to 10.0)                 |
+| `output`  | string | No       | Output file path (default: auto-generated) |
 
 ### Scale Factor Examples
 
@@ -253,14 +272,14 @@ Extracts a rectangular region from an image. Specify the top-left corner coordin
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `input` | string | Yes | Input image file path |
-| `x` | integer | Yes | X coordinate of top-left corner (0 = left edge) |
-| `y` | integer | Yes | Y coordinate of top-left corner (0 = top edge) |
-| `width` | integer | Yes | Width of crop region in pixels (minimum: 1) |
-| `height` | integer | Yes | Height of crop region in pixels (minimum: 1) |
-| `output` | string | No | Output file path (default: auto-generated) |
+| Parameter | Type    | Required | Description                                     |
+| --------- | ------- | -------- | ----------------------------------------------- |
+| `input`   | string  | Yes      | Input image file path                           |
+| `x`       | integer | Yes      | X coordinate of top-left corner (0 = left edge) |
+| `y`       | integer | Yes      | Y coordinate of top-left corner (0 = top edge)  |
+| `width`   | integer | Yes      | Width of crop region in pixels (minimum: 1)     |
+| `height`  | integer | Yes      | Height of crop region in pixels (minimum: 1)    |
+| `output`  | string  | No       | Output file path (default: auto-generated)      |
 
 ### Returns
 
@@ -292,11 +311,11 @@ Reduces image file size while maintaining visual quality. Quality ranges from 1 
 
 ### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `input` | string | Yes | - | Input image file path |
-| `quality` | integer | No | 90 | Compression quality (1-100) |
-| `output` | string | No | Auto-generated | Output file path |
+| Parameter | Type    | Required | Default        | Description                 |
+| --------- | ------- | -------- | -------------- | --------------------------- |
+| `input`   | string  | Yes      | -              | Input image file path       |
+| `quality` | integer | No       | 90             | Compression quality (1-100) |
+| `output`  | string  | No       | Auto-generated | Output file path            |
 
 ### Recommended Quality Settings
 
@@ -343,11 +362,11 @@ Converts images between PNG, JPG/JPEG, WebP, GIF, TIFF, and BMP formats. Useful 
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `input` | string | Yes | Input image file path |
-| `format` | string | Yes | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
-| `output` | string | No | Output file path (default: auto-generated with new extension) |
+| Parameter | Type   | Required | Description                                                   |
+| --------- | ------ | -------- | ------------------------------------------------------------- |
+| `input`   | string | Yes      | Input image file path                                         |
+| `format`  | string | Yes      | Target format (png, jpg, jpeg, webp, gif, tiff, bmp)          |
+| `output`  | string | No       | Output file path (default: auto-generated with new extension) |
 
 ### Supported Formats
 
@@ -391,13 +410,13 @@ Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in a directory and re
 
 ### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `input_dir` | string | Yes | - | Input directory containing images |
-| `width` | integer | Yes | - | Target width in pixels (minimum: 1) |
-| `height` | integer | Yes | - | Target height in pixels (minimum: 1) |
-| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
-| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
+| Parameter    | Type    | Required | Default   | Description                                 |
+| ------------ | ------- | -------- | --------- | ------------------------------------------- |
+| `input_dir`  | string  | Yes      | -         | Input directory containing images           |
+| `width`      | integer | Yes      | -         | Target width in pixels (minimum: 1)         |
+| `height`     | integer | Yes      | -         | Target height in pixels (minimum: 1)        |
+| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist) |
+| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)           |
 
 ### Returns
 
@@ -434,12 +453,12 @@ Processes all image files in a directory with specified quality setting to reduc
 
 ### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `input_dir` | string | Yes | - | Input directory containing images |
-| `quality` | integer | No | 85 | Compression quality (1-100) |
-| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
-| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
+| Parameter    | Type    | Required | Default   | Description                                 |
+| ------------ | ------- | -------- | --------- | ------------------------------------------- |
+| `input_dir`  | string  | Yes      | -         | Input directory containing images           |
+| `quality`    | integer | No       | 85        | Compression quality (1-100)                 |
+| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist) |
+| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)           |
 
 ### Returns
 
@@ -476,12 +495,12 @@ Converts all image files in a directory to a specified format. Useful for conver
 
 ### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `input_dir` | string | Yes | - | Input directory containing images |
-| `format` | string | Yes | - | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
-| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
-| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
+| Parameter    | Type    | Required | Default   | Description                                          |
+| ------------ | ------- | -------- | --------- | ---------------------------------------------------- |
+| `input_dir`  | string  | Yes      | -         | Input directory containing images                    |
+| `format`     | string  | Yes      | -         | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
+| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist)          |
+| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)                    |
 
 ### Returns
 
@@ -533,7 +552,7 @@ None
       "supports_seed": true,
       "free_tier": true,
       "free_tier_limit": "500 images/day"
-    },
+    }
     // ... more models
   ],
   "total": 4
@@ -604,16 +623,20 @@ Error messages are designed to be clear and actionable:
 Different providers support different advanced parameters:
 
 **Gemini 3 Pro Only:**
+
 - `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
 - `image_size`: Native resolution upscaling (1K, 2K, 4K)
 
 **Vertex AI Only:**
+
 - `output_format`: Control output format (png, jpeg, webp)
 
 **Bedrock (Nova Canvas) Only:**
+
 - `cfg_scale`: Control creativity/adherence to prompt (1.0-10.0, higher = more creative)
 
 **All Providers:**
+
 - `negative`: Negative prompt (exclude unwanted elements)
 - `seed`: Random seed for reproducibility
 - `count`: Generate multiple images (1-5)
