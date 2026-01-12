@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Shared pricing helper for consistent variable pricing display across CLI and TUI
 - Dynamic provider registry for extensible backend management
+- Unified image size parsing (`internal/generate/size.go`) for consistent dimension handling across all providers
+- TUI now supports all CLI options including resize mode, making CLI and TUI feature-equivalent
+- Resize mode option (`--mode crop|fit`) for aspect-ratio-preserving resize operations
 
 ### Changed
 - Standardized CLI output format across all image generation providers (Gemini, Vertex AI, Bedrock, Grok)
 - Fixed Grok image generation reliability issues
+- Refactored resize command to strictly preserve aspect ratio with two modes: crop (fill and crop excess) and fit (fit within bounds)
+- Updated README with comprehensive TUI documentation, resize mode examples, and advanced features
 - Updated all Go dependencies to latest versions:
   - `google.golang.org/genai`: v1.40.0 → v1.41.0 (Google AI SDK)
   - `aws-sdk-go-v2`: v1.41.0 → v1.41.1 (and all sub-packages)

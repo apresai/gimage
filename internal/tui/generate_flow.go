@@ -80,6 +80,13 @@ type outputFormatOption struct {
 	label string
 }
 
+// Resize mode option
+type resizeModeOption struct {
+	value string
+	label string
+	desc  string
+}
+
 // GenerateFlowModel handles the multi-step image generation flow
 type GenerateFlowModel struct {
 	currentStep GenerateStep
@@ -114,9 +121,11 @@ type GenerateFlowModel struct {
 	selectedImageSize    int
 	outputFormats        []outputFormatOption
 	selectedOutputFormat int
+	resizeModes          []resizeModeOption
+	selectedResizeMode   int
 	cfgScaleInput        textinput.Model
 	countInput           textinput.Model
-	advancedFocusIndex   int // Track which field is focused (0-6)
+	advancedFocusIndex   int // Track which field is focused (0-7)
 
 	// Step 6: Output path
 	outputInput textinput.Model
@@ -282,6 +291,12 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		{"webp", "WebP (modern)"},
 	}
 
+	// Resize mode options
+	resizeModeOpts := []resizeModeOption{
+		{"crop", "Crop (default)", "Fill target size, crop excess"},
+		{"fit", "Fit", "Fit within target, may add padding"},
+	}
+
 	// Initialize provider retry input
 	providerRetryInput := textinput.New()
 	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/imagen-4"
@@ -309,6 +324,8 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		selectedImageSize:    0,
 		outputFormats:        outputFormatOpts,
 		selectedOutputFormat: 0,
+		resizeModes:          resizeModeOpts,
+		selectedResizeMode:   0,
 		cfgScaleInput:        cfgScaleInput,
 		countInput:           countInput,
 		advancedFocusIndex:   0,
@@ -778,13 +795,13 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 		case "tab", "down", "j":
 			// Move to next field
 			m.blurAllAdvancedInputs()
-			m.advancedFocusIndex = (m.advancedFocusIndex + 1) % 7
+			m.advancedFocusIndex = (m.advancedFocusIndex + 1) % 8
 			m.focusAdvancedInput()
 			return m, textinput.Blink
 		case "shift+tab", "up", "k":
 			// Move to previous field
 			m.blurAllAdvancedInputs()
-			m.advancedFocusIndex = (m.advancedFocusIndex - 1 + 7) % 7
+			m.advancedFocusIndex = (m.advancedFocusIndex - 1 + 8) % 8
 			m.focusAdvancedInput()
 			return m, textinput.Blink
 		case "enter":
@@ -801,6 +818,8 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 				m.selectedImageSize--
 			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat > 0 {
 				m.selectedOutputFormat--
+			} else if m.advancedFocusIndex == 5 && m.selectedResizeMode > 0 {
+				m.selectedResizeMode--
 			}
 			return m, nil
 		case "right", "l":
@@ -811,6 +830,8 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 				m.selectedImageSize++
 			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat < len(m.outputFormats)-1 {
 				m.selectedOutputFormat++
+			} else if m.advancedFocusIndex == 5 && m.selectedResizeMode < len(m.resizeModes)-1 {
+				m.selectedResizeMode++
 			}
 			return m, nil
 		}
@@ -822,9 +843,9 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 		m.negativePromptInput, cmd = m.negativePromptInput.Update(msg)
 	case 1:
 		m.seedInput, cmd = m.seedInput.Update(msg)
-	case 5:
-		m.cfgScaleInput, cmd = m.cfgScaleInput.Update(msg)
 	case 6:
+		m.cfgScaleInput, cmd = m.cfgScaleInput.Update(msg)
+	case 7:
 		m.countInput, cmd = m.countInput.Update(msg)
 	}
 
@@ -844,11 +865,11 @@ func (m *GenerateFlowModel) focusAdvancedInput() {
 		m.negativePromptInput.Focus()
 	case 1:
 		m.seedInput.Focus()
-	case 5:
-		m.cfgScaleInput.Focus()
 	case 6:
+		m.cfgScaleInput.Focus()
+	case 7:
 		m.countInput.Focus()
-		// 2, 3, 4 are pickers - no focus needed
+		// 2, 3, 4, 5 are pickers - no focus needed
 	}
 }
 
@@ -918,9 +939,18 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 		content += MutedStyle.Render("  Output Format: (N/A - Vertex AI only)") + "\n\n"
 	}
 
-	// CFG Scale (Bedrock only)
+	// Resize Mode (all providers)
 	focusIndicator = "  "
 	if m.advancedFocusIndex == 5 {
+		focusIndicator = "> "
+	}
+	resizeModeValue := m.resizeModes[m.selectedResizeMode].label
+	content += focusIndicator + FormatKeyValue("Resize Mode", resizeModeValue) + "\n"
+	content += MutedStyle.Render("    ←/→ to change: "+m.resizeModes[m.selectedResizeMode].desc) + "\n\n"
+
+	// CFG Scale (Bedrock only)
+	focusIndicator = "  "
+	if m.advancedFocusIndex == 6 {
 		focusIndicator = "> "
 	}
 	if isBedrock {
@@ -932,7 +962,7 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 
 	// Number of Images (all providers)
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 6 {
+	if m.advancedFocusIndex == 7 {
 		focusIndicator = "> "
 	}
 	content += focusIndicator + FormatKeyValue("Count", m.countInput.View()) + "\n"
@@ -1041,6 +1071,10 @@ func (m *GenerateFlowModel) buildCommand() {
 	}
 	if m.countInput.Value() != "" && m.countInput.Value() != "1" {
 		cmdParts = append(cmdParts, fmt.Sprintf("--count %s", m.countInput.Value()))
+	}
+	// Only add resize-mode if not the default (crop)
+	if m.resizeModes[m.selectedResizeMode].value != "crop" && m.resizeModes[m.selectedResizeMode].value != "" {
+		cmdParts = append(cmdParts, fmt.Sprintf("--resize-mode %s", m.resizeModes[m.selectedResizeMode].value))
 	}
 
 	// Add output path
@@ -1564,6 +1598,7 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 			OutputFormat:   m.outputFormats[m.selectedOutputFormat].value,
 			CfgScale:       cfgScale,
 			NumberOfImages: count,
+			ResizeMode:     m.resizeModes[m.selectedResizeMode].value,
 		}
 
 		logger.LogDebug("TUI: Options built - Provider=%q, Model=%q, Size=%q, Style=%q, Seed=%d",

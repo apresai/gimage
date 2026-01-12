@@ -175,7 +175,10 @@ All image processing commands use explicit flags for clarity:
 
 ```bash
 # Resize to specific dimensions (strictly preserves aspect ratio)
-gimage resize --input photo.jpg --width 800 --height 600 --mode crop
+# --mode crop (default): fill target size, crop excess
+# --mode fit: fit within target, may have borders
+gimage resize --input photo.jpg --width 800 --height 600
+gimage resize --input photo.jpg --width 800 --height 600 --mode fit
 
 # Scale to 50% size
 gimage scale --input photo.jpg --factor 0.5
@@ -190,7 +193,7 @@ gimage compress --input photo.jpg --quality 85
 gimage convert --input photo.png --format jpg
 
 # Use --output to specify custom output path
-gimage resize --input photo.jpg --width 800 --height 600 --mode crop --output resized.jpg
+gimage resize --input photo.jpg --width 800 --height 600 --output resized.jpg
 
 # Add --verbose for detailed progress
 gimage convert --input photo.png --format webp --verbose
@@ -394,6 +397,21 @@ All processing operations preserve format by default, or you can specify output 
 - `photorealistic` - Realistic photos
 - `artistic` - Artistic interpretations
 - `anime` - Anime/manga style
+
+### Resize Modes
+
+When resizing images, aspect ratio is always preserved:
+
+- `crop` (default) - Fill target dimensions, crop any excess
+- `fit` - Fit entire image within target, may have borders
+
+```bash
+# Crop mode: 800x600 output, excess cropped
+gimage resize --input photo.jpg --width 800 --height 600 --mode crop
+
+# Fit mode: image fits within 800x600, preserving full image
+gimage resize --input photo.jpg --width 800 --height 600 --mode fit
+```
 
 ### Quality Settings
 
@@ -651,14 +669,14 @@ See [COMMANDS.md](COMMANDS.md) for complete command reference and detailed usage
 **Available commands**:
 
 - `generate` - AI image generation from text prompts
-- `resize` - Resize images to specific dimensions
+- `resize` - Resize images to specific dimensions (with crop/fit modes)
 - `scale` - Scale images by a factor
 - `crop` - Crop images to specific regions
 - `compress` - Compress images to reduce file size (JPG, WebP)
 - `convert` - Convert images between formats
 - `auth` - Configure and manage API credentials (setup, status, list, test)
 - `serve` - Start MCP server for Claude Desktop (includes batch operations)
-- `tui` - Launch interactive terminal UI
+- `tui` - Launch interactive terminal UI (supports all CLI options)
 
 **Removed commands** (use alternatives):
 
@@ -666,6 +684,33 @@ See [COMMANDS.md](COMMANDS.md) for complete command reference and detailed usage
 - `config` - Use `auth` commands for configuration
 
 Run `gimage [command] --help` for detailed usage of any command.
+
+### Interactive TUI
+
+Launch the interactive Terminal User Interface for a guided image generation experience:
+
+```bash
+gimage tui
+```
+
+**TUI Features:**
+
+- Step-by-step image generation workflow (8 steps)
+- Provider selection with pricing and auth status
+- All CLI options available: size, style, negative prompt, seed, aspect ratio, image size, output format, resize mode, CFG scale, count
+- Command preview before generation
+- Progress tracking and error handling
+
+**Workflow Steps:**
+
+1. Enter your prompt
+2. Select provider (Gemini, Vertex AI, Bedrock, Grok)
+3. Choose image size
+4. Select style (optional)
+5. Configure advanced options
+6. Set output path
+7. Review command
+8. Generate and view results
 
 ---
 
