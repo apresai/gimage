@@ -130,31 +130,28 @@ func TestBedrockRESTClient_buildRequest(t *testing.T) {
 			errContains: "prompt cannot be empty",
 		},
 		{
-			name:   "invalid dimensions - width too small",
+			name:   "dimensions auto-normalized - width too small becomes 512",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "256x1024",
 			},
-			wantErr:     true,
-			errContains: "invalid width",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid dimensions - height too large",
+			name:   "dimensions auto-normalized - height too large becomes 2048",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "1024x4096",
 			},
-			wantErr:     true,
-			errContains: "invalid height",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid dimensions - not multiple of 64",
+			name:   "dimensions auto-normalized - not multiple of 64 rounds up",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "1000x1024",
 			},
-			wantErr:     true,
-			errContains: "invalid width",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
 			name:   "seed out of range - too large",

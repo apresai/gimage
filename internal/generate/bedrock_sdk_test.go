@@ -113,58 +113,52 @@ func TestBedrockSDKClient_buildRequest(t *testing.T) {
 			errContains: "prompt cannot be empty",
 		},
 		{
-			name:   "invalid width - too small",
+			name:   "dimensions auto-normalized - width too small becomes 512",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "256x512",
 			},
-			wantErr:     true,
-			errContains: "invalid width",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid width - too large",
+			name:   "dimensions auto-normalized - width too large becomes 2048",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "4096x1024",
 			},
-			wantErr:     true,
-			errContains: "invalid width",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid width - not multiple of 64",
+			name:   "dimensions auto-normalized - width not multiple of 64 rounds up",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "1000x1024",
 			},
-			wantErr:     true,
-			errContains: "invalid width",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid height - too small",
+			name:   "dimensions auto-normalized - height too small becomes 512",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "512x256",
 			},
-			wantErr:     true,
-			errContains: "invalid height",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid height - too large",
+			name:   "dimensions auto-normalized - height too large becomes 2048",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "1024x4096",
 			},
-			wantErr:     true,
-			errContains: "invalid height",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
-			name:   "invalid height - not multiple of 64",
+			name:   "dimensions auto-normalized - height not multiple of 64 rounds up",
 			prompt: "test prompt",
 			options: models.GenerateOptions{
 				Size: "1024x1000",
 			},
-			wantErr:     true,
-			errContains: "invalid height",
+			wantErr: false, // NormalizeDimensions auto-corrects to valid values
 		},
 		{
 			name:   "seed too large",
