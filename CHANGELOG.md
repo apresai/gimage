@@ -7,25 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(empty - ready for next release)
+
+## [1.2.107] - 2026-01-25
+
 ### Added
-- Shared pricing helper for consistent variable pricing display across CLI and TUI
-- Dynamic provider registry for extensible backend management
-- Unified image size parsing (`internal/generate/size.go`) for consistent dimension handling across all providers
-- TUI now supports all CLI options including resize mode, making CLI and TUI feature-equivalent
-- Resize mode option (`--mode crop|fit`) for aspect-ratio-preserving resize operations
+- Unified image size handling with aspect-ratio-preserving resize mode across all components
+- Type coercion for image dimensions in MCP tools (auto-converts strings to integers)
+- Shared pricing helper for consistent display of variable pricing across providers
+- Comprehensive test suite for MCP resize tool (234 test cases, 100% coverage)
+- Helper functions for MCP tool dimension parsing and validation
 
 ### Changed
-- Standardized CLI output format across all image generation providers (Gemini, Vertex AI, Bedrock, Grok)
-- Fixed Grok image generation reliability issues
-- Refactored resize command to strictly preserve aspect ratio with two modes: crop (fill and crop excess) and fit (fit within bounds)
-- Updated README with comprehensive TUI documentation, resize mode examples, and advanced features
-- Updated all Go dependencies to latest versions:
-  - `google.golang.org/genai`: v1.40.0 → v1.41.0 (Google AI SDK)
-  - `aws-sdk-go-v2`: v1.41.0 → v1.41.1 (and all sub-packages)
-  - `golang.org/x/term`: v0.38.0 → v0.39.0
-  - `golang.org/x/text`: v0.32.0 → v0.33.0
-  - `golang.org/x/sys`: v0.39.0 → v0.40.0
-  - `googleapis/enterprise-certificate-proxy`: v0.3.7 → v0.3.9
+- Standardized CLI output format across all image generation providers (Gemini, Vertex, Bedrock, Grok)
+- Updated resize functionality in TUI, CLI, MCP tools, and Lambda handler to support aspect-ratio preservation
+- Improved MCP tool documentation with clearer examples and type information
+- Updated dependencies to latest versions
+- Consolidated documentation by streamlining mcp.md content
+
+### Fixed
+- Resize mode parameter handling in MCP tools now properly validates allowed values
+- Image dimension validation now correctly handles both integer and string inputs
+
 
 ## [1.2.99] - 2025-12-28
 
