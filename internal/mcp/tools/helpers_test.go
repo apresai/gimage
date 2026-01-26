@@ -54,6 +54,199 @@ func TestGenerateOutputPath(t *testing.T) {
 	}
 }
 
+func TestCoerceToInt(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     interface{}
+		wantValue int
+		wantError bool
+	}{
+		// float64 (JSON default)
+		{name: "float64 positive", value: 100.0, wantValue: 100, wantError: false},
+		{name: "float64 with decimal", value: 100.7, wantValue: 100, wantError: false},
+		{name: "float64 zero", value: 0.0, wantValue: 0, wantError: false},
+		{name: "float64 negative", value: -50.0, wantValue: -50, wantError: false},
+
+		// string (LLM common behavior)
+		{name: "string integer", value: "100", wantValue: 100, wantError: false},
+		{name: "string zero", value: "0", wantValue: 0, wantError: false},
+		{name: "string negative", value: "-50", wantValue: -50, wantError: false},
+		{name: "string float", value: "100.7", wantValue: 100, wantError: false},
+		{name: "string invalid", value: "abc", wantValue: 0, wantError: true},
+		{name: "string empty", value: "", wantValue: 0, wantError: true},
+
+		// int
+		{name: "int positive", value: int(100), wantValue: 100, wantError: false},
+		{name: "int zero", value: int(0), wantValue: 0, wantError: false},
+
+		// int64
+		{name: "int64 positive", value: int64(100), wantValue: 100, wantError: false},
+
+		// nil
+		{name: "nil value", value: nil, wantValue: 0, wantError: true},
+
+		// invalid types
+		{name: "bool type", value: true, wantValue: 0, wantError: true},
+		{name: "slice type", value: []int{1, 2, 3}, wantValue: 0, wantError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := coerceToInt(tt.value, "test")
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.wantValue {
+					t.Errorf("Expected %d, got %d", tt.wantValue, result)
+				}
+			}
+		})
+	}
+}
+
+func TestCoerceToFloat(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     interface{}
+		wantValue float64
+		wantError bool
+	}{
+		// float64 (JSON default)
+		{name: "float64 positive", value: 0.5, wantValue: 0.5, wantError: false},
+		{name: "float64 integer", value: 2.0, wantValue: 2.0, wantError: false},
+		{name: "float64 zero", value: 0.0, wantValue: 0.0, wantError: false},
+
+		// string (LLM common behavior)
+		{name: "string float", value: "0.5", wantValue: 0.5, wantError: false},
+		{name: "string integer", value: "2", wantValue: 2.0, wantError: false},
+		{name: "string zero", value: "0", wantValue: 0.0, wantError: false},
+		{name: "string invalid", value: "abc", wantValue: 0, wantError: true},
+		{name: "string empty", value: "", wantValue: 0, wantError: true},
+
+		// int
+		{name: "int positive", value: int(2), wantValue: 2.0, wantError: false},
+
+		// int64
+		{name: "int64 positive", value: int64(2), wantValue: 2.0, wantError: false},
+
+		// nil
+		{name: "nil value", value: nil, wantValue: 0, wantError: true},
+
+		// invalid types
+		{name: "bool type", value: true, wantValue: 0, wantError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := coerceToFloat(tt.value, "test")
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.wantValue {
+					t.Errorf("Expected %f, got %f", tt.wantValue, result)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateNonNegativeInt(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     interface{}
+		wantValue int
+		wantError bool
+	}{
+		// Valid values
+		{name: "zero", value: 0.0, wantValue: 0, wantError: false},
+		{name: "positive", value: 100.0, wantValue: 100, wantError: false},
+		{name: "string zero", value: "0", wantValue: 0, wantError: false},
+		{name: "string positive", value: "100", wantValue: 100, wantError: false},
+
+		// Invalid values
+		{name: "negative", value: -1.0, wantValue: 0, wantError: true},
+		{name: "string negative", value: "-1", wantValue: 0, wantError: true},
+		{name: "nil", value: nil, wantValue: 0, wantError: true},
+		{name: "invalid string", value: "abc", wantValue: 0, wantError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := validateNonNegativeInt(tt.value, "test")
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.wantValue {
+					t.Errorf("Expected %d, got %d", tt.wantValue, result)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateFloatInRange(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     interface{}
+		min       float64
+		max       float64
+		wantValue float64
+		wantError bool
+	}{
+		// Valid values in range [0.1, 10.0]
+		{name: "middle of range", value: 5.0, min: 0.1, max: 10.0, wantValue: 5.0, wantError: false},
+		{name: "at min", value: 0.1, min: 0.1, max: 10.0, wantValue: 0.1, wantError: false},
+		{name: "at max", value: 10.0, min: 0.1, max: 10.0, wantValue: 10.0, wantError: false},
+		{name: "string value", value: "0.5", min: 0.1, max: 10.0, wantValue: 0.5, wantError: false},
+
+		// Out of range
+		{name: "below min", value: 0.05, min: 0.1, max: 10.0, wantValue: 0, wantError: true},
+		{name: "above max", value: 15.0, min: 0.1, max: 10.0, wantValue: 0, wantError: true},
+		{name: "string below min", value: "0.05", min: 0.1, max: 10.0, wantValue: 0, wantError: true},
+
+		// Invalid values
+		{name: "nil", value: nil, min: 0.1, max: 10.0, wantValue: 0, wantError: true},
+		{name: "invalid string", value: "abc", min: 0.1, max: 10.0, wantValue: 0, wantError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := validateFloatInRange(tt.value, "test", tt.min, tt.max)
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if result != tt.wantValue {
+					t.Errorf("Expected %f, got %f", tt.wantValue, result)
+				}
+			}
+		})
+	}
+}
+
 func TestValidatePositiveInt(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -101,6 +294,28 @@ func TestValidatePositiveInt(t *testing.T) {
 			name:      "invalid type",
 			args:      map[string]interface{}{"value": "not a number"},
 			key:       "value",
+			wantValue: 0,
+			wantError: true,
+		},
+		// NEW: String type coercion tests
+		{
+			name:      "string integer",
+			args:      map[string]interface{}{"width": "800"},
+			key:       "width",
+			wantValue: 800,
+			wantError: false,
+		},
+		{
+			name:      "string float",
+			args:      map[string]interface{}{"height": "600.5"},
+			key:       "height",
+			wantValue: 600,
+			wantError: false,
+		},
+		{
+			name:      "string zero is not positive",
+			args:      map[string]interface{}{"size": "0"},
+			key:       "size",
 			wantValue: 0,
 			wantError: true,
 		},

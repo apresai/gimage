@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"image"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,7 +18,7 @@ import (
 func RegisterBatchResizeTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "batch_resize",
-		Description: "Resize multiple images in a directory concurrently. Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in the input directory and saves resized versions to the output directory. Uses parallel workers for fast processing of large batches.",
+		Description: "Resize multiple images in a directory concurrently. Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in the input directory and saves resized versions to the output directory. Uses parallel workers for fast processing of large batches. Supports three modes: 'crop' (default) preserves aspect ratio by filling and cropping, 'fit' preserves aspect ratio by fitting within bounds, 'stretch' forces exact dimensions.",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -34,6 +35,12 @@ func RegisterBatchResizeTool(server *mcp.MCPServer) {
 					"type":        "integer",
 					"description": "Target height in pixels for all images",
 					"minimum":     1,
+				},
+				"mode": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"crop", "fit", "stretch"},
+					"description": "Resize mode: 'crop' (default) preserves aspect ratio by filling and cropping, 'fit' preserves aspect ratio by fitting within bounds, 'stretch' forces exact dimensions",
+					"default":     "crop",
 				},
 				"output_dir": map[string]interface{}{
 					"type":        "string",
@@ -168,14 +175,19 @@ func batchProcessImages(args map[string]interface{}, operation string) (map[stri
 		return nil, fmt.Errorf("output directory validation failed: %w", err)
 	}
 
-	// Determine number of workers
+	// Determine number of workers (accepts string or number)
 	workers := runtime.NumCPU()
-	if workersVal, ok := args["workers"].(float64); ok {
-		workers = int(workersVal)
-		if workers < 1 {
+	if args["workers"] != nil {
+		workersVal, wErr := coerceToInt(args["workers"], "workers")
+		if wErr != nil {
+			return nil, wErr
+		}
+		if workersVal < 1 {
 			workers = 1
-		} else if workers > 16 {
+		} else if workersVal > 16 {
 			workers = 16
+		} else {
+			workers = workersVal
 		}
 	}
 
@@ -251,12 +263,18 @@ func batchProcessImages(args map[string]interface{}, operation string) (map[stri
 			case "resize":
 				width, _ := validatePositiveInt(args["width"], "width")
 				height, _ := validatePositiveInt(args["height"], "height")
-				err = processResize(inputPath, outputPath, width, height)
+				mode := "crop" // default mode
+				if modeArg, ok := args["mode"].(string); ok && modeArg != "" {
+					mode = modeArg
+				}
+				err = processResize(inputPath, outputPath, width, height, mode)
 
 			case "compress":
 				quality := 85
-				if qualityVal, ok := args["quality"].(float64); ok {
-					quality = int(qualityVal)
+				if args["quality"] != nil {
+					if qualityVal, qErr := coerceToInt(args["quality"], "quality"); qErr == nil {
+						quality = qualityVal
+					}
 				}
 				err = processCompress(inputPath, outputPath, quality)
 				if err == nil {
@@ -312,12 +330,22 @@ func batchProcessImages(args map[string]interface{}, operation string) (map[stri
 	return result, nil
 }
 
-func processResize(input, output string, width, height int) error {
+func processResize(input, output string, width, height int, mode string) error {
 	img, err := loadImage(input)
 	if err != nil {
 		return err
 	}
-	resized := imaging.Resize(img, width, height, imaging.Lanczos)
+
+	var resized image.Image
+	switch mode {
+	case "fit":
+		resized = imaging.Fit(img, width, height, imaging.Lanczos)
+	case "stretch":
+		resized = imaging.Resize(img, width, height, imaging.Lanczos)
+	default: // "crop"
+		resized = imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+	}
+
 	return saveImage(resized, output)
 }
 

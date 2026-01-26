@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,16 +51,97 @@ func getFileSize(path string) (int64, error) {
 	return info.Size(), nil
 }
 
-// validatePositiveInt validates that a value is a positive integer
+// coerceToInt converts various numeric types to int.
+// Accepts: float64 (JSON default), string, int, int64.
+// This allows LLMs to pass numbers as strings (e.g., "20" instead of 20).
+func coerceToInt(value interface{}, name string) (int, error) {
+	if value == nil {
+		return 0, fmt.Errorf("%s is required", name)
+	}
+
+	switch v := value.(type) {
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case string:
+		// Try to parse as integer first, then as float
+		if i, err := strconv.Atoi(v); err == nil {
+			return i, nil
+		}
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return int(f), nil
+		}
+		return 0, fmt.Errorf("%s must be a number, got string: %q", name, v)
+	default:
+		return 0, fmt.Errorf("%s must be a number, got %T", name, value)
+	}
+}
+
+// coerceToFloat converts various numeric types to float64.
+// Accepts: float64 (JSON default), string, int, int64.
+// This allows LLMs to pass numbers as strings (e.g., "0.5" instead of 0.5).
+func coerceToFloat(value interface{}, name string) (float64, error) {
+	if value == nil {
+		return 0, fmt.Errorf("%s is required", name)
+	}
+
+	switch v := value.(type) {
+	case float64:
+		return v, nil
+	case int:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case string:
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return f, nil
+		}
+		return 0, fmt.Errorf("%s must be a number, got string: %q", name, v)
+	default:
+		return 0, fmt.Errorf("%s must be a number, got %T", name, value)
+	}
+}
+
+// validatePositiveInt validates that a value is a positive integer.
+// Uses coerceToInt to accept various numeric types including strings.
 func validatePositiveInt(value interface{}, name string) (int, error) {
-	num, ok := value.(float64) // JSON numbers are float64
-	if !ok {
-		return 0, fmt.Errorf("%s must be a number", name)
+	num, err := coerceToInt(value, name)
+	if err != nil {
+		return 0, err
 	}
 	if num < 1 {
 		return 0, fmt.Errorf("%s must be positive", name)
 	}
-	return int(num), nil
+	return num, nil
+}
+
+// validateNonNegativeInt validates that a value is a non-negative integer (0 or greater).
+// Used for coordinates like x, y which can be 0.
+func validateNonNegativeInt(value interface{}, name string) (int, error) {
+	num, err := coerceToInt(value, name)
+	if err != nil {
+		return 0, err
+	}
+	if num < 0 {
+		return 0, fmt.Errorf("%s must be non-negative", name)
+	}
+	return num, nil
+}
+
+// validateFloatInRange validates that a value is a float within a specified range.
+// Used for scale factors, cfg_scale, etc.
+func validateFloatInRange(value interface{}, name string, min, max float64) (float64, error) {
+	num, err := coerceToFloat(value, name)
+	if err != nil {
+		return 0, err
+	}
+	if num < min || num > max {
+		return 0, fmt.Errorf("%s must be between %.1f and %.1f", name, min, max)
+	}
+	return num, nil
 }
 
 // validateString validates that a value is a non-empty string

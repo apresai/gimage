@@ -66,31 +66,15 @@ func RegisterCropImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("input validation failed: %w", err)
 			}
 
-			// Validate coordinates and dimensions
-			x, err := validatePositiveInt(args["x"], "x")
+			// Validate coordinates (can be 0) and dimensions (must be positive)
+			x, err := validateNonNegativeInt(args["x"], "x")
 			if err != nil {
-				// x can be 0, so check differently
-				xVal, ok := args["x"].(float64)
-				if !ok {
-					return nil, fmt.Errorf("x must be a number")
-				}
-				if xVal < 0 {
-					return nil, fmt.Errorf("x must be non-negative")
-				}
-				x = int(xVal)
+				return nil, err
 			}
 
-			y, err := validatePositiveInt(args["y"], "y")
+			y, err := validateNonNegativeInt(args["y"], "y")
 			if err != nil {
-				// y can be 0, so check differently
-				yVal, ok := args["y"].(float64)
-				if !ok {
-					return nil, fmt.Errorf("y must be a number")
-				}
-				if yVal < 0 {
-					return nil, fmt.Errorf("y must be non-negative")
-				}
-				y = int(yVal)
+				return nil, err
 			}
 
 			width, err := validatePositiveInt(args["width"], "width")

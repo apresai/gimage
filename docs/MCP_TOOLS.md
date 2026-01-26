@@ -191,16 +191,33 @@ Resize an image to specific dimensions.
 
 ### Description
 
-Resizes an image to exact width and height using high-quality Lanczos resampling. Note: Aspect ratio is NOT preserved unless dimensions match original ratio. Use `scale_image` if you want to maintain aspect ratio.
+Resizes an image to target width and height using high-quality Lanczos resampling. Supports three modes:
+- **crop** (default): Preserves aspect ratio by filling the target size and cropping excess from center. Best for thumbnails, avatars, and social media images.
+- **fit**: Preserves aspect ratio by fitting within target bounds. Result may be smaller than target dimensions. Best for constrained display areas.
+- **stretch**: Forces exact dimensions regardless of aspect ratio. May distort the image. Best for exact sizing requirements.
 
 ### Parameters
 
-| Parameter | Type    | Required | Description                                |
-| --------- | ------- | -------- | ------------------------------------------ |
-| `input`   | string  | Yes      | Input image file path                      |
-| `width`   | integer | Yes      | Target width in pixels (minimum: 1)        |
-| `height`  | integer | Yes      | Target height in pixels (minimum: 1)       |
-| `output`  | string  | No       | Output file path (default: auto-generated) |
+| Parameter | Type    | Required | Default | Description                                                                                                                                 |
+| --------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `input`   | string  | Yes      | -       | Input image file path                                                                                                                       |
+| `width`   | integer | Yes      | -       | Target width in pixels (minimum: 1)                                                                                                         |
+| `height`  | integer | Yes      | -       | Target height in pixels (minimum: 1)                                                                                                        |
+| `mode`    | string  | No       | "crop"  | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), or "stretch" (force exact dimensions)                                        |
+| `output`  | string  | No       | auto    | Output file path (default: auto-generated)                                                                                                  |
+
+### Resize Modes Explained
+
+| Mode    | Aspect Ratio | Output Size              | Use Case                       |
+| ------- | ------------ | ------------------------ | ------------------------------ |
+| crop    | Preserved    | Exact target dimensions  | Thumbnails, avatars, cards     |
+| fit     | Preserved    | Fits within target       | Galleries, constrained layouts |
+| stretch | Not preserved| Exact target dimensions  | Exact sizing, backgrounds      |
+
+**Example with 200x100 image (2:1 ratio) resized to 100x100 target:**
+- `crop`: 100x100 (scales height to 100, crops width to fit)
+- `fit`: 100x50 (fits 200x100 within 100x100, maintaining 2:1 ratio)
+- `stretch`: 100x100 (distorts from 2:1 to 1:1 ratio)
 
 ### Returns
 
@@ -209,15 +226,17 @@ Resizes an image to exact width and height using high-quality Lanczos resampling
   "success": true,
   "output_path": "/absolute/path/to/photo_resized.jpg",
   "original_size": "3000x2000",
-  "new_size": "800x600"
+  "new_size": "800x600",
+  "mode": "crop"
 }
 ```
 
 ### Examples
 
 ```
-Resize photo.jpg to 800x600 pixels
-Resize landscape.png to 1920x1080 and save as web-version.png
+Resize photo.jpg to 800x600 pixels (uses crop mode by default)
+Resize landscape.png to 1920x1080 using fit mode
+Resize avatar.jpg to 100x100 with stretch mode for exact dimensions
 ```
 
 ---
@@ -411,17 +430,18 @@ Resize multiple images concurrently.
 
 ### Description
 
-Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in a directory and resizes them to specified dimensions. Uses parallel workers for fast processing of large batches.
+Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in a directory and resizes them to specified dimensions. Uses parallel workers for fast processing of large batches. Supports the same three resize modes as `resize_image`: crop (default), fit, and stretch.
 
 ### Parameters
 
-| Parameter    | Type    | Required | Default   | Description                                 |
-| ------------ | ------- | -------- | --------- | ------------------------------------------- |
-| `input_dir`  | string  | Yes      | -         | Input directory containing images           |
-| `width`      | integer | Yes      | -         | Target width in pixels (minimum: 1)         |
-| `height`     | integer | Yes      | -         | Target height in pixels (minimum: 1)        |
-| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist) |
-| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)           |
+| Parameter    | Type    | Required | Default   | Description                                                             |
+| ------------ | ------- | -------- | --------- | ----------------------------------------------------------------------- |
+| `input_dir`  | string  | Yes      | -         | Input directory containing images                                       |
+| `width`      | integer | Yes      | -         | Target width in pixels (minimum: 1)                                     |
+| `height`     | integer | Yes      | -         | Target height in pixels (minimum: 1)                                    |
+| `mode`       | string  | No       | "crop"    | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), "stretch" |
+| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist)                             |
+| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)                                       |
 
 ### Returns
 
@@ -443,7 +463,8 @@ Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in a directory and re
 
 ```
 Resize all images in vacation-photos folder to 1920x1080, save to resized-photos
-Batch resize images in products/ to 600x600 using 8 workers
+Batch resize images in products/ to 600x600 using crop mode (default)
+Batch resize images in gallery/ to 800x600 using fit mode to preserve aspect ratios
 ```
 
 ---

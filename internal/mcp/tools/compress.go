@@ -52,13 +52,17 @@ func RegisterCompressImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("input validation failed: %w", err)
 			}
 
-			// Validate quality (default 90)
+			// Validate quality (default 90, accepts string or number)
 			quality := 90
-			if qualityVal, ok := args["quality"].(float64); ok {
-				quality = int(qualityVal)
-				if quality < 1 || quality > 100 {
+			if args["quality"] != nil {
+				qualityVal, qErr := coerceToInt(args["quality"], "quality")
+				if qErr != nil {
+					return nil, qErr
+				}
+				if qualityVal < 1 || qualityVal > 100 {
 					return nil, fmt.Errorf("quality must be between 1 and 100")
 				}
+				quality = qualityVal
 			}
 
 			// Determine output path

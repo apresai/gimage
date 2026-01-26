@@ -172,19 +172,26 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3 Pro
 			outputFormat, _ := args["output_format"].(string)
 
+			// Parse optional numeric parameters with type coercion (accepts string or number)
 			var seed int64
-			if seedVal, ok := args["seed"].(float64); ok {
-				seed = int64(seedVal)
+			if args["seed"] != nil {
+				if seedVal, sErr := coerceToInt(args["seed"], "seed"); sErr == nil {
+					seed = int64(seedVal)
+				}
 			}
 
 			var cfgScale float64
-			if cfgVal, ok := args["cfg_scale"].(float64); ok {
-				cfgScale = cfgVal
+			if args["cfg_scale"] != nil {
+				if cfgVal, cErr := coerceToFloat(args["cfg_scale"], "cfg_scale"); cErr == nil {
+					cfgScale = cfgVal
+				}
 			}
 
 			var count int
-			if countVal, ok := args["count"].(float64); ok {
-				count = int(countVal)
+			if args["count"] != nil {
+				if countVal, cErr := coerceToInt(args["count"], "count"); cErr == nil {
+					count = countVal
+				}
 			}
 
 			// Create generate options

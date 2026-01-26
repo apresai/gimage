@@ -234,3 +234,237 @@ func TestResizeImageToolSchema(t *testing.T) {
 func formatDimensions(width, height int) string {
 	return fmt.Sprintf("%dx%d", width, height)
 }
+
+func TestResizeImageToolModes(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := &config.Config{}
+
+	// Create a test image (200x100, 2:1 aspect ratio)
+	testImagePath := filepath.Join(tmpDir, "landscape.png")
+	img := image.NewRGBA(image.Rect(0, 0, 200, 100))
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 200; x++ {
+			img.Set(x, y, color.RGBA{100, 150, 200, 255})
+		}
+	}
+	file, err := os.Create(testImagePath)
+	if err != nil {
+		t.Fatalf("Failed to create test image: %v", err)
+	}
+	png.Encode(file, img)
+	file.Close()
+
+	// Create server and register tool
+	server := mcp.NewMCPServer("test", "1.0.0", cfg, false)
+	RegisterResizeImageTool(server)
+
+	tool := server.GetTool("resize_image")
+	if tool == nil {
+		t.Fatal("resize_image tool not registered")
+	}
+
+	tests := []struct {
+		name           string
+		mode           string
+		targetWidth    int
+		targetHeight   int
+		expectedWidth  int
+		expectedHeight int
+		description    string
+	}{
+		{
+			name:           "crop mode - preserves ratio, fills target, crops excess",
+			mode:           "crop",
+			targetWidth:    100,
+			targetHeight:   100,
+			expectedWidth:  100, // exact target because it crops
+			expectedHeight: 100,
+			description:    "200x100 (2:1) -> 100x100 square: scales up height, crops width",
+		},
+		{
+			name:           "fit mode - preserves ratio, fits within bounds",
+			mode:           "fit",
+			targetWidth:    100,
+			targetHeight:   100,
+			expectedWidth:  100, // fits within 100x100, preserving 2:1 ratio
+			expectedHeight: 50,  // 100/2 = 50 to maintain 2:1 ratio
+			description:    "200x100 (2:1) -> 100x50 within 100x100 bounds",
+		},
+		{
+			name:           "stretch mode - forces exact dimensions, may distort",
+			mode:           "stretch",
+			targetWidth:    100,
+			targetHeight:   100,
+			expectedWidth:  100, // exact target
+			expectedHeight: 100, // exact target (distorted from 2:1 to 1:1)
+			description:    "200x100 (2:1) -> 100x100 forced (distorted)",
+		},
+		{
+			name:           "default mode is crop",
+			mode:           "", // empty mode should default to crop
+			targetWidth:    100,
+			targetHeight:   100,
+			expectedWidth:  100,
+			expectedHeight: 100,
+			description:    "empty mode defaults to crop behavior",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outputPath := filepath.Join(tmpDir, fmt.Sprintf("resized_%s.png", tt.name))
+
+			args := map[string]interface{}{
+				"input":  testImagePath,
+				"width":  float64(tt.targetWidth),
+				"height": float64(tt.targetHeight),
+				"output": outputPath,
+			}
+
+			if tt.mode != "" {
+				args["mode"] = tt.mode
+			}
+
+			result, err := tool.Handler(args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Verify success
+			success, ok := result["success"].(bool)
+			if !ok || !success {
+				t.Error("Expected success: true in result")
+			}
+
+			// Verify output dimensions
+			width, height, err := getImageDimensions(outputPath)
+			if err != nil {
+				t.Fatalf("Failed to get dimensions: %v", err)
+			}
+
+			if width != tt.expectedWidth || height != tt.expectedHeight {
+				t.Errorf("%s: expected %dx%d, got %dx%d",
+					tt.description, tt.expectedWidth, tt.expectedHeight, width, height)
+			}
+
+			// Verify mode is returned in result (except for empty mode which defaults)
+			if tt.mode != "" {
+				resultMode, ok := result["mode"].(string)
+				if !ok {
+					t.Error("Expected mode in result")
+				} else if resultMode != tt.mode {
+					t.Errorf("Expected mode %s in result, got %s", tt.mode, resultMode)
+				}
+			}
+		})
+	}
+}
+
+func TestResizeImageToolModeSchema(t *testing.T) {
+	cfg := &config.Config{}
+	server := mcp.NewMCPServer("test", "1.0.0", cfg, false)
+	RegisterResizeImageTool(server)
+
+	tool := server.GetTool("resize_image")
+	if tool == nil {
+		t.Fatal("resize_image tool not registered")
+	}
+
+	// Verify mode is in schema
+	properties, ok := tool.InputSchema["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected properties in schema")
+	}
+
+	modeSchema, exists := properties["mode"].(map[string]interface{})
+	if !exists {
+		t.Fatal("Expected 'mode' property in schema")
+	}
+
+	// Verify mode type
+	if modeSchema["type"] != "string" {
+		t.Error("Expected mode type 'string'")
+	}
+
+	// Verify mode enum values
+	enumValues, ok := modeSchema["enum"].([]string)
+	if !ok {
+		t.Fatal("Expected enum array for mode")
+	}
+
+	expectedModes := []string{"crop", "fit", "stretch"}
+	for _, expected := range expectedModes {
+		found := false
+		for _, actual := range enumValues {
+			if actual == expected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected mode '%s' in enum", expected)
+		}
+	}
+
+	// Verify default is crop
+	if modeSchema["default"] != "crop" {
+		t.Error("Expected mode default to be 'crop'")
+	}
+}
+
+func TestResizeImageToolStringCoercion(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := &config.Config{}
+
+	// Create a test image
+	testImagePath := filepath.Join(tmpDir, "test.png")
+	img := image.NewRGBA(image.Rect(0, 0, 200, 200))
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 200; x++ {
+			img.Set(x, y, color.RGBA{100, 150, 200, 255})
+		}
+	}
+	file, err := os.Create(testImagePath)
+	if err != nil {
+		t.Fatalf("Failed to create test image: %v", err)
+	}
+	png.Encode(file, img)
+	file.Close()
+
+	// Create server and register tool
+	server := mcp.NewMCPServer("test", "1.0.0", cfg, false)
+	RegisterResizeImageTool(server)
+
+	tool := server.GetTool("resize_image")
+	if tool == nil {
+		t.Fatal("resize_image tool not registered")
+	}
+
+	// Test with string numbers (LLM common behavior)
+	args := map[string]interface{}{
+		"input":  testImagePath,
+		"width":  "100", // string instead of float64
+		"height": "100", // string instead of float64
+		"output": filepath.Join(tmpDir, "resized_string.png"),
+	}
+
+	result, err := tool.Handler(args)
+	if err != nil {
+		t.Fatalf("String coercion failed: %v", err)
+	}
+
+	success, ok := result["success"].(bool)
+	if !ok || !success {
+		t.Error("Expected success: true in result")
+	}
+
+	// Verify output dimensions
+	width, height, err := getImageDimensions(result["output_path"].(string))
+	if err != nil {
+		t.Fatalf("Failed to get dimensions: %v", err)
+	}
+
+	if width != 100 || height != 100 {
+		t.Errorf("Expected 100x100, got %dx%d", width, height)
+	}
+}

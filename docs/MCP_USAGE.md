@@ -156,13 +156,18 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 #### Resize
 
-Change image dimensions to exact pixel values.
+Change image dimensions with flexible aspect ratio handling. Three modes available:
+- **crop** (default): Fills target size and crops excess, preserving aspect ratio
+- **fit**: Fits within target bounds, may be smaller than target
+- **stretch**: Forces exact dimensions, may distort
 
 **Example Prompts:**
 
 ```
-"Resize landscape.jpg to 1920x1080"
-"Make photo.png exactly 800 pixels wide and 600 pixels tall"
+"Resize landscape.jpg to 1920x1080" (uses crop mode by default)
+"Resize photo.png to 800x600 using fit mode to preserve aspect ratio"
+"Resize avatar.jpg to exactly 100x100 using stretch mode"
+"Create thumbnails at 200x200 using crop mode for consistent sizes"
 ```
 
 #### Scale
@@ -217,7 +222,8 @@ Process multiple images concurrently for efficient workflows.
 **Example Prompts:**
 
 ```
-"Resize all images in the vacation-photos folder to 1920x1080"
+"Resize all images in the vacation-photos folder to 1920x1080" (uses crop mode by default)
+"Resize all images in gallery/ to 800x600 using fit mode to preserve aspect ratios"
 "Compress every image in my-photos directory to 85% quality"
 "Convert all PNG files in this directory to WebP"
 ```
@@ -228,6 +234,7 @@ Process multiple images concurrently for efficient workflows.
 - Progress reporting
 - Error handling (continues even if some files fail)
 - Preserves directory structure
+- Resize mode support (crop, fit, stretch)
 
 ---
 

@@ -51,13 +51,10 @@ func RegisterScaleImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("input validation failed: %w", err)
 			}
 
-			// Validate factor
-			factorVal, ok := args["factor"].(float64)
-			if !ok {
-				return nil, fmt.Errorf("factor must be a number")
-			}
-			if factorVal < 0.1 || factorVal > 10.0 {
-				return nil, fmt.Errorf("factor must be between 0.1 and 10.0")
+			// Validate factor (accepts string or number, must be 0.1-10.0)
+			factorVal, err := validateFloatInRange(args["factor"], "factor", 0.1, 10.0)
+			if err != nil {
+				return nil, err
 			}
 
 			// Validate and fix output path

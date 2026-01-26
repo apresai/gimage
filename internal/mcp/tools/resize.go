@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"image"
 	"path/filepath"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 func RegisterResizeImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "resize_image",
-		Description: "Resize an image to specific dimensions using high-quality Lanczos resampling. This changes both width and height to exact pixel values. Note: Aspect ratio is NOT preserved unless dimensions match original ratio. Use scale_image if you want to maintain aspect ratio.",
+		Description: "Resize an image to specific dimensions using high-quality Lanczos resampling. Supports three modes: 'crop' (default) preserves aspect ratio by filling the target size and cropping excess, 'fit' preserves aspect ratio by fitting within target bounds (may be smaller), 'stretch' forces exact dimensions (may distort). Use 'crop' for thumbnails/avatars, 'fit' for constrained display, 'stretch' for exact sizing.",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -31,6 +32,12 @@ func RegisterResizeImageTool(server *mcp.MCPServer) {
 					"type":        "integer",
 					"description": "Target height in pixels (must be positive integer)",
 					"minimum":     1,
+				},
+				"mode": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"crop", "fit", "stretch"},
+					"description": "Resize mode: 'crop' (default) preserves aspect ratio by filling and cropping excess from center, 'fit' preserves aspect ratio by fitting within bounds (result may be smaller than target), 'stretch' forces exact dimensions (may distort image)",
+					"default":     "crop",
 				},
 				"output": map[string]interface{}{
 					"type":        "string",
@@ -66,6 +73,17 @@ func RegisterResizeImageTool(server *mcp.MCPServer) {
 				return nil, err
 			}
 
+			// Extract mode (default: crop for aspect-ratio preservation)
+			mode := "crop"
+			if modeArg, ok := args["mode"].(string); ok && modeArg != "" {
+				switch modeArg {
+				case "crop", "fit", "stretch":
+					mode = modeArg
+				default:
+					return nil, fmt.Errorf("invalid mode: %s (must be crop, fit, or stretch)", modeArg)
+				}
+			}
+
 			// Validate and fix output path
 			outputArg, _ := args["output"].(string)
 			defaultFilename := generateOutputPath(input, "resized")
@@ -87,8 +105,19 @@ func RegisterResizeImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("failed to load image: %w", err)
 			}
 
-			// Resize image using Lanczos resampling
-			resized := imaging.Resize(img, width, height, imaging.Lanczos)
+			// Resize image based on mode
+			var resized image.Image
+			switch mode {
+			case "fit":
+				// Fit within bounds, preserving aspect ratio (may be smaller than target)
+				resized = imaging.Fit(img, width, height, imaging.Lanczos)
+			case "stretch":
+				// Force exact dimensions (may distort - backward compatible with old behavior)
+				resized = imaging.Resize(img, width, height, imaging.Lanczos)
+			default: // "crop"
+				// Fill target size, preserving aspect ratio, crop excess from center
+				resized = imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+			}
 
 			// Save resized image
 			err = saveImage(resized, output)
@@ -96,16 +125,22 @@ func RegisterResizeImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("failed to save resized image: %w", err)
 			}
 
+			// Get actual output dimensions (may differ from target in 'fit' mode)
+			outputBounds := resized.Bounds()
+			actualWidth := outputBounds.Dx()
+			actualHeight := outputBounds.Dy()
+
 			// Get absolute path for response
 			absPath, _ := filepath.Abs(output)
 
-			log.Debug("Resize complete: %dx%d -> %dx%d in %s", origWidth, origHeight, width, height, time.Since(startTime))
+			log.Debug("Resize complete: %dx%d -> %dx%d (mode=%s) in %s", origWidth, origHeight, actualWidth, actualHeight, mode, time.Since(startTime))
 
 			result := map[string]interface{}{
 				"success":       true,
 				"output_path":   absPath,
 				"original_size": fmt.Sprintf("%dx%d", origWidth, origHeight),
-				"new_size":      fmt.Sprintf("%dx%d", width, height),
+				"new_size":      fmt.Sprintf("%dx%d", actualWidth, actualHeight),
+				"mode":          mode,
 			}
 
 			// Add warning if path was adjusted
