@@ -2,10 +2,16 @@ package generate
 
 import (
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 )
+
+func newTestLogger() *observability.VerboseLogger {
+	return observability.NewVerboseLogger(observability.ComponentBedrock)
+}
 
 func TestNewBedrockSDKClient(t *testing.T) {
 	tests := []struct {
@@ -190,7 +196,7 @@ func TestBedrockSDKClient_buildRequest(t *testing.T) {
 				return
 			}
 			if tt.wantErr && tt.errContains != "" {
-				if err == nil || !contains(err.Error(), tt.errContains) {
+				if err == nil || !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("buildRequest() error = %v, should contain %q", err, tt.errContains)
 				}
 				return
@@ -225,7 +231,7 @@ func TestBedrockSDKClient_GenerateImage_EmptyPrompt(t *testing.T) {
 	if err == nil {
 		t.Error("GenerateImage() with empty prompt should return error")
 	}
-	if err != nil && !contains(err.Error(), "prompt cannot be empty") {
+	if err != nil && !strings.Contains(err.Error(), "prompt cannot be empty") {
 		t.Errorf("GenerateImage() error = %v, should contain 'prompt cannot be empty'", err)
 	}
 }
@@ -240,6 +246,150 @@ func TestBedrockSDKClient_Close(t *testing.T) {
 	err = client.Close()
 	if err != nil {
 		t.Errorf("Close() error = %v, want nil", err)
+	}
+}
+
+func TestBuildNovaCanvasRequest(t *testing.T) {
+	log := newTestLogger()
+
+	tests := []struct {
+		name        string
+		prompt      string
+		options     models.GenerateOptions
+		wantErr     bool
+		errContains string
+		validate    func(t *testing.T, req *NovaCanvasRequest)
+	}{
+		{
+			name:   "defaults",
+			prompt: "test prompt",
+			options: models.GenerateOptions{
+				Size: "1024x1024",
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.Quality != "standard" {
+					t.Errorf("Quality = %q, want standard", req.ImageGenerationConfig.Quality)
+				}
+				if req.ImageGenerationConfig.CfgScale != 7.0 {
+					t.Errorf("CfgScale = %f, want 7.0", req.ImageGenerationConfig.CfgScale)
+				}
+				if req.ImageGenerationConfig.NumberOfImages != 1 {
+					t.Errorf("NumberOfImages = %d, want 1", req.ImageGenerationConfig.NumberOfImages)
+				}
+			},
+		},
+		{
+			name:    "empty prompt",
+			prompt:  "",
+			options: models.GenerateOptions{Size: "1024x1024"},
+			wantErr: true, errContains: "prompt cannot be empty",
+		},
+		{
+			name:   "cfg scale clamped low",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:     "1024x1024",
+				CfgScale: 0.5,
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.CfgScale != 1.0 {
+					t.Errorf("CfgScale = %f, want 1.0 (clamped)", req.ImageGenerationConfig.CfgScale)
+				}
+			},
+		},
+		{
+			name:   "cfg scale clamped high",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:     "1024x1024",
+				CfgScale: 15.0,
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.CfgScale != 10.0 {
+					t.Errorf("CfgScale = %f, want 10.0 (clamped)", req.ImageGenerationConfig.CfgScale)
+				}
+			},
+		},
+		{
+			name:   "number of images clamped to 5",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:           "1024x1024",
+				NumberOfImages: 10,
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.NumberOfImages != 5 {
+					t.Errorf("NumberOfImages = %d, want 5 (clamped)", req.ImageGenerationConfig.NumberOfImages)
+				}
+			},
+		},
+		{
+			name:   "style high maps to premium",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:  "1024x1024",
+				Style: "high",
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.Quality != "premium" {
+					t.Errorf("Quality = %q, want premium", req.ImageGenerationConfig.Quality)
+				}
+			},
+		},
+		{
+			name:   "style ultra maps to premium",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:  "1024x1024",
+				Style: "ultra",
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.ImageGenerationConfig.Quality != "premium" {
+					t.Errorf("Quality = %q, want premium", req.ImageGenerationConfig.Quality)
+				}
+			},
+		},
+		{
+			name:   "negative prompt set",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size:           "1024x1024",
+				NegativePrompt: "no people",
+			},
+			validate: func(t *testing.T, req *NovaCanvasRequest) {
+				if req.TextToImageParams.NegativeText != "no people" {
+					t.Errorf("NegativeText = %q, want 'no people'", req.TextToImageParams.NegativeText)
+				}
+			},
+		},
+		{
+			name:   "seed too large",
+			prompt: "test",
+			options: models.GenerateOptions{
+				Size: "1024x1024",
+				Seed: 999999999,
+			},
+			wantErr: true, errContains: "invalid seed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := BuildNovaCanvasRequest(tt.prompt, tt.options, log)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BuildNovaCanvasRequest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && tt.errContains != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("error = %v, should contain %q", err, tt.errContains)
+				}
+				return
+			}
+			if tt.validate != nil && req != nil {
+				tt.validate(t, req)
+			}
+		})
 	}
 }
 

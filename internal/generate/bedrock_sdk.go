@@ -9,21 +9,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
-	"github.com/rs/zerolog"
 	"github.com/sony/gobreaker"
-	"github.com/spf13/viper"
 )
 
 // BedrockSDKClient uses AWS Bedrock Runtime for image generation
 type BedrockSDKClient struct {
 	client         *bedrockruntime.Client
 	region         string
-	verbose        bool
-	logger         zerolog.Logger
+	log            *observability.VerboseLogger
 	circuitBreaker *gobreaker.CircuitBreaker
 }
 
@@ -54,6 +52,78 @@ type NovaCanvasResponse struct {
 	Error  string   `json:"error,omitempty"`
 }
 
+// BuildNovaCanvasRequest builds a Nova Canvas request from prompt and options.
+// Shared by both BedrockSDKClient and BedrockRESTClient.
+func BuildNovaCanvasRequest(prompt string, options models.GenerateOptions, log *observability.VerboseLogger) (*NovaCanvasRequest, error) {
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt cannot be empty")
+	}
+
+	// Parse and normalize dimensions (Nova Canvas supports 512-2048, multiples of 64)
+	requestedWidth, requestedHeight := ParseSizeString(options.Size)
+	apiWidth, apiHeight := NormalizeDimensions(requestedWidth, requestedHeight, BedrockConstraints)
+	log.Debug("Normalized dimensions: %dx%d -> %dx%d",
+		requestedWidth, requestedHeight, apiWidth, apiHeight)
+
+	// Validate seed (Nova Canvas supports 0-858993459)
+	if options.Seed < 0 || options.Seed > 858993459 {
+		return nil, fmt.Errorf("invalid seed: %d (must be 0-858993459)", options.Seed)
+	}
+
+	// Map style keywords to Nova Canvas quality levels
+	quality := "standard"
+	if options.Style != "" {
+		lowerStyle := strings.ToLower(options.Style)
+		if lowerStyle == "premium" || lowerStyle == "high" || lowerStyle == "ultra" || lowerStyle == "photorealistic" {
+			quality = "premium"
+		}
+	}
+
+	// CFG scale (default 7.0, clamped to 1.0-10.0)
+	cfgScale := 7.0
+	if options.CfgScale > 0 {
+		cfgScale = options.CfgScale
+		if cfgScale < 1.0 {
+			cfgScale = 1.0
+		} else if cfgScale > 10.0 {
+			cfgScale = 10.0
+		}
+	}
+
+	// Number of images (default 1, max 5)
+	numberOfImages := 1
+	if options.NumberOfImages > 0 {
+		numberOfImages = options.NumberOfImages
+		if numberOfImages > 5 {
+			numberOfImages = 5
+		}
+	}
+
+	request := &NovaCanvasRequest{
+		TaskType: "TEXT_IMAGE",
+		TextToImageParams: NovaCanvasTextToImageParams{
+			Text: prompt,
+		},
+		ImageGenerationConfig: NovaCanvasImageConfig{
+			NumberOfImages: numberOfImages,
+			Quality:        quality,
+			Height:         apiHeight,
+			Width:          apiWidth,
+			CfgScale:       cfgScale,
+		},
+	}
+
+	if options.NegativePrompt != "" {
+		request.TextToImageParams.NegativeText = options.NegativePrompt
+	}
+
+	if options.Seed != 0 {
+		request.ImageGenerationConfig.Seed = int(options.Seed)
+	}
+
+	return request, nil
+}
+
 // NewBedrockSDKClient creates a new AWS Bedrock SDK client
 func NewBedrockSDKClient(ctx context.Context, region string) (*BedrockSDKClient, error) {
 	// Default region if not provided
@@ -63,6 +133,8 @@ func NewBedrockSDKClient(ctx context.Context, region string) (*BedrockSDKClient,
 			region = "us-east-1"
 		}
 	}
+
+	log := observability.NewVerboseLogger(observability.ComponentBedrock)
 
 	// Load AWS SDK configuration
 	// This automatically handles:
@@ -80,26 +152,10 @@ func NewBedrockSDKClient(ctx context.Context, region string) (*BedrockSDKClient,
 	// Create Bedrock Runtime client
 	client := bedrockruntime.NewFromConfig(cfg)
 
-	// Check verbose mode
-	verbose := viper.GetBool("verbose") ||
-		os.Getenv("GIMAGE_VERBOSE") == "true" ||
-		os.Getenv("VERBOSE") == "true"
-
-	// Setup logger
-	logger := zerolog.New(os.Stderr).With().
-		Timestamp().
-		Str("component", "bedrock_sdk").
-		Logger()
-
-	if !verbose {
-		logger = logger.Level(zerolog.WarnLevel)
-	}
-
 	return &BedrockSDKClient{
 		client:         client,
 		region:         region,
-		verbose:        verbose,
-		logger:         logger,
+		log:            log,
 		circuitBreaker: newCircuitBreaker("BedrockAPI"),
 	}, nil
 }
@@ -120,15 +176,9 @@ func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, opt
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	if c.verbose {
-		c.logger.Debug().
-			Str("prompt", prompt).
-			Str("model", options.Model).
-			Str("size", options.Size).
-			Str("quality", request.ImageGenerationConfig.Quality).
-			Int("seed", request.ImageGenerationConfig.Seed).
-			Msg("Generating image with AWS Bedrock Nova Canvas")
-	}
+	c.log.Debug("Generating image with AWS Bedrock Nova Canvas")
+	c.log.Debug("Prompt: %s, Model: %s, Size: %s, Quality: %s",
+		prompt, options.Model, options.Size, request.ImageGenerationConfig.Quality)
 
 	// Determine model ID
 	modelID := "amazon.nova-canvas-v1:0"
@@ -173,7 +223,7 @@ func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, opt
 		for i, imgStr := range novaResponse.Images {
 			imageData, err := base64.StdEncoding.DecodeString(imgStr)
 			if err != nil {
-				c.logger.Debug().Int("index", i).Err(err).Msg("Failed to decode image, skipping")
+				c.log.Debug("Failed to decode image %d, skipping: %v", i, err)
 				continue
 			}
 
@@ -198,13 +248,8 @@ func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, opt
 			return nil, fmt.Errorf("no valid images generated")
 		}
 
-		if c.verbose {
-			c.logger.Info().
-				Str("model", modelID).
-				Dur("duration", time.Since(startTime)).
-				Int("count", len(generatedImages)).
-				Msg("Images generated successfully")
-		}
+		c.log.Debug("Images generated successfully: model=%s, count=%d, duration=%s",
+			modelID, len(generatedImages), time.Since(startTime))
 
 		return generatedImages, nil
 	})
@@ -216,79 +261,9 @@ func (c *BedrockSDKClient) GenerateImage(ctx context.Context, prompt string, opt
 	return result.([]*models.GeneratedImage), nil
 }
 
-// buildRequest builds the Nova Canvas request from options
+// buildRequest builds the Nova Canvas request from options (delegates to shared function)
 func (c *BedrockSDKClient) buildRequest(prompt string, options models.GenerateOptions) (*NovaCanvasRequest, error) {
-	// Validate prompt
-	if prompt == "" {
-		return nil, fmt.Errorf("prompt cannot be empty")
-	}
-
-	// Parse and normalize dimensions (Nova Canvas supports 512-2048, multiples of 64)
-	requestedWidth, requestedHeight := ParseSizeString(options.Size)
-	apiWidth, apiHeight := NormalizeDimensions(requestedWidth, requestedHeight, BedrockConstraints)
-
-	// Validate seed if provided (Nova Canvas supports 0-858993459)
-	if options.Seed < 0 || options.Seed > 858993459 {
-		return nil, fmt.Errorf("invalid seed: %d (must be 0-858993459)", options.Seed)
-	}
-
-	// Determine quality from style (Nova Canvas uses standard/premium, not style)
-	// Map common quality/style keywords to Nova Canvas quality levels
-	quality := "standard"
-	if options.Style != "" {
-		lowerStyle := strings.ToLower(options.Style)
-		if lowerStyle == "premium" || lowerStyle == "high" || lowerStyle == "ultra" || lowerStyle == "photorealistic" {
-			quality = "premium"
-		}
-	}
-
-	// Determine CFG scale (use option or default to 7.0)
-	cfgScale := 7.0
-	if options.CfgScale > 0 {
-		// Clamp to valid range (1.0-10.0)
-		cfgScale = options.CfgScale
-		if cfgScale < 1.0 {
-			cfgScale = 1.0
-		} else if cfgScale > 10.0 {
-			cfgScale = 10.0
-		}
-	}
-
-	// Determine number of images (use option or default to 1)
-	numberOfImages := 1
-	if options.NumberOfImages > 0 {
-		numberOfImages = options.NumberOfImages
-		if numberOfImages > 5 {
-			numberOfImages = 5 // Nova Canvas max is 5
-		}
-	}
-
-	// Build request
-	request := &NovaCanvasRequest{
-		TaskType: "TEXT_IMAGE",
-		TextToImageParams: NovaCanvasTextToImageParams{
-			Text: prompt,
-		},
-		ImageGenerationConfig: NovaCanvasImageConfig{
-			NumberOfImages: numberOfImages,
-			Quality:        quality,
-			Height:         apiHeight,
-			Width:          apiWidth,
-			CfgScale:       cfgScale,
-		},
-	}
-
-	// Add negative prompt if provided
-	if options.NegativePrompt != "" {
-		request.TextToImageParams.NegativeText = options.NegativePrompt
-	}
-
-	// Add seed if provided
-	if options.Seed != 0 {
-		request.ImageGenerationConfig.Seed = int(options.Seed)
-	}
-
-	return request, nil
+	return BuildNovaCanvasRequest(prompt, options, c.log)
 }
 
 // handleError provides user-friendly error messages for AWS errors
@@ -297,31 +272,28 @@ func (c *BedrockSDKClient) handleError(err error) error {
 		return nil
 	}
 
-	// Log raw error in verbose mode
-	if c.verbose {
-		c.logger.Error().Err(err).Msg("AWS Bedrock error")
-	}
+	c.log.Error("AWS Bedrock error: %v", err)
 
 	errMsg := err.Error()
 
 	// Common AWS error patterns
 	switch {
-	case contains(errMsg, "ValidationException"):
+	case strings.Contains(errMsg, "ValidationException"):
 		return fmt.Errorf("invalid request parameters: %w\n\nTip: Check image dimensions (512-2048, multiple of 64) and quality (standard/premium)", err)
 
-	case contains(errMsg, "AccessDeniedException"):
+	case strings.Contains(errMsg, "AccessDeniedException"):
 		return fmt.Errorf("access denied: %w\n\nTip: Ensure you have enabled model access in AWS Bedrock console and have bedrock:InvokeModel permission", err)
 
-	case contains(errMsg, "ThrottlingException"):
+	case strings.Contains(errMsg, "ThrottlingException"):
 		return fmt.Errorf("rate limit exceeded: %w\n\nTip: Bedrock rate limits: 10 requests/second. Wait and retry.", err)
 
-	case contains(errMsg, "ModelNotReadyException"):
+	case strings.Contains(errMsg, "ModelNotReadyException"):
 		return fmt.Errorf("model not available: %w\n\nTip: Nova Canvas may not be available in region %s. Try us-east-1.", err, c.region)
 
-	case contains(errMsg, "ServiceQuotaExceededException"):
+	case strings.Contains(errMsg, "ServiceQuotaExceededException"):
 		return fmt.Errorf("service quota exceeded: %w\n\nTip: Request a quota increase in AWS Service Quotas console", err)
 
-	case contains(errMsg, "NoCredentialProviders"):
+	case strings.Contains(errMsg, "NoCredentialProviders"):
 		return fmt.Errorf("no AWS credentials found: %w\n\nTip: Run 'gimage auth bedrock' or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY", err)
 
 	default:

@@ -175,12 +175,16 @@ func saveImage(img image.Image, path string) error {
 
 // isVertexModel checks if a model is a Vertex AI model
 func isVertexModel(model string) bool {
+	// Match both user-facing aliases and resolved full model IDs
 	vertexModels := []string{
 		"imagen-3.0-generate-002",
 		"imagen-4",
 		"imagen-4-standard",
 		"imagen-4-ultra",
 		"imagen-4-fast",
+		"imagen-4.0-generate-001",
+		"imagen-4.0-fast-generate-001",
+		"imagen-4.0-ultra-generate-001",
 	}
 	for _, vm := range vertexModels {
 		if model == vm {

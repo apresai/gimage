@@ -69,7 +69,7 @@ gimage generate --prompt "your prompt" [flags]
 | `--negative`       | string | Negative prompt to avoid features                                                       | -                            |
 | `--seed`           | int    | Random seed for reproducibility                                                         | `0` (random)                 |
 | `--cfg-scale`      | float  | CFG scale for creativity (Bedrock: 1.0-10.0, higher = more creative)                    | Model default                |
-| `-n, --count`      | int    | Number of images to generate (1-5)                                                      | `1`                          |
+| `-n, --count`      | int    | Number of images to generate (max varies by provider)                                   | `1`                          |
 | `--output-format`  | string | Output format for Vertex AI: `png`, `jpeg`, or `webp`                                   | Provider default             |
 | `-o, --output`     | string | Output file path                                                                        | `generated_<timestamp>.png`  |
 | `--list-models`    | bool   | List all available models with pricing                                                  | `false`                      |
@@ -84,13 +84,14 @@ gimage generate --prompt "your prompt" [flags]
 
 - `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
 - `gemini-2.5-flash-image` (FREE tier) - FREE: 500 images/day, up to 1024x1024
-- `gemini-2.0-flash-preview-image-generation` - FREE: 500 images/day
 
 **Vertex AI (Paid):**
 
 - `imagen-4` - $0.04/image, up to 2048x2048
-- `imagen-3.0-generate-002` - $0.04/image, up to 1536x1536
-- `imagen-3.0-fast-generate-001` - $0.02/image, optimized for speed
+- `imagen-4-fast` - $0.02/image, speed-optimized
+- `imagen-4-ultra` - $0.06/image, premium quality
+- `imagen-3.0-generate-002` - $0.04/image, legacy (prefer Imagen 4)
+- `imagen-3.0-fast-generate-001` - $0.02/image, legacy (prefer Imagen 4 Fast)
 
 **AWS Bedrock (Paid):**
 
@@ -174,6 +175,18 @@ gimage generate "abstract art" --model nova-canvas --cfg-scale 10.0
 gimage generate "luxury product" --model nova-canvas --style premium
 ```
 
+**Using Imagen 4 Fast (speed-optimized):**
+
+```bash
+gimage generate "product mockup" --model imagen-4-fast
+```
+
+**Using Imagen 4 Ultra (premium quality):**
+
+```bash
+gimage generate "architectural visualization" --model imagen-4-ultra
+```
+
 **Using xAI Grok:**
 
 ```bash
@@ -186,6 +199,19 @@ gimage generate "robot waving hello" --model grok
 gimage generate --list-models
 ```
 
+**Convert to WebP after generation (recommended):**
+
+AI-generated PNGs are typically 1-3 MB. Converting to WebP reduces file size by 90%+ with no visible quality loss:
+
+```bash
+# Generate then convert to WebP
+gimage generate "sunset" -o sunset.png
+gimage convert --input sunset.png --format webp
+
+# Or use cwebp for maximum control
+cwebp -q 85 -mt -sharp_yuv -preset photo sunset.png -o sunset.webp
+```
+
 ### Image Sizes
 
 Common sizes (format: `WIDTHxHEIGHT`):
@@ -193,7 +219,7 @@ Common sizes (format: `WIDTHxHEIGHT`):
 - `512x512` - Small, fast generation
 - `1024x1024` - Default, balanced quality/speed
 - `1536x1536` - High quality
-- `2048x2048` - Maximum quality (Vertex AI only)
+- `2048x2048` - Maximum quality (Vertex AI and Bedrock at 1408x1408 max)
 
 Custom sizes are supported by some models.
 
@@ -514,7 +540,7 @@ gimage convert input.png webp --output optimized.webp
 
 ## auth
 
-Manage authentication for all image generation providers (Gemini, Vertex AI, AWS Bedrock).
+Manage authentication for all image generation providers (Gemini, Vertex AI, AWS Bedrock, xAI Grok).
 
 ### Usage
 
@@ -893,7 +919,7 @@ gimage --interactive
 Launches an 8-step interactive menu for image generation:
 
 1. **Enter Prompt** - Describe the image you want
-2. **Select Model** - Choose AI model (Gemini, Vertex AI, or Bedrock)
+2. **Select Provider** - Choose AI provider and model (Gemini, Vertex AI, Bedrock, or Grok)
 3. **Choose Size** - Select image dimensions
 4. **Select Style** - Pick style (photorealistic, artistic, anime, or none)
 5. **Advanced Options** - Configure optional parameters:
@@ -903,7 +929,7 @@ Launches an 8-step interactive menu for image generation:
    - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
    - Output format (Vertex AI: Auto, PNG, JPEG, WebP)
    - CFG scale (Bedrock: 1.0-10.0 for creativity control)
-   - Count (batch generation: 1-5 images)
+   - Count (batch generation, max varies by provider)
 6. **Set Output Path** - Specify where to save the image
 7. **Review & Confirm** - Review all settings before generation
 8. **Generate** - Create your image
@@ -1187,9 +1213,9 @@ gimage generate "cityscape" --style anime --output anime.png
 Run authentication setup:
 
 ```bash
-gimage auth gemini
+gimage auth setup gemini
 # or
-gimage auth vertex
+gimage auth setup vertex
 ```
 
 ### "Failed to load config"

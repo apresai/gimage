@@ -127,8 +127,8 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 **Capabilities:**
 
-- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas
-- **Size options**: From 256x256 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash (FREE), Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image
+- **Size options**: From 512x512 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
@@ -137,7 +137,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
   - Native resolution (Gemini 3 Pro: 1K, 2K, 4K)
   - Output format (Vertex AI: PNG, JPEG, WebP)
   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
-  - Batch generation (1-5 images at once)
+  - Batch generation (max count varies by provider)
 
 **Example Prompts:**
 
@@ -297,6 +297,19 @@ All should be compressed to 90% quality"
 Use 1024x1024 size for all"
 ```
 
+### Generate and Optimize for Web
+
+**Scenario**: Generate an AI image and convert to WebP for web use (90%+ file size reduction).
+
+**Prompt**:
+
+```
+"Generate a hero image of a futuristic city skyline at sunset.
+Then convert it to WebP format for my website."
+```
+
+Claude will use `generate_image` followed by `convert_image` to produce an optimized WebP file. AI-generated PNGs are typically 1-3 MB; WebP at quality 85 reduces this to 100-300 KB with no visible quality loss.
+
 ---
 
 ## Troubleshooting
@@ -454,16 +467,20 @@ export VERTEX_PROJECT="your-gcp-project"
 
 - `gemini-3-pro-image-preview` (default, native 4K, sharp text, $0.134-$0.24/image)
 - `gemini-2.5-flash-image` (FREE, 500/day, up to 1024x1024)
-- `gemini-2.0-flash-preview-image-generation`
-
 **Vertex AI Models** (Premium Quality):
 
 - `imagen-4` (highest quality, $0.04/image, up to 2048x2048)
-- `imagen-3.0-generate-002` ($0.04/image)
+- `imagen-4-fast` (speed-optimized, $0.02/image)
+- `imagen-4-ultra` (premium quality, $0.06/image)
+- `imagen-3.0-generate-002` (legacy, $0.04/image)
 
 **AWS Bedrock Models**:
 
 - `amazon.nova-canvas-v1:0` ($0.04-$0.08/image, up to 1408x1408)
+
+**xAI Grok Models**:
+
+- `grok-2-image` (Aurora-powered, ~$0.07/image)
 
 **Examples**:
 
@@ -522,7 +539,10 @@ Claude can chain multiple operations:
    - Gemini 2.5 Flash: FREE tier, fast, great for quick iterations
    - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
    - Imagen 4: Highest quality photo-realistic images, output format control
+   - Imagen 4 Fast: Speed-optimized Vertex AI at $0.02/image
+   - Imagen 4 Ultra: Premium Vertex AI quality at $0.06/image
    - Nova Canvas: AWS integration, CFG scale for creativity control
+   - Grok 2 Image: Creative artistic images via xAI (~$0.07/image)
 
 5. **Use provider-specific features**:
 

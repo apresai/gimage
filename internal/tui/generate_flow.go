@@ -259,7 +259,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	cfgScaleInput.Width = 20
 
 	countInput := textinput.New()
-	countInput.Placeholder = "1 (1-5)"
+	countInput.Placeholder = "1"
 	countInput.CharLimit = 2
 	countInput.Width = 10
 
@@ -669,6 +669,8 @@ func (m *GenerateFlowModel) updateSizeStep(msg tea.Msg) (*GenerateFlowModel, tea
 func (m *GenerateFlowModel) viewSizeStep() string {
 	var items []string
 
+	provider := m.providers[m.selectedProvider]
+
 	if !m.useCustom {
 		for i, size := range m.sizes {
 			var style lipgloss.Style
@@ -684,6 +686,14 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 			desc := ""
 			if size.aspect != "" {
 				desc = MutedStyle.Render("  Aspect ratio: " + size.aspect)
+			}
+			// Add note for Ultra HD size
+			if size.size == "2048x2048" {
+				if provider.api == "bedrock" {
+					desc += "\n" + MutedStyle.Render("  Actual 2048x2048 output (Bedrock)")
+				} else {
+					desc += "\n" + MutedStyle.Render("  Used for aspect ratio inference only (Gemini/Vertex)")
+				}
 			}
 
 			if desc != "" {
@@ -770,9 +780,18 @@ func (m *GenerateFlowModel) viewStyleStep() string {
 		items = append(items, title+"\n"+desc)
 	}
 
+	provider := m.providers[m.selectedProvider]
+	styleNote := ""
+	if provider.api == "grok" {
+		styleNote = WarningStyle.Render("Note: Grok ignores style parameter") + "\n\n"
+	} else {
+		styleNote = MutedStyle.Render("Note: Style behavior varies by provider") + "\n\n"
+	}
+
 	content := TitleStyle.Render("Generate Image - Step 4/8") + "\n\n" +
 		SubtitleStyle.Render("Select Image Style (Optional)") + "\n\n" +
 		strings.Join(items, "\n\n") + "\n\n" +
+		styleNote +
 		HelpStyle.Render("↑/↓: Navigate • Enter: Select • Esc: Back")
 
 	box := FocusedBoxStyle.Width(76).Render(content)
@@ -884,33 +903,41 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 	content = TitleStyle.Render("Generate Image - Step 5/8") + "\n\n" +
 		SubtitleStyle.Render("Advanced Options (Optional)") + "\n\n"
 
-	// Negative Prompt (all providers)
+	// Negative Prompt
 	focusIndicator := "  "
 	if m.advancedFocusIndex == 0 {
 		focusIndicator = "> "
 	}
-	content += focusIndicator + FormatKeyValue("Negative Prompt", m.negativePromptInput.View()) + "\n"
-	content += MutedStyle.Render("    Describe what you DON'T want in the image") + "\n\n"
+	if m.supportsNegativePrompt() {
+		content += focusIndicator + FormatKeyValue("Negative Prompt", m.negativePromptInput.View()) + "\n"
+		content += MutedStyle.Render("    Describe what you DON'T want in the image") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  Negative Prompt: N/A for "+provider.api) + "\n\n"
+	}
 
-	// Seed (all providers)
+	// Seed
 	focusIndicator = "  "
 	if m.advancedFocusIndex == 1 {
 		focusIndicator = "> "
 	}
-	content += focusIndicator + FormatKeyValue("Seed", m.seedInput.View()) + "\n"
-	content += MutedStyle.Render("    Use same seed for reproducible results") + "\n\n"
+	if m.supportsSeed() {
+		content += focusIndicator + FormatKeyValue("Seed", m.seedInput.View()) + "\n"
+		content += MutedStyle.Render("    Use same seed for reproducible results") + "\n\n"
+	} else {
+		content += MutedStyle.Render("  Seed: N/A for "+provider.api) + "\n\n"
+	}
 
-	// Aspect Ratio (Gemini 3 Pro only)
+	// Aspect Ratio (Gemini Flash, Gemini 3 Pro, and Vertex)
 	focusIndicator = "  "
 	if m.advancedFocusIndex == 2 {
 		focusIndicator = "> "
 	}
 	aspectRatioValue := m.aspectRatios[m.selectedAspectRatio].label
-	if isGemini3Pro {
+	if m.supportsAspectRatio() {
 		content += focusIndicator + FormatKeyValue("Aspect Ratio", aspectRatioValue) + "\n"
-		content += MutedStyle.Render("    ←/→ to change (Gemini 3 Pro only)") + "\n\n"
+		content += MutedStyle.Render("    ←/→ to change (Gemini & Vertex)") + "\n\n"
 	} else {
-		content += MutedStyle.Render("  Aspect Ratio: (N/A - Gemini 3 Pro only)") + "\n\n"
+		content += MutedStyle.Render("  Aspect Ratio: N/A for "+provider.api) + "\n\n"
 	}
 
 	// Image Size (Gemini 3 Pro native upscaling)
@@ -960,13 +987,19 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 		content += MutedStyle.Render("  CFG Scale: (N/A - Bedrock only)") + "\n\n"
 	}
 
-	// Number of Images (all providers)
+	// Number of Images - show correct max per provider
 	focusIndicator = "  "
 	if m.advancedFocusIndex == 7 {
 		focusIndicator = "> "
 	}
+	maxCount := m.maxCountForProvider()
 	content += focusIndicator + FormatKeyValue("Count", m.countInput.View()) + "\n"
-	content += MutedStyle.Render("    Number of images to generate (1-5)") + "\n\n"
+	content += MutedStyle.Render(fmt.Sprintf("    Number of images to generate (1-%d for %s)", maxCount, provider.api)) + "\n\n"
+
+	// Style note
+	if m.styles[m.selectedStyle].value != "" {
+		content += MutedStyle.Render("  Note: Style behavior varies by provider") + "\n\n"
+	}
 
 	content += HelpStyle.Render("Tab/↑↓: Navigate • ←→: Change picker • Enter: Continue • Esc: Back")
 
@@ -1748,6 +1781,64 @@ type generationCompleteMsg struct {
 	size     int64
 	duration time.Duration
 	err      error
+}
+
+// maxCountForProvider returns the maximum number of images for the selected provider's API
+func (m *GenerateFlowModel) maxCountForProvider() int {
+	if m.selectedProvider >= len(m.providers) {
+		return 4
+	}
+	provider := m.providers[m.selectedProvider]
+	switch provider.api {
+	case "grok":
+		return 10
+	case "vertex":
+		return 8
+	case "bedrock":
+		return 5
+	default: // gemini
+		return 4
+	}
+}
+
+// supportsNegativePrompt returns whether the selected provider supports negative prompts
+func (m *GenerateFlowModel) supportsNegativePrompt() bool {
+	if m.selectedProvider >= len(m.providers) {
+		return true
+	}
+	provider := m.providers[m.selectedProvider]
+	// Grok doesn't support negative prompts
+	if provider.api == "grok" {
+		return false
+	}
+	// Gemini Flash doesn't support negative prompts (only Gemini 3 Pro does)
+	if provider.api == "gemini" && !strings.Contains(provider.model, "gemini-3") {
+		return false
+	}
+	return true
+}
+
+// supportsSeed returns whether the selected provider supports seed
+func (m *GenerateFlowModel) supportsSeed() bool {
+	if m.selectedProvider >= len(m.providers) {
+		return true
+	}
+	provider := m.providers[m.selectedProvider]
+	// Grok doesn't support seed
+	if provider.api == "grok" {
+		return false
+	}
+	return true
+}
+
+// supportsAspectRatio returns whether the selected provider supports aspect ratio
+func (m *GenerateFlowModel) supportsAspectRatio() bool {
+	if m.selectedProvider >= len(m.providers) {
+		return false
+	}
+	provider := m.providers[m.selectedProvider]
+	// Gemini Flash, Gemini 3 Pro, and Vertex support aspect ratio
+	return provider.api == "gemini" || provider.api == "vertex"
 }
 
 // truncateString truncates a string to maxLen characters, adding "..." if truncated

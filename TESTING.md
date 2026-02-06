@@ -92,8 +92,9 @@ go test -short ./...
 
 ```bash
 export GEMINI_API_KEY="your-key-here"
-export VERTEX_API_KEY="your-vertex-key"  # Optional
-export AWS_ACCESS_KEY_ID="your-aws-key"  # Optional
+export VERTEX_API_KEY="your-vertex-key"  # Optional (for Imagen 4/Fast/Ultra)
+export AWS_ACCESS_KEY_ID="your-aws-key"  # Optional (for Nova Canvas)
+export GROK_API_KEY="your-grok-key"      # Optional (for Grok)
 ```
 
 ---
@@ -500,7 +501,7 @@ Integration tests are run manually before releases.
 
 ### Mocking Policy
 
-**DO NOT MOCK cloud provider APIs** (Gemini, Vertex AI, Bedrock).
+**DO NOT MOCK cloud provider APIs** (Gemini, Vertex AI, Bedrock, Grok).
 
 Why?
 - Mocks test your mock, not the real API

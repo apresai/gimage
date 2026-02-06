@@ -3,6 +3,7 @@ package generate
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/apresai/gimage/pkg/models"
@@ -42,7 +43,7 @@ func TestGenerateOutputPath(t *testing.T) {
 			expectedFormat := normalizeFormat(tt.format)
 			if !filepath.IsAbs(got) {
 				// Relative path should contain the prefix
-				if !contains(got, defaultOutputPrefix) {
+				if !strings.Contains(got, defaultOutputPrefix) {
 					t.Errorf("GenerateOutputPath() = %v, doesn't contain prefix %v", got, defaultOutputPrefix)
 				}
 			}
@@ -86,7 +87,7 @@ func TestGenerateOutputPathWithPrefix(t *testing.T) {
 				expectedPrefix = defaultOutputPrefix
 			}
 
-			if !contains(got, expectedPrefix) {
+			if !strings.Contains(got, expectedPrefix) {
 				t.Errorf("GenerateOutputPathWithPrefix() = %v, doesn't contain prefix %v", got, expectedPrefix)
 			}
 		})

@@ -38,7 +38,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				},
 				"size": map[string]interface{}{
 					"type":        "string",
-					"enum":        []string{"256x256", "512x512", "1024x1024", "1024x1792", "1792x1024", "2048x2048"},
+					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024", "2048x2048"},
 					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, vertex/imagen-4 up to 2048x2048, bedrock/nova-canvas up to 1408x1408. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait), '2048x2048' (ultra HD with imagen-4).",
 					"default":     "1024x1024",
 				},
@@ -52,6 +52,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"gemini-3-pro",
 						"imagen-3.0-generate-002",
 						"imagen-4",
+						"imagen-4-fast",
+						"imagen-4-ultra",
 						"gemini",
 						"gemini-flash",
 						"imagen",
@@ -63,7 +65,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048), 'grok' (xAI Aurora-powered). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048), 'imagen-4-fast' ($0.02/image, faster), 'imagen-4-ultra' ($0.06/image, highest quality), 'grok' (xAI Aurora-powered). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
 					"default":     "gemini-3-pro-image-preview",
 				},
 				"image_size": map[string]interface{}{

@@ -272,13 +272,129 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 3 (latest) via Vertex AI
+	// Imagen 4 Fast via Vertex AI
+	r.Register(&Provider{
+		ID:          "vertex/imagen-4-fast",
+		Name:        "Imagen 4 Fast (via Vertex AI)",
+		API:         "vertex",
+		ModelID:     "imagen-4.0-fast-generate-001",
+		Description: "Google's Imagen 4 optimized for speed",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., us-central1)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.02),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsNegativePrompt: true,
+			SupportsSeed:           true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
+		},
+	})
+
+	// Imagen 4 Ultra via Vertex AI
+	r.Register(&Provider{
+		ID:          "vertex/imagen-4-ultra",
+		Name:        "Imagen 4 Ultra (via Vertex AI)",
+		API:         "vertex",
+		ModelID:     "imagen-4.0-ultra-generate-001",
+		Description: "Google's Imagen 4 highest quality model",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., us-central1)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.06),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsNegativePrompt: true,
+			SupportsSeed:           true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
+		},
+	})
+
+	// Imagen 3 (latest, legacy) via Vertex AI
 	r.Register(&Provider{
 		ID:          "vertex/imagen-3",
 		Name:        "Imagen 3 (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "imagen-3.0-generate-002",
-		Description: "Google's Imagen 3 model, improved version",
+		Description: "Google's Imagen 3 model (legacy, prefer Imagen 4)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -336,7 +452,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Imagen 3 Standard (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "imagen-3.0-generate-001",
-		Description: "Google's Imagen 3 model, standard quality",
+		Description: "Google's Imagen 3 model, standard quality (legacy)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -394,7 +510,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Imagen 3 Fast (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "imagen-3.0-fast-generate-001",
-		Description: "Google's Imagen 3 Fast model, optimized for speed",
+		Description: "Google's Imagen 3 Fast model (legacy, prefer Imagen 4 Fast)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -792,10 +908,17 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"gemini-2.5":             "gemini/flash-2.5",
 		"gemini-2.5-flash":       "gemini/flash-2.5",
 		"gemini-2.5-flash-image": "gemini/flash-2.5",
-		// Vertex/Bedrock aliases
-		"imagen":                  "vertex/imagen-4",
-		"imagen-4":                "vertex/imagen-4",
-		"imagen-4.0-generate-001": "vertex/imagen-4",
+		// Vertex/Imagen aliases
+		"imagen":                       "vertex/imagen-4",
+		"imagen-4":                     "vertex/imagen-4",
+		"imagen-4.0-generate-001":      "vertex/imagen-4",
+		"imagen-4-fast":                "vertex/imagen-4-fast",
+		"imagen-fast":                  "vertex/imagen-4-fast",
+		"imagen-4.0-fast-generate-001": "vertex/imagen-4-fast",
+		"imagen-4-ultra":               "vertex/imagen-4-ultra",
+		"imagen-ultra":                 "vertex/imagen-4-ultra",
+		"imagen-4.0-ultra-generate-001": "vertex/imagen-4-ultra",
+		// Bedrock aliases
 		"nova":                    "bedrock/nova-canvas",
 		"nova-canvas":             "bedrock/nova-canvas",
 		"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
@@ -902,7 +1025,7 @@ func GetProviderPricing(provider *Provider, imageSize, dimensions string) Calcul
 	// Handle variable pricing models
 	if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
 		info.Cost = getGemini3ProCost(imageSize)
-		info.Display = fmt.Sprintf("$%.4f/image (%s)", info.Cost, imageSizeLabel(imageSize))
+		info.Display = fmt.Sprintf("$%.4f/image (%s)", info.Cost, ImageSizeLabel(imageSize))
 	} else if strings.Contains(provider.ModelID, "nova-canvas") {
 		info.Cost = getNovaCanvasCost(dimensions)
 		w, h := parseDimensionsForCost(dimensions)
@@ -959,8 +1082,8 @@ func parseDimensionsForCost(size string) (int, int) {
 	return width, height
 }
 
-// imageSizeLabel returns a human-readable label for the image size
-func imageSizeLabel(imageSize string) string {
+// ImageSizeLabel returns a human-readable label for the image size
+func ImageSizeLabel(imageSize string) string {
 	switch strings.ToUpper(imageSize) {
 	case "4K":
 		return "4K resolution"

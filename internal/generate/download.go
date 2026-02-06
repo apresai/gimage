@@ -249,7 +249,7 @@ func normalizeFormat(format string) string {
 	}
 
 	// Convert to lowercase
-	format = toLower(format)
+	format = strings.ToLower(format)
 
 	// Normalize variations
 	switch format {
@@ -260,20 +260,6 @@ func normalizeFormat(format string) string {
 	default:
 		return format
 	}
-}
-
-// toLower converts a string to lowercase (simple implementation)
-func toLower(s string) string {
-	result := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			result[i] = c + ('a' - 'A')
-		} else {
-			result[i] = c
-		}
-	}
-	return string(result)
 }
 
 // ValidateOutputPath checks if an output path is valid and writable

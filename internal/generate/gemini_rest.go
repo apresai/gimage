@@ -435,14 +435,6 @@ func buildPromptWithOptions(prompt string, options models.GenerateOptions) strin
 	return enhanced
 }
 
-// abs returns the absolute value of a float64
-func abs(x float64) float64 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 // enhanceError provides more context for API errors
 func enhanceError(err error) error {
 	if err == nil {
@@ -452,22 +444,22 @@ func enhanceError(err error) error {
 	errStr := err.Error()
 
 	// Check for authentication errors
-	if contains(errStr, "401") || contains(errStr, "unauthorized") {
+	if strings.Contains(errStr, "401") || strings.Contains(errStr, "unauthorized") {
 		return fmt.Errorf("authentication failed: invalid API key. Set GEMINI_API_KEY or use --api-key flag: %w", err)
 	}
 
 	// Check for permission errors
-	if contains(errStr, "403") || contains(errStr, "forbidden") {
+	if strings.Contains(errStr, "403") || strings.Contains(errStr, "forbidden") {
 		return fmt.Errorf("permission denied: check your API key and quota: %w", err)
 	}
 
 	// Check for rate limiting
-	if contains(errStr, "429") || contains(errStr, "rate limit") {
+	if strings.Contains(errStr, "429") || strings.Contains(errStr, "rate limit") {
 		return fmt.Errorf("rate limit exceeded: too many requests. Try again later: %w", err)
 	}
 
 	// Check for server errors
-	if contains(errStr, "500") || contains(errStr, "502") || contains(errStr, "503") {
+	if strings.Contains(errStr, "500") || strings.Contains(errStr, "502") || strings.Contains(errStr, "503") {
 		return fmt.Errorf("server error: Gemini API is experiencing issues. Try again later: %w", err)
 	}
 

@@ -2,6 +2,7 @@ package generate
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/apresai/gimage/pkg/models"
@@ -183,7 +184,7 @@ func TestBedrockRESTClient_buildRequest(t *testing.T) {
 				return
 			}
 			if tt.wantErr && tt.errContains != "" {
-				if err == nil || !contains(err.Error(), tt.errContains) {
+				if err == nil || !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("buildRequest() error = %v, should contain %q", err, tt.errContains)
 				}
 				return
@@ -223,7 +224,7 @@ func TestBedrockRESTClient_GenerateImage_EmptyPrompt(t *testing.T) {
 	if err == nil {
 		t.Error("GenerateImage() with empty prompt should return error")
 	}
-	if err != nil && !contains(err.Error(), "prompt cannot be empty") {
+	if err != nil && !strings.Contains(err.Error(), "prompt cannot be empty") {
 		t.Errorf("GenerateImage() error = %v, should contain 'prompt cannot be empty'", err)
 	}
 }

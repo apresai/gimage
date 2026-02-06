@@ -110,13 +110,6 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 		return nil, err
 	}
 
-	if err != nil {
-		if isCircuitBreakerError(err) {
-			return nil, fmt.Errorf("API circuit breaker is open (too many failures): %w", err)
-		}
-		return nil, err
-	}
-
 	return result.([]*models.GeneratedImage), nil
 }
 

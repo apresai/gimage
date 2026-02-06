@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4, AWS Bedrock Nova Canvas, or xAI Grok
+- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4/Fast/Ultra, AWS Bedrock Nova Canvas, or xAI Grok
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -125,7 +125,9 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 Model name implies backend (auto-detect):
 - `gemini-2.5-flash-image` → gemini (FREE tier)
 - `gemini-3-pro-image-preview` → gemini (native 4K, $0.134/image)
-- `imagen-4` → vertex
+- `imagen-4` → vertex ($0.04/image)
+- `imagen-4-fast` → vertex ($0.02/image)
+- `imagen-4-ultra` → vertex ($0.06/image)
 - `amazon.nova-canvas-v1:0` → bedrock
 - `grok-2-image` → grok (~$0.07/image)
 
@@ -139,13 +141,29 @@ Map informal names to exact model IDs:
 |-----------|---------------|-----|----------|
 | "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image (default) |
 | "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
-| "imagen", "imagen-4" | `imagen-4` | vertex | Highest quality, $0.04/image |
+| "imagen", "imagen-4" | `imagen-4.0-generate-001` | vertex | High quality, $0.04/image |
+| "imagen-4-fast", "imagen-fast" | `imagen-4.0-fast-generate-001` | vertex | Speed-optimized, $0.02/image |
+| "imagen-4-ultra", "imagen-ultra" | `imagen-4.0-ultra-generate-001` | vertex | Premium quality, $0.06/image |
+| "imagen-3" (legacy) | `imagen-3.0-generate-002` | vertex | Legacy, prefer Imagen 4, $0.04/image |
+| "imagen-3-fast" (legacy) | `imagen-3.0-fast-generate-001` | vertex | Legacy, prefer Imagen 4 Fast, $0.02/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.04-$0.08/image |
 | "grok", "grok-2", "xai", "aurora" | `grok-2-image` | grok | Aurora-powered, ~$0.07/image |
 
 **Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
 
 **Always use exact model IDs from the mapping table.**
+
+### Post-Generation: WebP Conversion
+
+AI-generated PNGs are typically 1-3 MB. Always convert to WebP for 90%+ size reduction:
+
+```bash
+# Using gimage convert
+gimage convert --input generated.png --format webp
+
+# Using cwebp for maximum control (preferred for photos)
+cwebp -q 85 -mt -sharp_yuv -preset photo generated.png -o generated.webp
+```
 
 ## Development Workflow
 
@@ -554,17 +572,14 @@ Deploy as serverless REST API on AWS Lambda:
 ```bash
 make build-lambda      # Build for ARM64/Graviton2
 make package-lambda    # Create deployment zip
-cd infrastructure/cdk && cdk deploy
 ```
 
-See `lambda.md` for complete guide.
+See the `gimage-deploy` sibling directory for deployment management.
 
 ## Documentation Structure
 
 - **README.md** - Main project overview
 - **COMMANDS.md** - Full CLI command reference
-- **lambda.md** - Lambda deployment guide
-- **INTEGRATION_GUIDE.md** - API client examples
 - **TESTING.md** - Testing documentation
 - **mcp.md** - MCP server overview
 - **docs/MCP_TOOLS.md** - Complete MCP tools reference (for LLMs)

@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 3, Imagen 4, Nova Canvas, Grok 2 Image), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
 
 ### Parameters
 
@@ -39,14 +39,13 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
 | `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
 | `cfg_scale`     | float   | No       | -                            | CFG scale for Bedrock (1.0-10.0, higher = more creative)                                       |
-| `count`         | integer | No       | 1                            | Number of images to generate (1-5)                                                             |
+| `count`         | integer | No       | 1                            | Number of images to generate (max varies by provider: Gemini 4, Bedrock 5, Vertex 8, Grok 10)  |
 | `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
 
 ### Supported Sizes
 
 **Gemini & Vertex AI:**
 
-- `256x256`
 - `512x512`
 - `1024x1024` (default)
 - `1024x1792`
@@ -70,12 +69,14 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 - **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
 - **gemini-2.5-flash-image** (FREE, 500 images/day, up to 1024x1024)
-- **gemini-2.0-flash-preview-image-generation**
 
 **Google Vertex AI:**
 
 - **imagen-4** (highest quality, $0.04/image, up to 2048x2048)
-- **imagen-3.0-generate-002** (Imagen 3, $0.04/image)
+- **imagen-4-fast** (speed-optimized, $0.02/image)
+- **imagen-4-ultra** (premium quality, $0.06/image)
+- **imagen-3.0-generate-002** (Imagen 3, legacy, $0.04/image)
+- **imagen-3.0-fast-generate-001** (Imagen 3 Fast, legacy, $0.02/image)
 
 **AWS Bedrock:**
 
@@ -163,6 +164,18 @@ Generate an image with seed 42 of abstract patterns
 
 ```
 Generate an image of a cat using gemini-2.5-flash-image model to stay within free tier
+```
+
+**Imagen 4 Fast (speed-optimized):**
+
+```
+Generate a quick product mockup using imagen-4-fast model
+```
+
+**Imagen 4 Ultra (premium quality):**
+
+```
+Generate a premium architectural visualization using imagen-4-ultra model
 ```
 
 **AWS Bedrock Nova Canvas:**
@@ -648,9 +661,12 @@ Error messages are designed to be clear and actionable:
 
 Different providers support different advanced parameters:
 
-**Gemini 3 Pro Only:**
+**Gemini (Flash & Pro) and Vertex AI:**
 
 - `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+
+**Gemini 3 Pro Only:**
+
 - `image_size`: Native resolution upscaling (1K, 2K, 4K)
 
 **Vertex AI Only:**
@@ -661,11 +677,14 @@ Different providers support different advanced parameters:
 
 - `cfg_scale`: Control creativity/adherence to prompt (1.0-10.0, higher = more creative)
 
+**Gemini, Vertex AI, and Bedrock (not Grok):**
+
+- `negative`: Negative prompt (exclude unwanted elements; Gemini Flash does not support negative prompts)
+- `seed`: Random seed for reproducibility (not supported by Grok)
+
 **All Providers:**
 
-- `negative`: Negative prompt (exclude unwanted elements)
-- `seed`: Random seed for reproducibility
-- `count`: Generate multiple images (1-5)
+- `count`: Generate multiple images (max varies: Gemini 4, Bedrock 5, Vertex 8, Grok 10)
 
 ### Tips for Better Performance
 
@@ -676,6 +695,8 @@ Different providers support different advanced parameters:
    - Use **Gemini 2.5 Flash** for FREE tier (500 images/day)
    - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
    - Use **Imagen 4** for premium photo-realistic quality ($0.04/image)
+   - Use **Imagen 4 Fast** for quick Vertex AI iterations ($0.02/image)
+   - Use **Imagen 4 Ultra** for highest Vertex AI quality ($0.06/image)
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 

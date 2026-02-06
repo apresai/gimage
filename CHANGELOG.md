@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Added
+- Imagen 4 Fast model (`imagen-4.0-fast-generate-001`) via Vertex AI - speed-optimized at $0.02/image
+- Imagen 4 Ultra model (`imagen-4.0-ultra-generate-001`) via Vertex AI - premium quality at $0.06/image
+- New model aliases: `imagen-4-fast`, `imagen-fast`, `imagen-4-ultra`, `imagen-ultra`
+- Dynamic TUI option display: count limits, feature availability, and size notes adapt per provider
+
+### Changed
+- Imagen 3 models now marked as legacy (prefer Imagen 4 variants)
+- Vertex AI pricing note updated to $0.02-0.06 per image range
+- TUI advanced options show "N/A" for unsupported provider features (negative prompt, seed, aspect ratio)
+- TUI count field shows provider-specific max (Gemini: 4, Bedrock: 5, Vertex: 8, Grok: 10)
+- Migrated all internal logging from `log.Printf` to structured `slog` logger
+- Deduplicated common functions across generation clients
+- Updated all documentation (README, CLAUDE.md, COMMANDS.md, MCP docs) with Imagen 4 Fast/Ultra models
+- Removed broken references to deleted `lambda.md` and `INTEGRATION_GUIDE.md`
+- Fixed troubleshooting auth syntax in COMMANDS.md (`gimage auth setup` instead of `gimage auth`)
+
+### Fixed
+- Grok CLI generation: advanced options (size, style, negative, seed) were being silently dropped
+- MCP tool schema: removed unsupported 256x256 size option
+- MCP `list_models` now includes all registered providers dynamically
+
+### Removed
+- Dead code: unused `GeminiClient` SDK-based client (replaced by `GeminiRESTClient`)
+- Redundant helper functions consolidated across generation backends
+- Removed `gemini-2.0-flash-preview-image-generation` from documentation (not registered in provider system)
 
 ## [1.2.111] - 2026-01-25
 

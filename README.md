@@ -21,7 +21,7 @@ Production-ready serverless REST API for web applications and remote processing.
 ### 🎨 AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 3, Imagen 4, Nova Canvas, Grok 2 Image
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image
 - Control size, style, quality, aspect ratio, and use negative prompts
 - Reproducible results with seed values
 - Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3 Pro)
@@ -153,7 +153,7 @@ gimage generate "random pattern" --seed 12345
 # Control creativity with CFG scale (Bedrock Nova Canvas, 1.0-10.0)
 gimage generate "abstract art" --model nova-canvas --cfg-scale 10
 
-# Generate multiple images at once (1-5 images)
+# Generate multiple images at once
 gimage generate "fantasy landscape" --count 3
 
 # Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
@@ -167,7 +167,15 @@ gimage generate --list-models
 
 # Or use explicit --prompt flag if preferred
 gimage generate --prompt "your prompt here"
+
+# Pro tip: Convert generated images to WebP for 90%+ size reduction
+gimage generate "sunset over mountains" -o sunset.png
+gimage convert --input sunset.png --format webp
+# Or use cwebp directly for maximum control:
+# cwebp -q 85 -mt -sharp_yuv -preset photo sunset.png -o sunset.webp
 ```
+
+> **Tip: Always convert to WebP** — AI-generated PNGs are typically 1-3 MB. Converting to WebP at quality 85 reduces file size by 90%+ with no visible quality loss. Use `gimage convert --format webp` or `cwebp -q 85 -mt -sharp_yuv -preset photo` for best results.
 
 ### Image Processing
 
@@ -340,27 +348,35 @@ gimage auth status  # Shows which credentials are active and their sources
   - Fast generation (~2-3 seconds)
   - Best for: Quick iterations, development, testing
 
-- **`gemini-2.0-flash-preview-image-generation`**
-  - FREE: 500 images/day
-  - Preview model with experimental features
-
 ### Vertex AI (Google Cloud) - Paid
 
-- **`imagen-4`** (newest, highest quality)
+- **`imagen-4`** (default Vertex model, highest quality)
 
   - Pricing: $0.04/image
   - Resolution: up to 2048x2048
   - Best for: Professional work, final production images
 
-- **`imagen-3.0-generate-002`** (Imagen 3)
+- **`imagen-4-fast`** (optimized for speed)
+
+  - Pricing: $0.02/image
+  - Faster generation with good quality
+  - Best for: Quick iterations, batch processing
+
+- **`imagen-4-ultra`** (premium quality)
+
+  - Pricing: $0.06/image
+  - Highest quality Vertex AI model
+  - Best for: Print-ready, marketing materials
+
+- **`imagen-3.0-generate-002`** (Imagen 3, legacy)
 
   - Pricing: $0.04/image
   - Resolution: up to 1536x1536
-  - High quality, production-ready
+  - Note: Prefer Imagen 4 for new projects
 
-- **`imagen-3.0-fast-generate-001`** (Imagen 3 Fast)
+- **`imagen-3.0-fast-generate-001`** (Imagen 3 Fast, legacy)
   - Pricing: $0.02/image
-  - Optimized for speed
+  - Note: Prefer Imagen 4 Fast for new projects
 
 ### AWS Bedrock - Paid
 
@@ -803,7 +819,7 @@ cd ../gimage-deploy
 
 **Option 2: Manual deployment**
 
-See [lambda.md](lambda.md) for manual deployment guide with AWS CLI.
+See the `gimage-deploy` directory for manual deployment with AWS CLI.
 
 ### Deployment Tool
 
@@ -882,9 +898,8 @@ result, err := client.GenerateImage(gimage.GenerateRequest{
 
 ### Documentation
 
-- **Deployment Guide**: [lambda.md](lambda.md) - Complete deployment and infrastructure setup
-- **Integration Guide**: [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Client SDKs & examples
 - **OpenAPI Spec**: [openapi.yaml](openapi.yaml) - Complete API reference
+- **Go SDK**: [github.com/apresai/gimage-go-sdk](https://github.com/apresai/gimage-go-sdk) - Type-safe Go client
 
 ### Architecture
 
@@ -951,8 +966,6 @@ make package-lambda
 ### Lambda API
 
 - **OpenAPI Specification**: [openapi.yaml](openapi.yaml)
-- **Integration Guide**: [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
-- **Deployment Guide**: [lambda.md](lambda.md)
 
 ### Community
 

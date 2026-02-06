@@ -587,13 +587,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		}
 		defer client.Close()
 
-		// Build options - Grok doesn't support size/style/negative prompts
-		grokOptions := models.GenerateOptions{
-			Model: modelName,
-		}
+		// Use the unified options with resolved model name
+		options.Model = modelName
 
 		startTime = time.Now()
-		generatedImages, err = client.GenerateImage(ctx, prompt, grokOptions)
+		generatedImages, err = client.GenerateImage(ctx, prompt, options)
 	} else {
 		return fmt.Errorf("invalid API: %s (must be 'gemini', 'vertex', 'bedrock', or 'grok')", selectedAPI)
 	}
@@ -653,20 +651,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// imageSizeLabel returns a human-readable label for the image size
-func imageSizeLabel(imageSize string) string {
-	switch strings.ToUpper(imageSize) {
-	case "4K":
-		return "4K resolution"
-	case "2K":
-		return "2K resolution"
-	case "1K":
-		return "1K resolution"
-	default:
-		return "1K/2K resolution"
-	}
 }
 
 // runGenerateWithProvider handles image generation using the new provider system
@@ -848,32 +832,22 @@ func printProviderStatus(status generate.AuthStatus) {
 }
 
 // printAvailableModels displays all available providers in a formatted table
+// Uses the provider registry dynamically so new APIs/models appear automatically.
 func printAvailableModels() error {
-	// Get provider registry and auth status
 	registry := generate.GetProviderRegistry()
-	statuses := registry.GetAuthStatus()
-
-	// Group providers by API
-	geminiProviders := []generate.AuthStatus{}
-	vertexProviders := []generate.AuthStatus{}
-	bedrockProviders := []generate.AuthStatus{}
-
-	for _, status := range statuses {
-		switch status.Provider.API {
-		case "gemini":
-			geminiProviders = append(geminiProviders, status)
-		case "vertex":
-			vertexProviders = append(vertexProviders, status)
-		case "bedrock":
-			bedrockProviders = append(bedrockProviders, status)
-		}
-	}
+	grouped := registry.GroupAuthStatusByAPI()
+	apis := registry.ListAPIs()
 
 	// Check if any auth is configured
 	hasAnyAuth := false
-	for _, status := range statuses {
-		if status.Configured {
-			hasAnyAuth = true
+	for _, apiInfo := range apis {
+		for _, status := range grouped[apiInfo.ID] {
+			if status.Configured {
+				hasAnyAuth = true
+				break
+			}
+		}
+		if hasAnyAuth {
 			break
 		}
 	}
@@ -888,138 +862,65 @@ func printAvailableModels() error {
 	printInfo("║    ██║  ██║ ╚████╔╝ ██║  ██║██║███████╗██║  ██║██████╔╝███████╗███████╗     ║")
 	printInfo("║    ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚══════╝     ║")
 	printInfo("║                                                                               ║")
-	printInfo("║               🎨  AI Image Generation Providers  🎨                           ║")
+	printInfo("║               AI Image Generation Providers                                   ║")
 	printInfo("║                                                                               ║")
 	printInfo("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
 
 	if !hasAnyAuth {
-		printWarning("⚠️  No API credentials configured. Set up authentication to use these providers:\n")
+		printWarning("No API credentials configured. Set up authentication to use these providers:\n")
 	}
 
-	// Print Gemini providers - ALWAYS show, indicate auth status
-	hasGemini := false
-	for _, status := range geminiProviders {
-		if status.Configured {
-			hasGemini = true
-			break
-		}
-	}
-	printInfo("┌─────────────────────────────────────────────────────────────────────────────────┐")
-	if hasGemini {
-		printSuccess("│ ✓ Gemini API (AUTHENTICATED - Free Tier Available)                             │")
-	} else {
-		printWarning("│ ○ Gemini API (NOT AUTHENTICATED - Setup: gimage auth gemini)                   │")
-	}
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	printInfo("│ Providers:                                                                      │")
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	for _, status := range geminiProviders {
-		p := status.Provider
-		// Format pricing
-		pricingDisplay := "Variable"
-		if p.Pricing.FreeTier {
-			pricingDisplay = fmt.Sprintf("FREE (%s)", p.Pricing.FreeTierLimit)
-		} else if p.Pricing.CostPerImage != nil {
-			pricingDisplay = fmt.Sprintf("$%.4f/image", *p.Pricing.CostPerImage)
+	// Track which APIs are authenticated for quick start section
+	apiAuth := map[string]bool{}
+
+	// Print providers for each API dynamically
+	for _, apiInfo := range apis {
+		providers := grouped[apiInfo.ID]
+		if len(providers) == 0 {
+			continue
 		}
 
-		authMark := greenYes()
-		if !status.Configured {
-			authMark = redNo()
+		// Check if this API is authenticated
+		hasAuth := false
+		for _, status := range providers {
+			if status.Configured {
+				hasAuth = true
+				break
+			}
 		}
-		// Display provider name (73 chars for name)
-		paddedName := padRight(p.Name, 73)
-		printInfo("│ %s  %s │", authMark, paddedName)
-		// Print details on second line (indented)
-		printInfo("│     Provider ID: %-20s  Pricing: %-35s │", p.ID, pricingDisplay)
-		if viper.GetBool("verbose") {
-			printVerbose("│     %s", p.Description)
-			printVerbose("│     Model ID: %s", p.ModelID)
-		}
-	}
-	printInfo("└─────────────────────────────────────────────────────────────────────────────────┘\n")
+		apiAuth[apiInfo.ID] = hasAuth
 
-	// Print Vertex providers - ALWAYS show, indicate auth status
-	hasVertex := false
-	for _, status := range vertexProviders {
-		if status.Configured {
-			hasVertex = true
-			break
+		printInfo("┌─────────────────────────────────────────────────────────────────────────────────┐")
+		if hasAuth {
+			printSuccess("| AUTHENTICATED: %s", apiInfo.DisplayName)
+		} else {
+			printWarning("| NOT AUTHENTICATED: %s (Setup: gimage auth %s)", apiInfo.DisplayName, apiInfo.ID)
 		}
-	}
-	printInfo("┌─────────────────────────────────────────────────────────────────────────────────┐")
-	if hasVertex {
-		printSuccess("│ ✓ Vertex AI (AUTHENTICATED - Paid, Requires GCP)                               │")
-	} else {
-		printWarning("│ ○ Vertex AI (NOT AUTHENTICATED - Setup: gimage auth vertex)                    │")
-	}
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	printInfo("│ Providers:                                                                      │")
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	for _, status := range vertexProviders {
-		p := status.Provider
-		// Format pricing
-		pricingDisplay := "Variable"
-		if p.Pricing.CostPerImage != nil {
-			pricingDisplay = fmt.Sprintf("$%.4f/image", *p.Pricing.CostPerImage)
-		}
+		printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
 
-		authMark := greenYes()
-		if !status.Configured {
-			authMark = redNo()
-		}
-		// Display provider name (73 chars for name)
-		paddedName := padRight(p.Name, 73)
-		printInfo("│ %s  %s │", authMark, paddedName)
-		// Print details on second line (indented)
-		printInfo("│     Provider ID: %-20s  Pricing: %-35s │", p.ID, pricingDisplay)
-		if viper.GetBool("verbose") {
-			printVerbose("│     %s", p.Description)
-			printVerbose("│     Model ID: %s", p.ModelID)
-		}
-	}
-	printInfo("└─────────────────────────────────────────────────────────────────────────────────┘\n")
+		for _, status := range providers {
+			p := status.Provider
+			pricingDisplay := "Variable"
+			if p.Pricing.FreeTier {
+				pricingDisplay = fmt.Sprintf("FREE (%s)", p.Pricing.FreeTierLimit)
+			} else if p.Pricing.CostPerImage != nil {
+				pricingDisplay = fmt.Sprintf("$%.4f/image", *p.Pricing.CostPerImage)
+			}
 
-	// Print Bedrock providers - ALWAYS show, indicate auth status
-	hasBedrock := false
-	for _, status := range bedrockProviders {
-		if status.Configured {
-			hasBedrock = true
-			break
+			authMark := greenYes()
+			if !status.Configured {
+				authMark = redNo()
+			}
+			paddedName := padRight(p.Name, 73)
+			printInfo("│ %s  %s │", authMark, paddedName)
+			printInfo("│     Provider ID: %-20s  Pricing: %-35s │", p.ID, pricingDisplay)
+			if viper.GetBool("verbose") {
+				printVerbose("│     %s", p.Description)
+				printVerbose("│     Model ID: %s", p.ModelID)
+			}
 		}
+		printInfo("└─────────────────────────────────────────────────────────────────────────────────┘\n")
 	}
-	printInfo("┌─────────────────────────────────────────────────────────────────────────────────┐")
-	if hasBedrock {
-		printSuccess("│ ✓ AWS Bedrock (AUTHENTICATED - Paid, Requires AWS)                             │")
-	} else {
-		printWarning("│ ○ AWS Bedrock (NOT AUTHENTICATED - Setup: gimage auth bedrock)                 │")
-	}
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	printInfo("│ Providers:                                                                      │")
-	printInfo("├─────────────────────────────────────────────────────────────────────────────────┤")
-	for _, status := range bedrockProviders {
-		p := status.Provider
-		// Format pricing
-		pricingDisplay := "Variable"
-		if p.Pricing.CostPerImage != nil {
-			pricingDisplay = fmt.Sprintf("$%.4f/image", *p.Pricing.CostPerImage)
-		}
-
-		authMark := greenYes()
-		if !status.Configured {
-			authMark = redNo()
-		}
-		// Display provider name (73 chars for name)
-		paddedName := padRight(p.Name, 73)
-		printInfo("│ %s  %s │", authMark, paddedName)
-		// Print details on second line (indented)
-		printInfo("│     Provider ID: %-20s  Pricing: %-35s │", p.ID, pricingDisplay)
-		if viper.GetBool("verbose") {
-			printVerbose("│     %s", p.Description)
-			printVerbose("│     Model ID: %s", p.ModelID)
-		}
-	}
-	printInfo("└─────────────────────────────────────────────────────────────────────────────────┘\n")
 
 	printInfo("╔═══════════════════════════════════════════════════════════════════════════════╗")
 	printInfo("║                                   LEGEND                                      ║")
@@ -1033,46 +934,27 @@ func printAvailableModels() error {
 	printInfo("╠═══════════════════════════════════════════════════════════════════════════════╣")
 	printInfo("║  Usage: gimage generate \"your prompt\" --model <model-name>                   ║")
 	printInfo("╠═══════════════════════════════════════════════════════════════════════════════╣")
-	printInfo("║  Recommended Providers:                                                       ║")
-	if hasGemini {
-		printInfo("║    ✓ Free users:  gemini (500/day FREE)                                       ║")
-	} else {
-		printInfo("║    ○ Free users:  gemini (setup: gimage auth gemini)                          ║")
-	}
-	if hasVertex {
-		printInfo("║    ✓ Paid users:  imagen-4 ($0.04/image, highest quality)                    ║")
-	} else {
-		printInfo("║    ○ Paid users:  imagen-4 (setup: gimage auth vertex)                       ║")
-	}
-	if hasBedrock {
-		printInfo("║    ✓ AWS users:   nova-canvas ($0.08/image)                                  ║")
-	} else {
-		printInfo("║    ○ AWS users:   nova-canvas (setup: gimage auth bedrock)                   ║")
-	}
-	printInfo("╠═══════════════════════════════════════════════════════════════════════════════╣")
 	printInfo("║  Examples:                                                                    ║")
-	if hasGemini {
-		printInfo("║    gimage generate \"sunset\" --model gemini                                   ║")
+
+	// Show examples for authenticated APIs
+	for _, apiInfo := range apis {
+		if apiAuth[apiInfo.ID] {
+			providers := grouped[apiInfo.ID]
+			if len(providers) > 0 {
+				// Use first provider as example
+				printInfo("║    gimage generate \"prompt\" --model %s", providers[0].Provider.ID)
+			}
+		}
 	}
-	if hasVertex {
-		printInfo("║    gimage generate \"abstract art\" --model imagen-4                           ║")
-	}
-	if hasBedrock {
-		printInfo("║    gimage generate \"landscape\" --api bedrock                                 ║")
-		printInfo("║    gimage generate \"portrait\" --model nova-canvas                            ║")
-	}
+
 	printInfo("╚═══════════════════════════════════════════════════════════════════════════════╝")
 
 	if !hasAnyAuth {
-		printInfo("\n╔═══════════════════════════════════════════════════════════════════════════════╗")
-		printInfo("║                            GET STARTED                                        ║")
-		printInfo("╠═══════════════════════════════════════════════════════════════════════════════╣")
-		printInfo("║  To get started, authenticate with at least one API:                         ║")
-		printInfo("║                                                                               ║")
-		printInfo("║    gimage auth gemini   # Fastest, has free tier                             ║")
-		printInfo("║    gimage auth vertex   # Highest quality (paid)                             ║")
-		printInfo("║    gimage auth bedrock  # AWS integration (paid)                             ║")
-		printInfo("╚═══════════════════════════════════════════════════════════════════════════════╝")
+		printInfo("\n  To get started, authenticate with at least one API:")
+		printInfo("    gimage auth gemini   # Fastest, has free tier")
+		printInfo("    gimage auth vertex   # Highest quality (paid)")
+		printInfo("    gimage auth bedrock  # AWS integration (paid)")
+		printInfo("    gimage auth grok     # xAI Aurora (paid)")
 	}
 
 	return nil

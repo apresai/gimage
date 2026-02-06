@@ -87,8 +87,8 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 		return nil, err
 	}
 
-	// Enhance prompt for better results
-	enhancedPrompt := EnhancePrompt(prompt)
+	// Enhance prompt for better results, including style
+	enhancedPrompt := buildPromptWithOptions(EnhancePrompt(prompt), options)
 
 	// Use custom model if provided, otherwise default to Imagen 4
 	modelName := options.Model
@@ -110,9 +110,16 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 		NumberOfImages: int32(numberOfImages),
 	}
 
-	// Parse aspect ratio if provided
+	// Determine aspect ratio: explicit flag > inferred from Size
 	if options.AspectRatio != "" {
 		config.AspectRatio = options.AspectRatio
+		c.log.Debug("Using explicit aspect ratio: %s", options.AspectRatio)
+	} else if options.Size != "" {
+		w, h := ParseSizeString(options.Size)
+		if w > 0 && h > 0 {
+			config.AspectRatio = InferAspectRatio(w, h, nil)
+			c.log.Debug("Inferred aspect ratio from size %dx%d: %s", w, h, config.AspectRatio)
+		}
 	}
 
 	// Set output format if supported

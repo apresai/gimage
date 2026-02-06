@@ -133,15 +133,19 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	c.log.Debug("Project: %s, Location: %s", c.projectID, c.location)
 	c.log.Debug("Full prompt: %s", fullPrompt)
 
-	// Determine aspect ratio from size
+	// Determine aspect ratio: explicit flag > inferred from Size > default
 	aspectRatio := "1:1" // Default
-	if options.Size != "" {
+	if options.AspectRatio != "" {
+		aspectRatio = options.AspectRatio
+		c.log.Debug("Using explicit aspect ratio: %s", aspectRatio)
+	} else if options.Size != "" {
 		width, height := ParseSizeString(options.Size)
 		c.log.Debug("Requested dimensions: %dx%d", width, height)
 		aspectRatio = InferAspectRatio(width, height, nil)
+		c.log.Debug("Inferred aspect ratio from size: %s", aspectRatio)
+	} else {
+		c.log.Debug("Using default aspect ratio: %s", aspectRatio)
 	}
-
-	c.log.Debug("Using aspect ratio: %s", aspectRatio)
 
 	// Determine number of images (Vertex AI Imagen supports 1-8)
 	sampleCount := 1

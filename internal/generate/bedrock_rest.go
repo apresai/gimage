@@ -9,13 +9,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/rs/zerolog"
 	"github.com/sony/gobreaker"
-	"github.com/spf13/viper"
 )
 
 // BedrockRESTClient uses AWS Bedrock REST API with bearer token for image generation
@@ -24,8 +22,7 @@ type BedrockRESTClient struct {
 	region         string
 	baseURL        string
 	httpClient     *http.Client
-	verbose        bool
-	logger         zerolog.Logger
+	log            *observability.VerboseLogger
 	circuitBreaker *gobreaker.CircuitBreaker
 }
 
@@ -46,21 +43,6 @@ func NewBedrockRESTClient(apiKey, region string) (*BedrockRESTClient, error) {
 	// Build base URL for Bedrock Runtime
 	baseURL := fmt.Sprintf("https://bedrock-runtime.%s.amazonaws.com", region)
 
-	// Check verbose mode
-	verbose := viper.GetBool("verbose") ||
-		os.Getenv("GIMAGE_VERBOSE") == "true" ||
-		os.Getenv("VERBOSE") == "true"
-
-	// Setup logger
-	logger := zerolog.New(os.Stderr).With().
-		Timestamp().
-		Str("component", "bedrock_rest").
-		Logger()
-
-	if !verbose {
-		logger = logger.Level(zerolog.WarnLevel)
-	}
-
 	return &BedrockRESTClient{
 		apiKey:  apiKey,
 		region:  region,
@@ -68,8 +50,7 @@ func NewBedrockRESTClient(apiKey, region string) (*BedrockRESTClient, error) {
 		httpClient: &http.Client{
 			Timeout: 5 * time.Minute,
 		},
-		verbose:        verbose,
-		logger:         logger,
+		log:            observability.NewVerboseLogger(observability.ComponentBedrock),
 		circuitBreaker: newCircuitBreaker("BedrockRESTAPI"),
 	}, nil
 }
@@ -90,15 +71,9 @@ func (c *BedrockRESTClient) GenerateImage(ctx context.Context, prompt string, op
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	if c.verbose {
-		c.logger.Debug().
-			Str("prompt", prompt).
-			Str("model", options.Model).
-			Str("size", options.Size).
-			Str("quality", request.ImageGenerationConfig.Quality).
-			Int("seed", request.ImageGenerationConfig.Seed).
-			Msg("Generating image with AWS Bedrock Nova Canvas via REST API")
-	}
+	c.log.Debug("Generating image with AWS Bedrock Nova Canvas via REST API")
+	c.log.Debug("Prompt: %s, Model: %s, Size: %s, Quality: %s",
+		prompt, options.Model, options.Size, request.ImageGenerationConfig.Quality)
 
 	// Determine model ID
 	modelID := "amazon.nova-canvas-v1:0"
@@ -165,7 +140,7 @@ func (c *BedrockRESTClient) GenerateImage(ctx context.Context, prompt string, op
 		for i, imgStr := range novaResponse.Images {
 			imageData, err := base64.StdEncoding.DecodeString(imgStr)
 			if err != nil {
-				c.logger.Debug().Int("index", i).Err(err).Msg("Failed to decode image, skipping")
+				c.log.Debug("Failed to decode image %d, skipping: %v", i, err)
 				continue
 			}
 
@@ -190,13 +165,8 @@ func (c *BedrockRESTClient) GenerateImage(ctx context.Context, prompt string, op
 			return nil, fmt.Errorf("no valid images generated")
 		}
 
-		if c.verbose {
-			c.logger.Info().
-				Str("model", modelID).
-				Dur("duration", time.Since(startTime)).
-				Int("count", len(generatedImages)).
-				Msg("Images generated successfully via REST API")
-		}
+		c.log.Debug("Images generated successfully via REST API: model=%s, count=%d, duration=%s",
+			modelID, len(generatedImages), time.Since(startTime))
 
 		response = generatedImages
 		return response, nil
@@ -209,83 +179,9 @@ func (c *BedrockRESTClient) GenerateImage(ctx context.Context, prompt string, op
 	return response, nil
 }
 
-// buildRequest builds the Nova Canvas request from options
+// buildRequest builds the Nova Canvas request from options (delegates to shared function)
 func (c *BedrockRESTClient) buildRequest(prompt string, options models.GenerateOptions) (*NovaCanvasRequest, error) {
-	// Validate prompt
-	if prompt == "" {
-		return nil, fmt.Errorf("prompt cannot be empty")
-	}
-
-	// Parse and normalize dimensions (Nova Canvas supports 512-2048, multiples of 64)
-	requestedWidth, requestedHeight := ParseSizeString(options.Size)
-	apiWidth, apiHeight := NormalizeDimensions(requestedWidth, requestedHeight, BedrockConstraints)
-	c.logger.Debug().
-		Int("requested_w", requestedWidth).Int("requested_h", requestedHeight).
-		Int("api_w", apiWidth).Int("api_h", apiHeight).
-		Msg("Normalized dimensions for Bedrock")
-
-	// Validate seed if provided (Nova Canvas supports 0-858993459)
-	if options.Seed < 0 || options.Seed > 858993459 {
-		return nil, fmt.Errorf("invalid seed: %d (must be 0-858993459)", options.Seed)
-	}
-
-	// Determine quality from style (Nova Canvas uses standard/premium, not style)
-	// Map common quality/style keywords to Nova Canvas quality levels
-	quality := "standard"
-	if options.Style != "" {
-		lowerStyle := strings.ToLower(options.Style)
-		if lowerStyle == "premium" || lowerStyle == "high" || lowerStyle == "ultra" || lowerStyle == "photorealistic" {
-			quality = "premium"
-		}
-	}
-
-	// Determine CFG scale (use option or default to 7.0)
-	cfgScale := 7.0
-	if options.CfgScale > 0 {
-		// Clamp to valid range (1.0-10.0)
-		cfgScale = options.CfgScale
-		if cfgScale < 1.0 {
-			cfgScale = 1.0
-		} else if cfgScale > 10.0 {
-			cfgScale = 10.0
-		}
-	}
-
-	// Determine number of images (use option or default to 1)
-	numberOfImages := 1
-	if options.NumberOfImages > 0 {
-		numberOfImages = options.NumberOfImages
-		if numberOfImages > 5 {
-			numberOfImages = 5 // Nova Canvas max is 5
-		}
-	}
-
-	// Build request
-	request := &NovaCanvasRequest{
-		TaskType: "TEXT_IMAGE",
-		TextToImageParams: NovaCanvasTextToImageParams{
-			Text: prompt,
-		},
-		ImageGenerationConfig: NovaCanvasImageConfig{
-			NumberOfImages: numberOfImages,
-			Quality:        quality,
-			Height:         apiHeight,
-			Width:          apiWidth,
-			CfgScale:       cfgScale,
-		},
-	}
-
-	// Add negative prompt if provided
-	if options.NegativePrompt != "" {
-		request.TextToImageParams.NegativeText = options.NegativePrompt
-	}
-
-	// Add seed if provided
-	if options.Seed != 0 {
-		request.ImageGenerationConfig.Seed = int(options.Seed)
-	}
-
-	return request, nil
+	return BuildNovaCanvasRequest(prompt, options, c.log)
 }
 
 // handleHTTPError provides user-friendly error messages for HTTP errors
@@ -303,13 +199,7 @@ func (c *BedrockRESTClient) handleHTTPError(statusCode int, body []byte) error {
 		errorMsg = string(body)
 	}
 
-	// Log raw error in verbose mode
-	if c.verbose {
-		c.logger.Error().
-			Int("status_code", statusCode).
-			Str("error_message", errorMsg).
-			Msg("AWS Bedrock REST API error")
-	}
+	c.log.Error("AWS Bedrock REST API error: status=%d, message=%s", statusCode, errorMsg)
 
 	// Provide user-friendly messages based on status code
 	switch statusCode {
