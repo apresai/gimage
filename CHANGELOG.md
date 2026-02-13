@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.115] - 2026-02-13
+
+### Added
+- Grok Imagine and Grok Imagine Pro model support with aliases (grok, xai, aurora)
+- 265 unit tests across 13 new test files (coverage: 15.6% → 30%)
+- Coverage report with embedded E2E images and prompt display
+- Path traversal protection in image download paths
+
+### Changed
+- Updated provider registry with accurate pricing for all models
+- Gemini Flash marked as paid ($0.039/image), no longer listed as free
+- Bedrock REST client timeout reduced from 5 to 2 minutes
+- Updated all dependencies to latest versions
+
+### Fixed
+- CLI/TUI/MCP model name mismatches for Grok providers
+
+
 ## [1.2.113] - 2026-02-05
 
 ### Added
