@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/apresai/gimage/pkg/models"
@@ -33,6 +34,7 @@ type GrokImageRequest struct {
 	Prompt         string `json:"prompt"`
 	N              int    `json:"n,omitempty"`
 	ResponseFormat string `json:"response_format,omitempty"`
+	AspectRatio    string `json:"aspect_ratio,omitempty"`
 }
 
 // GrokImageResponse represents the response from Grok image generation
@@ -44,8 +46,9 @@ type GrokImageResponse struct {
 
 // GrokImageData contains the generated image data
 type GrokImageData struct {
-	URL     string `json:"url,omitempty"`
-	B64JSON string `json:"b64_json,omitempty"`
+	URL            string `json:"url,omitempty"`
+	B64JSON        string `json:"b64_json,omitempty"`
+	RevisedPrompt  string `json:"revised_prompt,omitempty"`
 }
 
 // GrokErrorDetail contains error information from the API
@@ -93,9 +96,15 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 		ResponseFormat: "b64_json", // Get base64 data directly
 	}
 
-	// Use custom model if specified
-	if options.Model != "" && options.Model != "grok" && options.Model != "grok-2-image" {
+	// Use custom model if specified (skip known aliases that should use the default)
+	if options.Model != "" && options.Model != "grok" && options.Model != "grok-2-image" &&
+		options.Model != "grok-imagine" && options.Model != "xai" && options.Model != "aurora" {
 		request.Model = options.Model
+	}
+
+	// Set aspect ratio for grok-imagine models (not supported on grok-2-image)
+	if options.AspectRatio != "" && isGrokImagineModel(request.Model) {
+		request.AspectRatio = options.AspectRatio
 	}
 
 	// Execute through circuit breaker
@@ -205,6 +214,9 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) ([
 			"generated": time.Now().UTC().Format(time.RFC3339),
 			"candidate": fmt.Sprintf("%d", i),
 		}
+		if imageData.RevisedPrompt != "" {
+			metadata["revised_prompt"] = imageData.RevisedPrompt
+		}
 
 		generatedImages = append(generatedImages, &models.GeneratedImage{
 			Data:     rawImageData,
@@ -273,6 +285,11 @@ func detectImageFormat(data []byte) string {
 	default:
 		return "png" // Default to PNG
 	}
+}
+
+// isGrokImagineModel returns true if the model supports grok-imagine features (aspect_ratio)
+func isGrokImagineModel(model string) bool {
+	return strings.HasPrefix(model, "grok-imagine")
 }
 
 // Close cleans up resources (implements ImageGenerator interface)

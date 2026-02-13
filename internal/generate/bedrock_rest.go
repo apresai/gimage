@@ -48,7 +48,7 @@ func NewBedrockRESTClient(apiKey, region string) (*BedrockRESTClient, error) {
 		region:  region,
 		baseURL: baseURL,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Minute,
+			Timeout: 2 * time.Minute,
 		},
 		log:            observability.NewVerboseLogger(observability.ComponentBedrock),
 		circuitBreaker: newCircuitBreaker("BedrockRESTAPI"),

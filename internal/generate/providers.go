@@ -91,7 +91,7 @@ var apiRegistry = map[string]APIInfo{
 		ID:          "gemini",
 		DisplayName: "Gemini API (Google AI Studio)",
 		Description: "Direct access via Google AI Studio",
-		PricingNote: "Free tier: 500 images/day",
+		PricingNote: "Paid: $0.039-0.24 per image",
 		Order:       1,
 	},
 	"vertex": {
@@ -112,7 +112,7 @@ var apiRegistry = map[string]APIInfo{
 		ID:          "grok",
 		DisplayName: "xAI Grok",
 		Description: "xAI's Aurora-powered image generation",
-		PricingNote: "Paid: ~$0.07 per image",
+		PricingNote: "Paid: $0.02-0.07 per image",
 		Order:       4,
 	},
 }
@@ -146,7 +146,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Gemini 2.5 Flash (via Gemini API)",
 		API:         "gemini",
 		ModelID:     "gemini-2.5-flash-image",
-		Description: "Direct access via Google AI Studio - Simple, with free tier",
+		Description: "Direct access via Google AI Studio - Simple, affordable",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GEMINI_API_KEY",
@@ -157,10 +157,9 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage:  float64Ptr(0.0),
-			FreeTier:      true,
-			FreeTierLimit: "500 images/day",
-			Currency:      "USD",
+			CostPerImage: float64Ptr(0.039),
+			FreeTier:     false,
+			Currency:     "USD",
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
@@ -562,13 +561,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Grok 2 Image via xAI
+	// Grok Imagine via xAI (new default)
 	r.Register(&Provider{
-		ID:          "grok/grok-2-image",
-		Name:        "Grok 2 Image (via xAI)",
+		ID:          "grok/grok-imagine",
+		Name:        "Grok Imagine (via xAI)",
 		API:         "grok",
-		ModelID:     "grok-2-image-1212", // Versioned model name works more reliably
-		Description: "xAI's Aurora-powered image generation model",
+		ModelID:     "grok-imagine-image",
+		Description: "xAI's latest image generation model - fast and affordable",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -579,14 +578,86 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.07), // Approximate pricing
+			CostPerImage: float64Ptr(0.02),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
 		Capabilities: ModelCapabilities{
-			SupportsStyles:         false, // Grok doesn't support style parameter
-			SupportsNegativePrompt: false, // Grok doesn't support negative prompts
-			SupportsSeed:           false, // Grok doesn't support seed
+			SupportsStyles:         false,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
+			MaxPromptLength:        8000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GROK_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GROK_API_KEY is required")
+			}
+			return NewGrokClient(apiKey)
+		},
+	})
+
+	// Grok Imagine Pro via xAI (higher quality)
+	r.Register(&Provider{
+		ID:          "grok/grok-imagine-pro",
+		Name:        "Grok Imagine Pro (via xAI)",
+		API:         "grok",
+		ModelID:     "grok-imagine-image-pro",
+		Description: "xAI's premium image generation model - higher quality",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GROK_API_KEY",
+				ConfigKey:   "grok_api_key",
+				Description: "API key from https://console.x.ai",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.07),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         false,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
+			MaxPromptLength:        8000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GROK_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GROK_API_KEY is required")
+			}
+			return NewGrokClient(apiKey)
+		},
+	})
+
+	// Grok 2 Image via xAI (legacy)
+	r.Register(&Provider{
+		ID:          "grok/grok-2-image",
+		Name:        "Grok 2 Image (via xAI)",
+		API:         "grok",
+		ModelID:     "grok-2-image-1212", // Versioned model name works more reliably
+		Description: "xAI's Aurora-powered image generation model (legacy, prefer Grok Imagine)",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GROK_API_KEY",
+				ConfigKey:   "grok_api_key",
+				Description: "API key from https://console.x.ai",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.07),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         false,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
 			MaxPromptLength:        4000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -902,7 +973,7 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"gemini3":                    "gemini/pro-3",
 		"pro-3":                      "gemini/pro-3",
 		"gemini-3-pro-image-preview": "gemini/pro-3",
-		// Explicit aliases for Gemini 2.5 Flash (free tier)
+		// Explicit aliases for Gemini 2.5 Flash
 		"gemini-flash":           "gemini/flash-2.5",
 		"flash":                  "gemini/flash-2.5",
 		"gemini-2.5":             "gemini/flash-2.5",
@@ -922,12 +993,17 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 		"nova":                    "bedrock/nova-canvas",
 		"nova-canvas":             "bedrock/nova-canvas",
 		"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
-		// Grok aliases
-		"grok":         "grok/grok-2-image",
-		"grok-2":       "grok/grok-2-image",
-		"grok-2-image": "grok/grok-2-image",
-		"xai":          "grok/grok-2-image",
-		"aurora":       "grok/grok-2-image",
+		// Grok aliases (default → Grok Imagine)
+		"grok":                   "grok/grok-imagine",
+		"grok-imagine":           "grok/grok-imagine",
+		"grok-imagine-image":     "grok/grok-imagine",
+		"grok-imagine-pro":       "grok/grok-imagine-pro",
+		"grok-imagine-image-pro": "grok/grok-imagine-pro",
+		"grok-2":                 "grok/grok-2-image",
+		"grok-2-image":           "grok/grok-2-image",
+		"grok-2-image-1212":      "grok/grok-2-image",
+		"xai":                    "grok/grok-imagine",
+		"aurora":                 "grok/grok-imagine",
 	}
 
 	if providerID, ok := aliases[input]; ok {

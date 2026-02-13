@@ -39,10 +39,9 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 	}
 
 	if projectID == "" {
-		// Try to get from environment
 		projectID = os.Getenv("VERTEX_PROJECT")
 		if projectID == "" {
-			projectID = "gen-lang-client-0241846458" // Default project
+			return nil, fmt.Errorf("VERTEX_PROJECT is required for Vertex AI Express Mode. Set via environment variable or config file")
 		}
 	}
 

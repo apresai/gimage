@@ -83,7 +83,7 @@ gimage generate --prompt "your prompt" [flags]
 **Gemini API:**
 
 - `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
-- `gemini-2.5-flash-image` (FREE tier) - FREE: 500 images/day, up to 1024x1024
+- `gemini-2.5-flash-image` - $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**
 
@@ -99,7 +99,9 @@ gimage generate --prompt "your prompt" [flags]
 
 **xAI Grok (Paid):**
 
-- `grok-2-image` - ~$0.07/image, Aurora-powered image generation
+- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model)
+- `grok-imagine-image-pro` - $0.07/image, higher quality
+- `grok-2-image` - $0.07/image, legacy Aurora-powered (prefer Grok Imagine)
 
 ### Examples
 
@@ -187,10 +189,22 @@ gimage generate "product mockup" --model imagen-4-fast
 gimage generate "architectural visualization" --model imagen-4-ultra
 ```
 
-**Using xAI Grok:**
+**Using xAI Grok Imagine (fast, $0.02/image):**
 
 ```bash
 gimage generate "robot waving hello" --model grok
+```
+
+**Using Grok Imagine Pro (higher quality):**
+
+```bash
+gimage generate "detailed portrait" --model grok-imagine-pro
+```
+
+**Using Grok Imagine with aspect ratio:**
+
+```bash
+gimage generate "wide landscape" --model grok --aspect-ratio 16:9
 ```
 
 **List all models:**
@@ -575,7 +589,7 @@ gimage auth setup <provider>
 
 #### Examples
 
-**Quick start with Gemini (FREE tier):**
+**Quick start with Gemini:**
 
 ```bash
 gimage auth setup gemini
@@ -702,7 +716,7 @@ Shows table with:
 - ✓ / ✗ Configuration status
 - Provider ID (e.g., `gemini/flash-2.5`)
 - Provider name
-- Pricing (FREE/paid with cost)
+- Pricing (cost per image)
 - Credential source (env/config/both)
 - Missing credentials
 

@@ -34,7 +34,7 @@ FEATURES:
 
 AUTHENTICATION:
   Before generating images, set up your API credentials:
-    gimage auth gemini          # Setup Gemini API (simple, free tier available)
+    gimage auth gemini          # Setup Gemini API (simple, affordable)
     gimage auth vertex          # Setup Vertex AI (Express or Full mode)
 
   Get your Gemini API key from: https://aistudio.google.com/app/apikey

@@ -115,7 +115,7 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 ## Multi-Backend Architecture
 
 **Supported Backends**:
-- **Gemini API** (REST) - Free tier, fastest setup
+- **Gemini API** (REST) - Paid, fastest setup
 - **Vertex AI** - Express Mode (REST) or Full Mode (SDK)
 - **AWS Bedrock** - REST or SDK modes
 - **xAI Grok** (REST) - Aurora-powered image generation
@@ -123,13 +123,15 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 ### Backend Selection Logic
 
 Model name implies backend (auto-detect):
-- `gemini-2.5-flash-image` → gemini (FREE tier)
+- `gemini-2.5-flash-image` → gemini ($0.039/image)
 - `gemini-3-pro-image-preview` → gemini (native 4K, $0.134/image)
 - `imagen-4` → vertex ($0.04/image)
 - `imagen-4-fast` → vertex ($0.02/image)
 - `imagen-4-ultra` → vertex ($0.06/image)
 - `amazon.nova-canvas-v1:0` → bedrock
-- `grok-2-image` → grok (~$0.07/image)
+- `grok-imagine-image` → grok ($0.02/image)
+- `grok-imagine-image-pro` → grok ($0.07/image)
+- `grok-2-image-1212` → grok ($0.07/image, legacy)
 
 Optional `--api` flag overrides auto-detection.
 
@@ -140,16 +142,20 @@ Map informal names to exact model IDs:
 | User Input | Exact Model ID | API | Features |
 |-----------|---------------|-----|----------|
 | "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image (default) |
-| "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | FREE 500/day, 1024x1024 max |
+| "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | $0.039/image, 1024x1024 max |
 | "imagen", "imagen-4" | `imagen-4.0-generate-001` | vertex | High quality, $0.04/image |
 | "imagen-4-fast", "imagen-fast" | `imagen-4.0-fast-generate-001` | vertex | Speed-optimized, $0.02/image |
 | "imagen-4-ultra", "imagen-ultra" | `imagen-4.0-ultra-generate-001` | vertex | Premium quality, $0.06/image |
 | "imagen-3" (legacy) | `imagen-3.0-generate-002` | vertex | Legacy, prefer Imagen 4, $0.04/image |
 | "imagen-3-fast" (legacy) | `imagen-3.0-fast-generate-001` | vertex | Legacy, prefer Imagen 4 Fast, $0.02/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration, $0.04-$0.08/image |
-| "grok", "grok-2", "xai", "aurora" | `grok-2-image` | grok | Aurora-powered, ~$0.07/image |
+| "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
+| "grok-imagine-pro" | `grok-imagine-image-pro` | grok | Higher quality, $0.07/image |
+| "grok-2", "grok-2-image" (legacy) | `grok-2-image-1212` | grok | Legacy Aurora-powered, $0.07/image |
 
 **Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
+
+**Grok Imagine** supports `aspect_ratio` parameter (13 ratios including 1:1, 16:9, 9:16, 4:3, 3:4, etc.).
 
 **Always use exact model IDs from the mapping table.**
 

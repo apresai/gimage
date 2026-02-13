@@ -3,21 +3,23 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 )
 
 type CoverageFile struct {
-	Path       string
-	Coverage   float64
-	Category   string
-	IsTested   bool
-	Functions  []FunctionCoverage
+	Path      string
+	Coverage  float64
+	Category  string
+	IsTested  bool
+	Functions []FunctionCoverage
 }
 
 type FunctionCoverage struct {
@@ -26,12 +28,22 @@ type FunctionCoverage struct {
 	Coverage float64
 }
 
+type GeneratedImage struct {
+	Path     string
+	Provider string
+	Size     string
+	Format   string
+	Base64   string
+}
+
 type CoverageReport struct {
 	TotalCoverage    float64
 	CorePackages     []CoverageFile
 	CLIPackages      []CoverageFile
 	UnitTestCoverage float64
 	E2ECoverage      float64
+	GeneratedImages  []GeneratedImage
+	ImagePrompt      string
 }
 
 func runCommand(cmdStr string) (string, error) {
@@ -46,12 +58,19 @@ func runCommand(cmdStr string) (string, error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: coverage-report <coverage.out>")
+		fmt.Println("Usage: coverage-report <coverage.out> [image-dir]")
 		os.Exit(1)
 	}
 
 	coverageFile := os.Args[1]
+	imageDir := "test/output/e2e"
+	if len(os.Args) >= 3 {
+		imageDir = os.Args[2]
+	}
+
 	report := parseCoverageFile(coverageFile)
+	report.GeneratedImages = scanImages(imageDir)
+	report.ImagePrompt = extractE2EPrompt()
 	generateHTML(report)
 }
 
@@ -168,6 +187,146 @@ func categorizeFile(path string) string {
 		return "cli"
 	}
 	return "core"
+}
+
+// scanImages scans a directory for generated test images and returns them as base64-embedded structs
+func scanImages(dir string) []GeneratedImage {
+	var images []GeneratedImage
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// Directory doesn't exist or can't be read - not an error
+		return images
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		ext := strings.ToLower(filepath.Ext(name))
+		if ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".webp" {
+			continue
+		}
+
+		fullPath := filepath.Join(dir, name)
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		// Extract provider from filename (e.g., "e2e_gemini_flash_1.png" -> "Gemini Flash")
+		provider := extractProviderFromFilename(name)
+
+		// Determine format for data URI
+		format := strings.TrimPrefix(ext, ".")
+		if format == "jpg" {
+			format = "jpeg"
+		}
+
+		// Format file size
+		sizeStr := formatFileSize(info.Size())
+
+		images = append(images, GeneratedImage{
+			Path:     fullPath,
+			Provider: provider,
+			Size:     sizeStr,
+			Format:   format,
+			Base64:   base64.StdEncoding.EncodeToString(data),
+		})
+	}
+
+	// Sort by provider name for consistent ordering
+	sort.Slice(images, func(i, j int) bool {
+		return images[i].Provider < images[j].Provider
+	})
+
+	return images
+}
+
+// extractE2EPrompt reads the shared prompt from the E2E test file
+func extractE2EPrompt() string {
+	paths := []string{
+		"test/integration/generate_e2e_test.go",
+		filepath.Join("..", "..", "test", "integration", "generate_e2e_test.go"),
+	}
+
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		re := regexp.MustCompile(`e2ePrompt\s*=\s*"([^"]+)"`)
+		matches := re.FindSubmatch(data)
+		if len(matches) >= 2 {
+			return string(matches[1])
+		}
+	}
+
+	return "Same prompt across all models for visual comparison"
+}
+
+// extractProviderFromFilename extracts a display-friendly provider name from an image filename
+func extractProviderFromFilename(name string) string {
+	// Remove extension
+	name = strings.TrimSuffix(name, filepath.Ext(name))
+	name = strings.ToLower(name)
+
+	// Map filename patterns to display names
+	patterns := []struct {
+		contains string
+		display  string
+	}{
+		{"gemini_flash", "Gemini Flash"},
+		{"gemini_3_pro", "Gemini 3 Pro"},
+		{"gemini3pro", "Gemini 3 Pro"},
+		{"gemini", "Gemini"},
+		{"vertex_sdk", "Vertex AI SDK"},
+		{"vertex", "Vertex AI"},
+		{"imagen", "Imagen"},
+		{"bedrock", "Bedrock Nova Canvas"},
+		{"nova", "Nova Canvas"},
+		{"grok_imagine_pro", "Grok Imagine Pro"},
+		{"grok_pro", "Grok Imagine Pro"},
+		{"grok", "Grok Imagine"},
+	}
+
+	for _, p := range patterns {
+		if strings.Contains(name, p.contains) {
+			return p.display
+		}
+	}
+
+	// Fallback: clean up the filename
+	name = strings.ReplaceAll(name, "_", " ")
+	name = strings.ReplaceAll(name, "-", " ")
+	// Capitalize first letter of each word
+	words := strings.Fields(name)
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
+}
+
+// formatFileSize returns a human-readable file size string
+func formatFileSize(size int64) string {
+	switch {
+	case size >= 1024*1024:
+		return fmt.Sprintf("%.1f MB", float64(size)/(1024*1024))
+	case size >= 1024:
+		return fmt.Sprintf("%.1f KB", float64(size)/1024)
+	default:
+		return fmt.Sprintf("%d B", size)
+	}
 }
 
 func generateHTML(report CoverageReport) {
@@ -353,6 +512,73 @@ func generateHTML(report CoverageReport) {
 			margin-bottom: 0.5rem;
 		}
 
+		.prompt-box {
+			background: var(--bg-secondary);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 1.5rem;
+			margin: 1rem 0;
+		}
+
+		.prompt-label {
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--text-secondary);
+			margin-bottom: 0.5rem;
+		}
+
+		.prompt-text {
+			font-size: 1.15rem;
+			font-style: italic;
+			color: var(--text-primary);
+			line-height: 1.6;
+		}
+
+		.prompt-note {
+			font-size: 0.85rem;
+			color: var(--text-secondary);
+			margin-top: 0.5rem;
+		}
+
+		.image-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+			gap: 1.5rem;
+			margin-top: 1rem;
+		}
+
+		.image-card {
+			background: var(--bg-secondary);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+			transition: box-shadow 0.2s;
+		}
+
+		.image-card:hover {
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		}
+
+		.image-card img {
+			width: 100%;
+			height: 250px;
+			object-fit: cover;
+			display: block;
+		}
+
+		.image-label {
+			padding: 0.75rem 1rem 0.25rem;
+			font-weight: 600;
+			font-size: 0.95rem;
+		}
+
+		.image-meta {
+			padding: 0 1rem 0.75rem;
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+		}
+
 		footer {
 			margin-top: 4rem;
 			padding-top: 2rem;
@@ -365,7 +591,7 @@ func generateHTML(report CoverageReport) {
 </head>
 <body>
 	<div class="container">
-		<h1>📊 Gimage Coverage Report</h1>
+		<h1>Gimage Coverage Report</h1>
 		<p class="subtitle">Comprehensive test coverage analysis</p>
 
 		<div class="summary">
@@ -394,10 +620,31 @@ func generateHTML(report CoverageReport) {
 			</div>
 		</div>
 
+		{{if .GeneratedImages}}
+		<div class="section">
+			<h2>Generated Test Images <span class="badge badge-info">E2E</span></h2>
+			<div class="prompt-box">
+				<div class="prompt-label">Prompt</div>
+				<div class="prompt-text">"{{.ImagePrompt}}"</div>
+				<div class="prompt-note">Same prompt sent to all providers for visual comparison</div>
+			</div>
+
+			<div class="image-grid">
+				{{range .GeneratedImages}}
+				<div class="image-card">
+					<img src="data:image/{{.Format}};base64,{{.Base64}}" alt="{{.Provider}} generated image" />
+					<div class="image-label">{{.Provider}}</div>
+					<div class="image-meta">{{.Size}}</div>
+				</div>
+				{{end}}
+			</div>
+		</div>
+		{{end}}
+
 		<div class="section">
 			<h2>Core Packages <span class="badge badge-success">Unit Tested</span></h2>
 			<div class="note">
-				<div class="note-title">📚 These packages have comprehensive unit test coverage</div>
+				<div class="note-title">These packages have comprehensive unit test coverage</div>
 				Includes: imaging operations, image generation clients, MCP tools, and shared models
 			</div>
 
@@ -414,7 +661,7 @@ func generateHTML(report CoverageReport) {
 		<div class="section">
 			<h2>CLI & Config Packages <span class="badge badge-info">E2E Tested</span></h2>
 			<div class="note">
-				<div class="note-title">🧪 These packages are tested via End-to-End tests</div>
+				<div class="note-title">These packages are tested via End-to-End tests</div>
 				CLI commands and configuration are tested by running the actual binary in test/integration/cli_e2e_test.go.
 				0% unit test coverage is expected and correct for these packages.
 			</div>
@@ -464,9 +711,12 @@ func generateHTML(report CoverageReport) {
 		os.Exit(1)
 	}
 
-	fmt.Println("✓ Coverage report generated: coverage-report.html")
+	fmt.Println("Coverage report generated: coverage-report.html")
 	fmt.Printf("  Total Coverage: %.1f%%\n", report.TotalCoverage)
 	fmt.Printf("  Unit Test Coverage: %.1f%%\n", report.UnitTestCoverage)
 	fmt.Printf("  Core Packages: %d files\n", len(report.CorePackages))
 	fmt.Printf("  CLI Packages: %d files (E2E tested)\n", len(report.CLIPackages))
+	if len(report.GeneratedImages) > 0 {
+		fmt.Printf("  Generated Images: %d (embedded in report)\n", len(report.GeneratedImages))
+	}
 }

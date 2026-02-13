@@ -46,7 +46,6 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"type": "string",
 					"enum": []string{
 						"gemini-2.5-flash-image",
-						"gemini-2.0-flash-preview-image-generation",
 						"gemini-3-pro-image-preview",
 						"gemini-3",
 						"gemini-3-pro",
@@ -60,12 +59,16 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"nova-canvas",
 						"amazon.nova-canvas-v1:0",
 						"grok",
+						"grok-imagine-image",
+						"grok-imagine-image-pro",
+						"grok-imagine",
+						"grok-imagine-pro",
 						"grok-2",
 						"grok-2-image",
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini' (FREE 500/day, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048), 'imagen-4-fast' ($0.02/image, faster), 'imagen-4-ultra' ($0.06/image, highest quality), 'grok' (xAI Aurora-powered). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3' or 'gemini-3-pro-image-preview' ($0.134/image, native 4K with sharp text), 'imagen-4' ($0.04/image, up to 2048x2048), 'imagen-4-fast' ($0.02/image, faster), 'imagen-4-ultra' ($0.06/image, highest quality), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-pro' ($0.07/image). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
 					"default":     "gemini-3-pro-image-preview",
 				},
 				"image_size": map[string]interface{}{
@@ -89,7 +92,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"aspect_ratio": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"},
-					"description": "Aspect ratio for Gemini 3 Pro. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
+					"description": "Aspect ratio for Gemini 3 Pro and Grok Imagine models. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
 				},
 				"cfg_scale": map[string]interface{}{
 					"type":        "number",

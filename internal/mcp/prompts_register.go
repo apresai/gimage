@@ -7,20 +7,21 @@ func RegisterAllPrompts(server *MCPServer) {
 	server.RegisterPrompt(Prompt{
 		Name:        "gimage_quick_start",
 		Title:       "Get Started with gimage",
-		Description: "Learn how to generate your first AI image using the free Gemini provider",
+		Description: "Learn how to generate your first AI image using the affordable Gemini provider",
 		Arguments:   []PromptArgument{},
 		Template: `I want to generate an AI image using gimage. Here's how to get started:
 
 STEP 1: Check available providers
 Call list_models to see all providers with pricing:
-- Free option: Gemini 2.5 Flash (500 images/day FREE)
-- Paid options: Imagen 4, Nova Canvas
+- Affordable option: Gemini 2.5 Flash ($0.039/image)
+- Default: Gemini 3 Pro ($0.134/image, native 4K)
+- Paid options: Imagen 4, Nova Canvas, Grok Imagine
 
-STEP 2: Generate a simple image using the free Gemini provider
+STEP 2: Generate a simple image
 Call generate_image with:
 - prompt: "a sunset over mountains"
 - output: "~/Desktop/sunset.png"
-- (defaults to gemini-2.5-flash-image provider - FREE!)
+- (defaults to gemini-3-pro-image-preview)
 
 EXAMPLE:
 generate_image(
@@ -30,8 +31,8 @@ generate_image(
 
 Result will show:
 - Output path
-- Provider used (Gemini 2.5 Flash via Gemini API)
-- Pricing: FREE (500/day)
+- Provider used
+- Pricing per image
 
 That's it! The image will be saved to your Desktop.`,
 	})
@@ -122,7 +123,8 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 
 STEP 1: Check providers with list_models
 This shows all providers with pricing and capabilities:
-- gemini/flash-2.5: FREE (500/day), up to 1024x1024
+- gemini/flash-2.5: $0.039/image, up to 1024x1024
+- gemini/pro-3: $0.134/image, native 4K (default)
 - vertex/imagen-4: $0.04/image, up to 2048x2048 (highest quality)
 - bedrock/nova-canvas: $0.08/image, up to 1408x1408
 
@@ -135,12 +137,14 @@ generate_image(
 )
 
 PROVIDER COMPARISON:
-- Gemini (gemini/flash-2.5): Good quality, FREE, best for iterations
+- Gemini Flash (gemini/flash-2.5): Good quality, $0.039/image, best for iterations
+- Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134/image, sharp text
 - Imagen 4 (vertex/imagen-4): Highest quality, $0.04/image, best for final work
 - Nova Canvas (bedrock/nova-canvas): High quality, $0.08/image, AWS integration
 
 WHEN TO USE EACH:
-- Gemini: Quick iterations, testing prompts, social media, FREE
+- Gemini Flash: Quick iterations, testing prompts, social media ($0.039/image)
+- Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134/image)
 - Imagen-4: Final production images, professional work, large sizes (2048x2048)
 - Nova: AWS-integrated workflows, comparable quality to Imagen
 

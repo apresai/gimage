@@ -18,7 +18,7 @@ requirements and pricing. Use the subcommands to:
   setup - Interactively configure credentials for a provider
 
 Different providers offer different models with different pricing:
-  - gemini/flash-2.5: FREE tier via Gemini API (500/day)
+  - gemini/flash-2.5: $0.039/image via Gemini API
   - vertex/imagen-4: $0.04/image via Vertex AI
   - bedrock/nova-canvas: $0.08/image via AWS Bedrock`,
 	Example: `  # List all providers and auth status

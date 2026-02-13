@@ -1,10 +1,14 @@
+//go:build e2e
 // +build e2e
 
 package integration
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/apresai/gimage/internal/config"
@@ -15,10 +19,69 @@ import (
 // E2E tests for real API calls
 // These tests cost money and require real credentials
 // Run with: go test -tags=e2e ./test/integration/...
+// Filter providers: GIMAGE_TEST_PROVIDERS=gemini,grok go test -tags=e2e ./test/integration/...
 
-func TestGeminiAPIE2E(t *testing.T) {
+// e2ePrompt is the shared prompt used across all provider tests for visual comparison.
+const e2ePrompt = "A young woman on a Southern California beach in 1970s vintage beach attire, retro color palette with warm golden tones, film grain texture, classic 70s aesthetic"
+
+// shouldTestProvider checks if a provider should be tested based on the
+// GIMAGE_TEST_PROVIDERS environment variable. If unset, all providers are tested.
+func shouldTestProvider(provider string) bool {
+	filter := os.Getenv("GIMAGE_TEST_PROVIDERS")
+	if filter == "" {
+		return true // test all by default
+	}
+	for _, p := range strings.Split(filter, ",") {
+		if strings.TrimSpace(p) == provider {
+			return true
+		}
+	}
+	return false
+}
+
+// e2eOutputDir returns the output directory for E2E test images
+func e2eOutputDir() string {
+	if dir := os.Getenv("GIMAGE_E2E_OUTPUT_DIR"); dir != "" {
+		return dir
+	}
+	absDir, err := filepath.Abs(filepath.Join("..", "..", "test", "output", "e2e"))
+	if err != nil {
+		return filepath.Join("test", "output", "e2e")
+	}
+	return absDir
+}
+
+// saveAndLogImage saves generated image data to disk and logs the full path
+func saveAndLogImage(t *testing.T, img *models.GeneratedImage, provider string) {
+	t.Helper()
+
+	outDir := e2eOutputDir()
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Logf("Warning: could not create output dir %s: %v", outDir, err)
+		return
+	}
+
+	ext := img.Format
+	if ext == "" {
+		ext = "png"
+	}
+	filename := fmt.Sprintf("e2e_%s.%s", provider, ext)
+	fullPath := filepath.Join(outDir, filename)
+
+	if err := os.WriteFile(fullPath, img.Data, 0644); err != nil {
+		t.Logf("Warning: could not save image to %s: %v", fullPath, err)
+		return
+	}
+
+	t.Logf("GENERATED_IMAGE: %s (%d bytes, %s, %dx%d)", fullPath, len(img.Data), img.Format, img.Width, img.Height)
+}
+
+func TestGeminiFlashE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
+	}
+	if !shouldTestProvider("gemini") {
+		t.Skip("Skipping: gemini not in GIMAGE_TEST_PROVIDERS")
 	}
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
@@ -39,32 +102,81 @@ func TestGeminiAPIE2E(t *testing.T) {
 	ctx := context.Background()
 	options := models.GenerateOptions{
 		Model: "gemini-2.5-flash-image",
-		Size:  "512x512", // Smaller size for faster/cheaper testing
+		Size:  "1024x1024",
 	}
 
-	t.Log("🎨 Generating test image with Gemini API...")
-	t.Log("⚠️  This will consume API quota/credits")
+	t.Log("Generating test image with Gemini 2.5 Flash...")
+	t.Log("This will cost approximately $0.04")
 
-	result, err := client.GenerateImage(ctx, "a simple red circle on white background", options)
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
-		t.Fatalf("Gemini image generation failed: %v", err)
+		t.Fatalf("Gemini Flash image generation failed: %v", err)
 	}
 
-	if len(result.Data) == 0 {
-		t.Fatal("Gemini returned empty image data")
+	if len(results) == 0 {
+		t.Fatal("Gemini Flash returned no images")
 	}
 
-	t.Logf("✅ Gemini E2E test passed - generated %d bytes", len(result.Data))
-	t.Logf("   Format: %s", result.Format)
-	t.Logf("   Size: %dx%d", result.Width, result.Height)
+	for i, img := range results {
+		t.Logf("Gemini Flash E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("gemini_flash_%d", i+1))
+	}
+}
+
+func TestGemini3ProE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping E2E test in short mode")
+	}
+	if !shouldTestProvider("gemini") {
+		t.Skip("Skipping: gemini not in GIMAGE_TEST_PROVIDERS")
+	}
+
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		cfg, err := config.LoadConfig()
+		if err != nil || cfg.GeminiAPIKey == "" {
+			t.Skip("GEMINI_API_KEY not set, skipping Gemini 3 Pro E2E test")
+		}
+		apiKey = cfg.GeminiAPIKey
+	}
+
+	client, err := generate.NewGeminiRESTClient(apiKey)
+	if err != nil {
+		t.Fatalf("Failed to create Gemini client: %v", err)
+	}
+	defer client.Close()
+
+	ctx := context.Background()
+	options := models.GenerateOptions{
+		Model: "gemini-3-pro-image-preview",
+	}
+
+	t.Log("Generating test image with Gemini 3 Pro...")
+	t.Log("This will cost approximately $0.13")
+
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
+	if err != nil {
+		t.Fatalf("Gemini 3 Pro image generation failed: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatal("Gemini 3 Pro returned no images")
+	}
+
+	for i, img := range results {
+		t.Logf("Gemini 3 Pro E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("gemini_3_pro_%d", i+1))
+	}
 }
 
 func TestVertexAIE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
 	}
+	if !shouldTestProvider("vertex") {
+		t.Skip("Skipping: vertex not in GIMAGE_TEST_PROVIDERS")
+	}
 
-	// Check for Vertex credentials
 	apiKey := os.Getenv("VERTEX_API_KEY")
 	project := os.Getenv("VERTEX_PROJECT")
 
@@ -85,33 +197,36 @@ func TestVertexAIE2E(t *testing.T) {
 
 	ctx := context.Background()
 	options := models.GenerateOptions{
-		Model: "imagen-4.0-fast-generate-001", // Use fast/cheap model
+		Model: "imagen-4.0-fast-generate-001",
 		Size:  "512x512",
 	}
 
-	t.Log("🎨 Generating test image with Vertex AI...")
-	t.Log("⚠️  This will cost approximately $0.02")
+	t.Log("Generating test image with Vertex AI (Imagen 4 Fast)...")
+	t.Log("This will cost approximately $0.02")
 
-	result, err := client.GenerateImage(ctx, "a simple blue square on white background", options)
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
 		t.Fatalf("Vertex image generation failed: %v", err)
 	}
 
-	if len(result.Data) == 0 {
-		t.Fatal("Vertex returned empty image data")
+	if len(results) == 0 {
+		t.Fatal("Vertex returned no images")
 	}
 
-	t.Logf("✅ Vertex E2E test passed - generated %d bytes", len(result.Data))
-	t.Logf("   Format: %s", result.Format)
-	t.Logf("   Size: %dx%d", result.Width, result.Height)
+	for i, img := range results {
+		t.Logf("Vertex E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("vertex_%d", i+1))
+	}
 }
 
 func TestBedrockNovaCanvasE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
 	}
+	if !shouldTestProvider("bedrock") {
+		t.Skip("Skipping: bedrock not in GIMAGE_TEST_PROVIDERS")
+	}
 
-	// Check for Bedrock credentials
 	apiKey := os.Getenv("AWS_BEARER_TOKEN_BEDROCK")
 	region := os.Getenv("AWS_REGION")
 	if region == "" {
@@ -139,32 +254,35 @@ func TestBedrockNovaCanvasE2E(t *testing.T) {
 	options := models.GenerateOptions{
 		Model: "amazon.nova-canvas-v1:0",
 		Size:  "512x512",
-		Style: "standard", // Use standard quality
+		Style: "standard",
 	}
 
-	t.Log("🎨 Generating test image with AWS Bedrock Nova Canvas...")
-	t.Log("⚠️  This will cost $0.04 (standard quality)")
+	t.Log("Generating test image with AWS Bedrock Nova Canvas...")
+	t.Log("This will cost $0.04 (standard quality)")
 
-	result, err := client.GenerateImage(ctx, "a simple green triangle on white background", options)
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
 		t.Fatalf("Bedrock Nova Canvas image generation failed: %v", err)
 	}
 
-	if len(result.Data) == 0 {
-		t.Fatal("Bedrock returned empty image data")
+	if len(results) == 0 {
+		t.Fatal("Bedrock returned no images")
 	}
 
-	t.Logf("✅ Bedrock Nova Canvas E2E test passed - generated %d bytes", len(result.Data))
-	t.Logf("   Format: %s", result.Format)
-	t.Logf("   Size: %dx%d", result.Width, result.Height)
+	for i, img := range results {
+		t.Logf("Bedrock E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("bedrock_%d", i+1))
+	}
 }
 
-func TestGrokE2E(t *testing.T) {
+func TestGrokImagineE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
 	}
+	if !shouldTestProvider("grok") {
+		t.Skip("Skipping: grok not in GIMAGE_TEST_PROVIDERS")
+	}
 
-	// Check for Grok credentials
 	apiKey := os.Getenv("GROK_API_KEY")
 	if apiKey == "" {
 		cfg, err := config.LoadConfig()
@@ -182,40 +300,87 @@ func TestGrokE2E(t *testing.T) {
 
 	ctx := context.Background()
 	options := models.GenerateOptions{
-		Model: "grok-2-image",
-		Size:  "512x512",
+		Model: "grok-imagine-image",
 	}
 
-	t.Log("🎨 Generating test image with xAI Grok...")
-	t.Log("⚠️  This will cost approximately $0.07")
+	t.Log("Generating test image with xAI Grok Imagine...")
+	t.Log("This will cost approximately $0.02")
 
-	result, err := client.GenerateImage(ctx, "a simple purple star on white background", options)
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
-		t.Fatalf("Grok image generation failed: %v", err)
+		t.Fatalf("Grok Imagine image generation failed: %v", err)
 	}
 
-	if len(result.Data) == 0 {
-		t.Fatal("Grok returned empty image data")
+	if len(results) == 0 {
+		t.Fatal("Grok Imagine returned no images")
 	}
 
-	t.Logf("✅ Grok E2E test passed - generated %d bytes", len(result.Data))
-	t.Logf("   Format: %s", result.Format)
-	t.Logf("   Size: %dx%d", result.Width, result.Height)
+	for i, img := range results {
+		t.Logf("Grok Imagine E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("grok_imagine_%d", i+1))
+	}
+}
+
+func TestGrokImagineProE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping E2E test in short mode")
+	}
+	if !shouldTestProvider("grok") {
+		t.Skip("Skipping: grok not in GIMAGE_TEST_PROVIDERS")
+	}
+
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		cfg, err := config.LoadConfig()
+		if err != nil || cfg.GrokAPIKey == "" {
+			t.Skip("GROK_API_KEY not set, skipping Grok Imagine Pro E2E test")
+		}
+		apiKey = cfg.GrokAPIKey
+	}
+
+	client, err := generate.NewGrokClient(apiKey)
+	if err != nil {
+		t.Fatalf("Failed to create Grok client: %v", err)
+	}
+	defer client.Close()
+
+	ctx := context.Background()
+	options := models.GenerateOptions{
+		Model: "grok-imagine-image-pro",
+	}
+
+	t.Log("Generating test image with xAI Grok Imagine Pro...")
+	t.Log("This will cost approximately $0.07")
+
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
+	if err != nil {
+		t.Fatalf("Grok Imagine Pro image generation failed: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatal("Grok Imagine Pro returned no images")
+	}
+
+	for i, img := range results {
+		t.Logf("Grok Imagine Pro E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("grok_imagine_pro_%d", i+1))
+	}
 }
 
 func TestVertexAIUnifiedSDKE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
 	}
+	if !shouldTestProvider("vertex") {
+		t.Skip("Skipping: vertex not in GIMAGE_TEST_PROVIDERS")
+	}
 
-	// Check for Vertex ADC credentials (service account or gcloud auth)
 	project := os.Getenv("VERTEX_PROJECT")
 	location := os.Getenv("VERTEX_LOCATION")
 	if location == "" {
 		location = "us-central1"
 	}
 
-	// Skip if API key is set (use REST test instead) or no project
 	if os.Getenv("VERTEX_API_KEY") != "" {
 		t.Skip("VERTEX_API_KEY is set, use TestVertexAIE2E for REST mode")
 	}
@@ -239,25 +404,26 @@ func TestVertexAIUnifiedSDKE2E(t *testing.T) {
 	defer client.Close()
 
 	options := models.GenerateOptions{
-		Model: "imagen-4.0-fast-generate-001", // Use fast/cheap model
+		Model: "imagen-4.0-fast-generate-001",
 		Size:  "512x512",
 	}
 
-	t.Log("🎨 Generating test image with Vertex AI Unified SDK (ADC)...")
-	t.Log("⚠️  This will cost approximately $0.02")
+	t.Log("Generating test image with Vertex AI Unified SDK (ADC)...")
+	t.Log("This will cost approximately $0.02")
 
-	result, err := client.GenerateImage(ctx, "a simple orange diamond on white background", options)
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
 		t.Fatalf("Vertex unified SDK image generation failed: %v", err)
 	}
 
-	if len(result.Data) == 0 {
-		t.Fatal("Vertex unified SDK returned empty image data")
+	if len(results) == 0 {
+		t.Fatal("Vertex unified SDK returned no images")
 	}
 
-	t.Logf("✅ Vertex AI Unified SDK E2E test passed - generated %d bytes", len(result.Data))
-	t.Logf("   Format: %s", result.Format)
-	t.Logf("   Size: %dx%d", result.Width, result.Height)
+	for i, img := range results {
+		t.Logf("Vertex SDK E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("vertex_sdk_%d", i+1))
+	}
 }
 
 // TestAllAPIsE2E runs all API tests in sequence if credentials are available
@@ -266,9 +432,11 @@ func TestAllAPIsE2E(t *testing.T) {
 		t.Skip("Skipping E2E test in short mode")
 	}
 
-	t.Run("Gemini", TestGeminiAPIE2E)
+	t.Run("GeminiFlash", TestGeminiFlashE2E)
+	t.Run("Gemini3Pro", TestGemini3ProE2E)
 	t.Run("VertexREST", TestVertexAIE2E)
 	t.Run("VertexUnifiedSDK", TestVertexAIUnifiedSDKE2E)
 	t.Run("Bedrock", TestBedrockNovaCanvasE2E)
-	t.Run("Grok", TestGrokE2E)
+	t.Run("GrokImagine", TestGrokImagineE2E)
+	t.Run("GrokImaginePro", TestGrokImagineProE2E)
 }

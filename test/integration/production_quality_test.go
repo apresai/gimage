@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 package integration
@@ -85,19 +86,25 @@ func TestSizeEnforcement(t *testing.T) {
 
 			t.Logf("Generating image with requested size: %s", tc.requestedSize)
 
-			result, err := client.GenerateImage(ctx, "a simple test image", options)
+			results, err := client.GenerateImage(ctx, "a simple test image", options)
 			if err != nil {
 				t.Fatalf("Image generation failed: %v", err)
 			}
+			if len(results) == 0 {
+				t.Fatal("No images returned")
+			}
 
-			// Create temp directory for test output
-			tempDir := t.TempDir()
-			outputPath := filepath.Join(tempDir, "test_output.png")
+			// Save to E2E output dir for visibility
+			outDir := e2eOutputDir()
+			os.MkdirAll(outDir, 0755)
+			outputPath := filepath.Join(outDir, fmt.Sprintf("e2e_size_%s.png", tc.requestedSize))
 
 			// Save the image (which should enforce size)
-			if err := generate.SaveImage(result, outputPath); err != nil {
+			if err := generate.SaveImage(results[0], outputPath); err != nil {
 				t.Fatalf("Failed to save image: %v", err)
 			}
+
+			t.Logf("GENERATED_IMAGE: %s", outputPath)
 
 			// Verify the file was created
 			if _, err := os.Stat(outputPath); os.IsNotExist(err) {
@@ -191,19 +198,25 @@ func TestFormatConversion(t *testing.T) {
 
 			t.Logf("Generating image and converting to %s", tc.outputFormat)
 
-			result, err := client.GenerateImage(ctx, "a simple test image", options)
+			results, err := client.GenerateImage(ctx, "a simple test image", options)
 			if err != nil {
 				t.Fatalf("Image generation failed: %v", err)
 			}
+			if len(results) == 0 {
+				t.Fatal("No images returned")
+			}
 
-			// Create temp directory for test output
-			tempDir := t.TempDir()
-			outputPath := filepath.Join(tempDir, fmt.Sprintf("test_output.%s", tc.outputFormat))
+			// Save to E2E output dir for visibility
+			outDir := e2eOutputDir()
+			os.MkdirAll(outDir, 0755)
+			outputPath := filepath.Join(outDir, fmt.Sprintf("e2e_format_test.%s", tc.outputFormat))
 
 			// Save the image (which should convert format)
-			if err := generate.SaveImage(result, outputPath); err != nil {
+			if err := generate.SaveImage(results[0], outputPath); err != nil {
 				t.Fatalf("Failed to save image: %v", err)
 			}
+
+			t.Logf("GENERATED_IMAGE: %s", outputPath)
 
 			// Verify the file was created
 			if _, err := os.Stat(outputPath); os.IsNotExist(err) {

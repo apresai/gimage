@@ -45,19 +45,18 @@ gimage auth setup
 gimage auth test
 ```
 
-**Get your free API key**: https://aistudio.google.com/app/apikey
+**Get your API key**: https://aistudio.google.com/app/apikey
 
-The Gemini free tier includes:
+Gemini API pricing:
 
-- 500 image generations per day (gemini-2.5-flash-image)
-- No credit card required
-- Note: Gemini 3 Pro is a paid model ($0.134-$0.24/image)
+- Gemini 2.5 Flash: $0.039/image (most affordable)
+- Gemini 3 Pro: $0.134/image (1K/2K), $0.24/image (4K)
 
 **For advanced users**:
 
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
 - **AWS Bedrock**: 4 authentication modes (Bearer Token/Access Keys/Profile/IAM Role)
-- **xAI Grok**: `GROK_API_KEY` environment variable (Aurora-powered, ~$0.07/image)
+- **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine $0.02/image, Pro $0.07/image)
 
 See [Authentication Guide](../README.md#configuration) for complete details.
 
@@ -127,7 +126,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 **Capabilities:**
 
-- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash (FREE), Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash ($0.039/image), Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine/Pro
 - **Size options**: From 512x512 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
@@ -466,7 +465,7 @@ export VERTEX_PROJECT="your-gcp-project"
 **Gemini Models**:
 
 - `gemini-3-pro-image-preview` (default, native 4K, sharp text, $0.134-$0.24/image)
-- `gemini-2.5-flash-image` (FREE, 500/day, up to 1024x1024)
+- `gemini-2.5-flash-image` ($0.039/image, up to 1024x1024)
 **Vertex AI Models** (Premium Quality):
 
 - `imagen-4` (highest quality, $0.04/image, up to 2048x2048)
@@ -480,14 +479,16 @@ export VERTEX_PROJECT="your-gcp-project"
 
 **xAI Grok Models**:
 
-- `grok-2-image` (Aurora-powered, ~$0.07/image)
+- `grok-imagine-image` (fast, $0.02/image, supports aspect ratio)
+- `grok-imagine-image-pro` (higher quality, $0.07/image, supports aspect ratio)
+- `grok-2-image` (legacy Aurora-powered, $0.07/image)
 
 **Examples**:
 
 ```
 "Generate an image using Imagen 4 model with 2048x2048 resolution showing a hyper-realistic dragon"
 "Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
-"Generate an image using gemini-2.5-flash-image to use the free tier"
+"Generate an image using gemini-2.5-flash-image for affordable generation"
 "Generate a 16:9 landscape using Gemini 3 Pro aspect ratio control"
 "Generate an image in WebP format using Vertex AI for smaller file size"
 "Generate an abstract image with CFG scale 10 using Nova Canvas for maximum creativity"
@@ -536,13 +537,14 @@ Claude can chain multiple operations:
 
 4. **Try different models** - Each has strengths
 
-   - Gemini 2.5 Flash: FREE tier, fast, great for quick iterations
+   - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
    - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
    - Imagen 4: Highest quality photo-realistic images, output format control
    - Imagen 4 Fast: Speed-optimized Vertex AI at $0.02/image
    - Imagen 4 Ultra: Premium Vertex AI quality at $0.06/image
    - Nova Canvas: AWS integration, CFG scale for creativity control
-   - Grok 2 Image: Creative artistic images via xAI (~$0.07/image)
+   - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
+   - Grok Imagine Pro: Higher quality xAI generation ($0.07/image)
 
 5. **Use provider-specific features**:
 

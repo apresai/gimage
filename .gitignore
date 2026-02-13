@@ -79,6 +79,9 @@ generated_*.webp
 # *.tif
 # *.bmp
 
+# Test output (E2E generated images)
+test/output/
+
 # Temporary files
 tmp/
 temp/

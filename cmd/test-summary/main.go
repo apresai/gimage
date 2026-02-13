@@ -8,10 +8,11 @@ import (
 )
 
 type TestResults struct {
-	Name   string
-	Passed int
-	Failed int
-	Total  int
+	Name            string
+	Passed          int
+	Failed          int
+	Total           int
+	GeneratedImages []string
 }
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 
 	unit := parseTestLog(unitLog, "Unit Tests")
 	cli := parseTestLog(cliLog, "CLI E2E Tests (resize, scale, crop)")
-	generate := parseTestLog(generateLog, "Generate Image E2E Tests (Gemini, Vertex, Bedrock)")
+	generate := parseTestLog(generateLog, "Generate Image E2E Tests (Gemini, Vertex, Bedrock, Grok)")
 
 	// Print test results
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -49,8 +50,21 @@ func main() {
 	fmt.Println()
 	printTestResult(cli, "(FREE - no API costs)")
 	fmt.Println()
-	printTestResult(generate, "(~$0.12 API costs)")
+	printTestResult(generate, "(~$0.34 API costs)")
 	fmt.Println()
+
+	// Print generated images from all test runs
+	allImages := append(append(unit.GeneratedImages, cli.GeneratedImages...), generate.GeneratedImages...)
+	if len(allImages) > 0 {
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		fmt.Printf("                         Generated Images (%d)\n", len(allImages))
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		fmt.Println()
+		for _, img := range allImages {
+			fmt.Printf("  %s\n", img)
+		}
+		fmt.Println()
+	}
 
 	// Print exit code (0 if all passed, 1 if any failed)
 	totalFailed := unit.Failed + cli.Failed + generate.Failed
@@ -77,6 +91,17 @@ func parseTestLog(logPath, name string) TestResults {
 			result.Passed++
 		} else if strings.HasPrefix(line, "--- FAIL:") {
 			result.Failed++
+		}
+		// Extract generated image paths from test logs
+		if idx := strings.Index(line, "GENERATED_IMAGE:"); idx >= 0 {
+			imgPath := strings.TrimSpace(line[idx+len("GENERATED_IMAGE:"):])
+			// Strip trailing metadata like "(1234 bytes, png, 512x512)"
+			if parenIdx := strings.Index(imgPath, " ("); parenIdx >= 0 {
+				imgPath = imgPath[:parenIdx]
+			}
+			if imgPath != "" {
+				result.GeneratedImages = append(result.GeneratedImages, imgPath)
+			}
 		}
 	}
 

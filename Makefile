@@ -174,16 +174,20 @@ test-cli-e2e: build
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@$(GOTEST) -v -tags=e2e ./test/integration/cli_e2e_test.go
 	@echo ""
-	@echo "✓ CLI E2E tests complete (FREE - no API costs)"
+	@echo "✓ CLI E2E tests complete (no API costs)"
 
 ## test-generate-e2e: Run Generate Image E2E tests (costs money!)
 test-generate-e2e:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "⚠️  WARNING: E2E tests will make real API calls!"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "   - Gemini: Uses free tier quota (FREE)"
-	@echo "   - Vertex: ~\$$0.02 per test"
+	@echo "   - Gemini Flash: ~\$$0.04 per test"
+	@echo "   - Gemini 3 Pro: ~\$$0.13 per test"
+	@echo "   - Vertex: ~\$$0.04 per test (REST + SDK)"
 	@echo "   - Bedrock: ~\$$0.04 per test"
+	@echo "   - Grok: ~\$$0.09 per test (Imagine + Pro)"
+	@echo "   - Total: ~\$$0.34"
+	@echo "   Limit providers: GIMAGE_TEST_PROVIDERS=gemini,grok make test-generate-e2e"
 	@echo ""
 	@read -p "Continue? [y/N] " -n 1 -r; \
 	echo; \

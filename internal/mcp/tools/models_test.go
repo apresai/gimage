@@ -274,7 +274,7 @@ func TestListModelsTool_RecommendationsStructure(t *testing.T) {
 	}
 
 	// Check for recommendation categories (updated for Provider system)
-	requiredRecommendations := []string{"free_users", "paid_users", "aws_users"}
+	requiredRecommendations := []string{"budget_users", "paid_users", "aws_users"}
 	for _, field := range requiredRecommendations {
 		if _, exists := recommendations[field]; !exists {
 			t.Errorf("Required recommendation '%s' missing", field)

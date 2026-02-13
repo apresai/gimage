@@ -107,11 +107,11 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 					"name":            defaultProviderName,
 					"pricing_summary": defaultProviderPricing,
 				},
-				"pricing_note": "Costs shown are in USD. Free tier limits reset daily. Each provider offers specific models optimized for different use cases (gemini/flash-2.5 for free rapid iteration, vertex/imagen-4 for highest quality, bedrock/nova-canvas for AWS integration).",
+				"pricing_note": "Costs shown are in USD. Each provider offers specific models optimized for different use cases (gemini/flash-2.5 for affordable iteration, vertex/imagen-4 for highest quality, bedrock/nova-canvas for AWS integration).",
 				"recommendations": map[string]interface{}{
-					"free_users":  "gemini/flash-2.5 (500 FREE images/day via Gemini API)",
-					"paid_users":  "vertex/imagen-4 ($0.04/image, highest quality)",
-					"aws_users":   "bedrock/nova-canvas ($0.08/image, AWS integration)",
+					"budget_users": "gemini/flash-2.5 ($0.039/image via Gemini API, most affordable)",
+					"paid_users":   "vertex/imagen-4 ($0.04/image, highest quality)",
+					"aws_users":    "bedrock/nova-canvas ($0.08/image, AWS integration)",
 				},
 			}, nil
 		},

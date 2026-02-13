@@ -951,7 +951,7 @@ func printAvailableModels() error {
 
 	if !hasAnyAuth {
 		printInfo("\n  To get started, authenticate with at least one API:")
-		printInfo("    gimage auth gemini   # Fastest, has free tier")
+		printInfo("    gimage auth gemini   # Fastest, most affordable")
 		printInfo("    gimage auth vertex   # Highest quality (paid)")
 		printInfo("    gimage auth bedrock  # AWS integration (paid)")
 		printInfo("    gimage auth grok     # xAI Aurora (paid)")

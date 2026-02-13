@@ -234,38 +234,6 @@ func TestSaveImage(t *testing.T) {
 	}
 }
 
-func TestSaveImageWithMetadata(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	img := &models.GeneratedImage{
-		Data:   []byte("fake image data"),
-		Format: "png",
-		Width:  1024,
-		Height: 1024,
-		Metadata: map[string]string{
-			"model":  "gemini-2.5-flash-image",
-			"prompt": "test prompt",
-		},
-	}
-
-	outputPath := filepath.Join(tmpDir, "test_with_metadata.png")
-
-	err := SaveImageWithMetadata(img, outputPath)
-	if err != nil {
-		t.Errorf("SaveImageWithMetadata() error = %v", err)
-	}
-
-	// Check that both files exist
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		t.Errorf("SaveImageWithMetadata() did not create image file")
-	}
-
-	metadataPath := outputPath + ".json"
-	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
-		t.Errorf("SaveImageWithMetadata() did not create metadata file")
-	}
-}
-
 func TestValidateOutputPath(t *testing.T) {
 	tmpDir := t.TempDir()
 

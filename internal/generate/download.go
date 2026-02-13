@@ -57,6 +57,9 @@ func SaveImage(img *models.GeneratedImage, outputPath string) error {
 		return fmt.Errorf("output path cannot be empty")
 	}
 
+	// Sanitize output path to prevent path traversal
+	outputPath = filepath.Clean(outputPath)
+
 	if len(img.Data) == 0 {
 		return fmt.Errorf("image data is empty")
 	}
@@ -136,46 +139,6 @@ func SaveImage(img *models.GeneratedImage, outputPath string) error {
 	return nil
 }
 
-// SaveImageWithMetadata saves an image and creates a companion metadata file
-func SaveImageWithMetadata(img *models.GeneratedImage, outputPath string) error {
-	// Save the image
-	if err := SaveImage(img, outputPath); err != nil {
-		return err
-	}
-
-	// Save metadata in a .json file alongside the image
-	metadataPath := outputPath + ".json"
-	if err := saveMetadata(img, metadataPath); err != nil {
-		// Log error but don't fail the save operation
-		return fmt.Errorf("warning: failed to save metadata: %w", err)
-	}
-
-	return nil
-}
-
-// saveMetadata writes image metadata to a JSON file
-func saveMetadata(img *models.GeneratedImage, path string) error {
-	// Build JSON manually to avoid importing encoding/json
-	var metadata string
-	metadata = "{\n"
-
-	first := true
-	for key, value := range img.Metadata {
-		if !first {
-			metadata += ",\n"
-		}
-		metadata += fmt.Sprintf("  %q: %q", key, value)
-		first = false
-	}
-
-	metadata += fmt.Sprintf(",\n  \"format\": %q", img.Format)
-	metadata += fmt.Sprintf(",\n  \"width\": %d", img.Width)
-	metadata += fmt.Sprintf(",\n  \"height\": %d", img.Height)
-	metadata += fmt.Sprintf(",\n  \"size_bytes\": %d", len(img.Data))
-	metadata += "\n}\n"
-
-	return os.WriteFile(path, []byte(metadata), defaultFilePerms)
-}
 
 // GenerateOutputPath generates a default output path with timestamp
 // Format: generated_YYYYMMDD_HHMMSS.{format}

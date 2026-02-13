@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine/Pro), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
 
 ### Parameters
 
@@ -68,7 +68,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 **Google Gemini API:**
 
 - **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
-- **gemini-2.5-flash-image** (FREE, 500 images/day, up to 1024x1024)
+- **gemini-2.5-flash-image** ($0.039/image, up to 1024x1024)
 
 **Google Vertex AI:**
 
@@ -84,8 +84,11 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **xAI Grok:**
 
-- **grok-2-image** (Aurora-powered, ~$0.07/image, creative images)
-  - Note: Grok does not support size, style, negative prompts, or seed parameters
+- **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio)
+- **grok-imagine-image-pro** (higher quality, $0.07/image, supports aspect ratio)
+- **grok-2-image** (legacy Aurora-powered, $0.07/image)
+  - Note: Grok models do not support size, style, negative prompts, or seed parameters
+  - Grok Imagine models support `aspect_ratio` parameter
 
 ### Returns
 
@@ -160,10 +163,10 @@ Generate 3 variations of a fantasy castle
 Generate an image with seed 42 of abstract patterns
 ```
 
-**Using Gemini 2.5 Flash (FREE tier):**
+**Using Gemini 2.5 Flash (affordable):**
 
 ```
-Generate an image of a cat using gemini-2.5-flash-image model to stay within free tier
+Generate an image of a cat using gemini-2.5-flash-image model for affordable generation
 ```
 
 **Imagen 4 Fast (speed-optimized):**
@@ -190,10 +193,22 @@ Generate an image of a futuristic cityscape using Nova Canvas model
 Generate a 1173x640 panoramic landscape using Nova Canvas model
 ```
 
-**xAI Grok (Aurora-powered):**
+**xAI Grok Imagine (fast, $0.02/image):**
 
 ```
-Generate a creative artistic image using grok-2-image model
+Generate a creative artistic image using grok model
+```
+
+**xAI Grok Imagine Pro (higher quality):**
+
+```
+Generate a detailed portrait using grok-imagine-pro model
+```
+
+**xAI Grok with aspect ratio:**
+
+```
+Generate a 16:9 landscape using grok model with wide aspect ratio
 ```
 
 ---
@@ -677,6 +692,10 @@ Different providers support different advanced parameters:
 
 - `cfg_scale`: Control creativity/adherence to prompt (1.0-10.0, higher = more creative)
 
+**Grok Imagine Only:**
+
+- `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, etc.)
+
 **Gemini, Vertex AI, and Bedrock (not Grok):**
 
 - `negative`: Negative prompt (exclude unwanted elements; Gemini Flash does not support negative prompts)
@@ -692,12 +711,14 @@ Different providers support different advanced parameters:
 2. Increase workers for faster batch processing (up to 16)
 3. Use smaller images when possible
 4. For generation:
-   - Use **Gemini 2.5 Flash** for FREE tier (500 images/day)
+   - Use **Gemini 2.5 Flash** for affordable generation ($0.039/image)
    - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
    - Use **Imagen 4** for premium photo-realistic quality ($0.04/image)
    - Use **Imagen 4 Fast** for quick Vertex AI iterations ($0.02/image)
    - Use **Imagen 4 Ultra** for highest Vertex AI quality ($0.06/image)
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
+   - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
+   - Use **Grok Imagine Pro** for higher quality xAI generation ($0.07/image)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---

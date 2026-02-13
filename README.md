@@ -21,7 +21,7 @@ Production-ready serverless REST API for web applications and remote processing.
 ### 🎨 AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash (FREE), Imagen 4/Fast/Ultra, Nova Canvas, Grok 2 Image
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash ($0.039/image), Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine ($0.02-0.07/image)
 - Control size, style, quality, aspect ratio, and use negative prompts
 - Reproducible results with seed values
 - Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3 Pro)
@@ -90,7 +90,7 @@ sudo mv gimage /usr/local/bin/
 **Quick Start** (recommended for most users):
 
 ```bash
-# Get a free Gemini API key from https://aistudio.google.com/app/apikey
+# Get a Gemini API key from https://aistudio.google.com/app/apikey
 # Then run the interactive setup:
 gimage auth setup gemini
 
@@ -114,10 +114,10 @@ gimage auth test gemini
 
 **Get API Keys:**
 
-- **Gemini API**: https://aistudio.google.com/app/apikey (FREE tier: 500 images/day with gemini-2.5-flash-image, no credit card)
+- **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Flash $0.039/image, Gemini 3 Pro $0.134/image)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
-- **xAI Grok**: https://console.x.ai (Aurora-powered image generation, ~$0.07/image)
+- **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Pro $0.07/image)
 
 ### 3. Generate Your First Image
 
@@ -341,10 +341,10 @@ gimage auth status  # Shows which credentials are active and their sources
   - Native 4K resolution, sharp text rendering
   - Best for: Professional work, text-heavy images, diagrams
 
-- **`gemini-2.5-flash-image`** (FREE tier, recommended for beginners)
+- **`gemini-2.5-flash-image`** (affordable, recommended for beginners)
 
-  - FREE: 500 images/day, no credit card required
-  - Resolution: up to 1024x1024
+  - Pricing: $0.039/image
+  - Resolution: up to 1024x1024 (also supports 1024x1792, 1792x1024)
   - Fast generation (~2-3 seconds)
   - Best for: Quick iterations, development, testing
 
@@ -387,10 +387,22 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ### xAI Grok - Paid
 
-- **`grok-2-image`** (Aurora-powered)
-  - Pricing: ~$0.07/image
-  - Best for: Creative and artistic images
-  - Note: Does not support size, style, or negative prompt parameters
+- **`grok-imagine-image`** (default Grok model, fast and affordable)
+
+  - Pricing: $0.02/image
+  - Supports aspect ratio (13 ratios: 1:1, 16:9, 9:16, 4:3, 3:4, etc.)
+  - Best for: Quick iterations, affordable image generation
+
+- **`grok-imagine-image-pro`** (higher quality)
+
+  - Pricing: $0.07/image
+  - Supports aspect ratio
+  - Best for: Higher quality creative images
+
+- **`grok-2-image`** (legacy, Aurora-powered)
+  - Pricing: $0.07/image
+  - Note: Does not support size, style, negative prompt, or aspect ratio parameters
+  - Prefer Grok Imagine for new projects
 
 **View all models with live pricing:**
 
@@ -577,7 +589,7 @@ That's it! Claude Code will now have access to all gimage MCP tools.
 Before using the MCP server, configure your API credentials:
 
 ```bash
-# Quick start with Gemini (FREE tier)
+# Quick start with Gemini (most affordable)
 gimage auth setup gemini
 
 # Or use environment variable (more secure):

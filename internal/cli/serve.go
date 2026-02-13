@@ -153,7 +153,7 @@ For more information: https://github.com/apresai/gimage`,
 
 			if configuredCount == 0 {
 				fmt.Fprintln(os.Stderr, "[gimage-mcp] ⚠️  No providers configured")
-				fmt.Fprintln(os.Stderr, "[gimage-mcp]     Run: gimage auth setup gemini/flash-2.5  (FREE tier, 500/day)")
+				fmt.Fprintln(os.Stderr, "[gimage-mcp]     Run: gimage auth setup gemini/flash-2.5  ($0.039/image, affordable)")
 				fmt.Fprintln(os.Stderr, "[gimage-mcp]     Or:  gimage auth setup vertex/imagen-4  (Paid, highest quality)")
 			} else {
 				fmt.Fprintf(os.Stderr, "[gimage-mcp] 📊 Available Providers (%d configured):\n", configuredCount)
