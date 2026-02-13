@@ -82,6 +82,15 @@ generated_*.webp
 # Test output (E2E generated images)
 test/output/
 
+# Ad-hoc generated images in project root
+aws-builder-lego-*
+
+# Personal notes
+backlog.md
+
+# Compiled tools
+coverage-report
+
 # Temporary files
 tmp/
 temp/
