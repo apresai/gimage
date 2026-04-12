@@ -83,7 +83,7 @@ gimage generate --prompt "your prompt" [flags]
 **Gemini API:**
 
 - `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
-- `gemini-3.1-flash-image-preview` - ~$0.05/image, 4K resolution, improved text rendering
+- `gemini-3.1-flash-image-preview` - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
 - `gemini-2.5-flash-image` - $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**
@@ -96,7 +96,7 @@ gimage generate --prompt "your prompt" [flags]
 
 **AWS Bedrock (Paid):**
 
-- `amazon.nova-canvas-v1:0` - $0.04/image (up to 1024x1024), $0.08/image (larger), up to 1408x1408
+- `amazon.nova-canvas-v1:0` - std ≤1024: $0.04, prem ≤1024: $0.06, std >1024: $0.06, prem >1024: $0.08; up to 1408x1408. Premium quality triggered by `--style photorealistic|premium|high|ultra`
 
 **xAI Grok (Paid):**
 

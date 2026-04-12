@@ -70,14 +70,7 @@ func BuildNovaCanvasRequest(prompt string, options models.GenerateOptions, log *
 		return nil, fmt.Errorf("invalid seed: %d (must be 0-858993459)", options.Seed)
 	}
 
-	// Map style keywords to Nova Canvas quality levels
-	quality := "standard"
-	if options.Style != "" {
-		lowerStyle := strings.ToLower(options.Style)
-		if lowerStyle == "premium" || lowerStyle == "high" || lowerStyle == "ultra" || lowerStyle == "photorealistic" {
-			quality = "premium"
-		}
-	}
+	quality := NovaCanvasQualityFromStyle(options.Style)
 
 	// CFG scale (default 7.0, clamped to 1.0-10.0)
 	cfgScale := 7.0

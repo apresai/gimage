@@ -343,8 +343,8 @@ gimage auth status  # Shows which credentials are active and their sources
 
 - **`gemini-3.1-flash-image-preview`** (4K flash)
 
-  - Pricing: ~$0.05/image
-  - 4K resolution, improved text rendering
+  - Pricing tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
+  - Improved text rendering vs Flash 2.5
   - Best for: High-quality images at flash speed
 
 - **`gemini-2.5-flash-image`** (affordable, recommended for beginners)

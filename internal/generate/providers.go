@@ -192,11 +192,11 @@ func (r *ProviderRegistry) registerAllProviders() {
 				Secret:      true,
 			},
 		},
-		// TODO(gemini-3.1-flash): pricing and MaxPromptLength are estimates —
-		// ai.google.dev/gemini-api/docs/pricing does not list the preview model
-		// as of 2026-04-12. Verify once Google publishes official pricing.
+		// Tiered by resolution: see ModelPricing["gemini-3.1-flash-image-preview"].
+		// CostPerImage holds the 1K-tier price for list displays only —
+		// GetProviderPricing uses the full tier schedule from pricing.go.
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.05),
+			CostPerImage: float64Ptr(0.067),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -1117,10 +1117,14 @@ type CalculatedPricing struct {
 	IsExpensive bool    // Whether cost > $0.05 (triggers warning)
 }
 
-// GetProviderPricing calculates pricing info for a provider based on request parameters
-// imageSize: For Gemini 3 Pro native resolution (1K, 2K, 4K)
-// dimensions: For size-based pricing like Nova Canvas (e.g., "1024x1024", "2048x2048")
-func GetProviderPricing(provider *Provider, imageSize, dimensions string) CalculatedPricing {
+// GetProviderPricing calculates pricing for a provider based on request parameters.
+// It consults ModelPricing (the single source of truth in pricing.go) first,
+// falling back to provider.Pricing.CostPerImage for models not yet in the registry.
+// imageSize: "0.5K"/"1K"/"2K"/"4K" for Gemini tiered models.
+// dimensions: "WIDTHxHEIGHT" for Nova Canvas.
+// style: user-supplied style string ("photorealistic", "artistic", etc.),
+// used by Nova Canvas to select standard vs premium quality pricing.
+func GetProviderPricing(provider *Provider, imageSize, dimensions, style string) CalculatedPricing {
 	info := CalculatedPricing{}
 
 	if provider == nil {
@@ -1134,50 +1138,22 @@ func GetProviderPricing(provider *Provider, imageSize, dimensions string) Calcul
 		return info
 	}
 
+	if entry, ok := LookupPricing(provider.ModelID); ok {
+		info.Cost = entry.Calculate(imageSize, dimensions, style)
+		info.Display = formatPricingDisplay(entry, info.Cost, imageSize, dimensions, style)
+		info.IsExpensive = info.Cost > 0.05
+		return info
+	}
+
 	if provider.Pricing.CostPerImage == nil {
 		info.Display = "Variable"
 		return info
 	}
 
 	info.Cost = *provider.Pricing.CostPerImage
-
-	// Handle variable pricing models
-	if strings.Contains(provider.ModelID, "gemini-3-pro") {
-		info.Cost = getGemini3ProCost(imageSize)
-		info.Display = fmt.Sprintf("$%.4f/image (%s)", info.Cost, ImageSizeLabel(imageSize))
-	} else if strings.Contains(provider.ModelID, "nova-canvas") {
-		info.Cost = getNovaCanvasCost(dimensions)
-		w, h := parseDimensionsForCost(dimensions)
-		if w > 1024 || h > 1024 {
-			info.Display = fmt.Sprintf("$%.4f/image (>1024px)", info.Cost)
-		} else {
-			info.Display = fmt.Sprintf("$%.4f/image (≤1024px)", info.Cost)
-		}
-	} else {
-		info.Display = fmt.Sprintf("$%.4f/image", info.Cost)
-	}
-
+	info.Display = fmt.Sprintf("$%.4f/image", info.Cost)
 	info.IsExpensive = info.Cost > 0.05
 	return info
-}
-
-// getGemini3ProCost returns the cost for Gemini 3 Pro based on image size
-// Pricing: $0.134 for 1K/2K, $0.24 for 4K
-func getGemini3ProCost(imageSize string) float64 {
-	if strings.ToUpper(imageSize) == "4K" {
-		return 0.24
-	}
-	return 0.134 // Default for 1K/2K or unspecified
-}
-
-// getNovaCanvasCost returns the cost for Nova Canvas based on image dimensions
-// Pricing: $0.04 for ≤1024x1024, $0.08 for >1024x1024
-func getNovaCanvasCost(size string) float64 {
-	width, height := parseDimensionsForCost(size)
-	if width > 1024 || height > 1024 {
-		return 0.08
-	}
-	return 0.04
 }
 
 // parseDimensionsForCost parses "WIDTHxHEIGHT" string for cost calculation

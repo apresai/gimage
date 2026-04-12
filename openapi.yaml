@@ -48,7 +48,7 @@ paths:
         Generate an AI image from a text description using Google Gemini, Vertex AI, or AWS Bedrock.
 
         **Models Available:**
-        - Gemini: `gemini-2.5-flash-image` ($0.039/image), `gemini-3.1-flash-image-preview` ($0.05/image, 4K), `gemini-3-pro-image-preview` ($0.134-$0.24/image, native 4K)
+        - Gemini: `gemini-2.5-flash-image` ($0.039/image), `gemini-3.1-flash-image-preview` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image-preview` ($0.134-$0.24/image, native 4K)
         - Vertex AI: `imagen-4` ($0.04/image), `imagen-3.0-generate-002` ($0.04/image)
         - AWS Bedrock: `amazon.nova-canvas-v1:0` ($0.04-$0.08/image)
 

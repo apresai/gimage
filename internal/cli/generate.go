@@ -101,16 +101,12 @@ func printProviderHeader(provider *generate.Provider) {
 	printInfo("Using: %s", provider.Name)
 }
 
-// printProviderPricing prints the standard pricing information
-// Format: "Pricing: $X.XXXX/image" or "Pricing: FREE (limit)"
-func printProviderPricing(provider *generate.Provider, imageSize, dimensions string) {
-	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
+// printPricingInfo prints the standard pricing line and, if the provider is
+// expensive (>$0.05/image), a cost warning on stderr. Combines what used to be
+// two helpers so callers only do one pricing lookup per generation.
+func printPricingInfo(provider *generate.Provider, imageSize, dimensions, style string) {
+	pricing := generate.GetProviderPricing(provider, imageSize, dimensions, style)
 	printInfo("Pricing: %s", pricing.Display)
-}
-
-// printCostWarning prints a warning if the provider is expensive (>$0.05/image)
-func printCostWarning(provider *generate.Provider, imageSize, dimensions string) {
-	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
 	if pricing.IsExpensive {
 		fmt.Fprintf(os.Stderr, "⚠️  %s costs $%.4f/image\n", provider.Name, pricing.Cost)
 	}
@@ -123,13 +119,13 @@ func printGenerationTiming(elapsed time.Duration) {
 }
 
 // printSuccessDetails prints the standard success block for a single image
-func printSuccessDetails(provider *generate.Provider, output string, imageData []byte, width, height int, imageSize, dimensions string) {
+func printSuccessDetails(provider *generate.Provider, output string, imageData []byte, width, height int, imageSize, dimensions, style string) {
 	printInfo("  File: %s", output)
 	printInfo("  Size: %s", formatImageSize(int64(len(imageData))))
 	printInfo("  Dimensions: %dx%d", width, height)
 
 	// Cost info using shared pricing helper
-	pricing := generate.GetProviderPricing(provider, imageSize, dimensions)
+	pricing := generate.GetProviderPricing(provider, imageSize, dimensions, style)
 	if pricing.IsFree {
 		printInfo("  Cost: %s", pricing.Display)
 	} else if pricing.Cost > 0 {
@@ -392,8 +388,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		resolvedProvider, _ = registry.ResolveProvider(modelName)
 		if resolvedProvider != nil {
 			printProviderHeader(resolvedProvider)
-			printProviderPricing(resolvedProvider, imageSize, size)
-			printCostWarning(resolvedProvider, imageSize, size)
+			printPricingInfo(resolvedProvider, imageSize, size, style)
 		}
 
 		printInfo("Generating image...")
@@ -442,8 +437,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		resolvedProvider, _ = registry.ResolveProvider(modelName)
 		if resolvedProvider != nil {
 			printProviderHeader(resolvedProvider)
-			printProviderPricing(resolvedProvider, imageSize, size)
-			printCostWarning(resolvedProvider, imageSize, size)
+			printPricingInfo(resolvedProvider, imageSize, size, style)
 		}
 
 		printInfo("Generating image...")
@@ -515,8 +509,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Show provider info using standardized output
 		printProviderHeader(resolvedProvider)
-		printProviderPricing(resolvedProvider, imageSize, size)
-		printCostWarning(resolvedProvider, imageSize, size)
+		printPricingInfo(resolvedProvider, imageSize, size, style)
 
 		// Update options to use resolved model ID (not alias)
 		bedrockOptions := options
@@ -575,8 +568,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		resolvedProvider, _ = registry.ResolveProvider(modelName)
 		if resolvedProvider != nil {
 			printProviderHeader(resolvedProvider)
-			printProviderPricing(resolvedProvider, imageSize, size)
-			printCostWarning(resolvedProvider, imageSize, size)
+			printPricingInfo(resolvedProvider, imageSize, size, style)
 		}
 
 		printInfo("Generating image...")
@@ -642,7 +634,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Print standardized success output for this image
 		if resolvedProvider != nil {
-			printSuccessDetails(resolvedProvider, currentOutput, img.Data, img.Width, img.Height, imageSize, size)
+			printSuccessDetails(resolvedProvider, currentOutput, img.Data, img.Width, img.Height, imageSize, size, style)
 		} else {
 			printInfo("  File: %s", currentOutput)
 			printInfo("  Size: %s", formatImageSize(int64(len(img.Data))))
@@ -684,8 +676,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 
 	// Show provider info using standardized output
 	printProviderHeader(provider)
-	printProviderPricing(provider, imageSize, size)
-	printCostWarning(provider, imageSize, size)
+	printPricingInfo(provider, imageSize, size, style)
 
 	// Create client
 	client, err := registry.CreateClient(provider.ID)
@@ -753,7 +744,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 			return fmt.Errorf("failed to save image %d: %w", i+1, err)
 		}
 
-		printSuccessDetails(provider, currentOutput, img.Data, img.Width, img.Height, imageSize, size)
+		printSuccessDetails(provider, currentOutput, img.Data, img.Width, img.Height, imageSize, size, style)
 	}
 
 	return nil

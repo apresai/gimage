@@ -280,6 +280,7 @@ func TestGetProviderPricing(t *testing.T) {
 		provider    *Provider
 		imageSize   string
 		dimensions  string
+		style       string
 		wantCost    float64
 		wantDisplay string
 	}{
@@ -289,10 +290,33 @@ func TestGetProviderPricing(t *testing.T) {
 			wantCost: 0.039,
 		},
 		{
-			name:      "gemini 3.1 flash flat pricing at 4K",
+			name:      "gemini 3.1 flash 0.5K pricing",
+			provider:  flash31Provider,
+			imageSize: "0.5K",
+			wantCost:  0.045,
+		},
+		{
+			name:      "gemini 3.1 flash 1K pricing",
+			provider:  flash31Provider,
+			imageSize: "1K",
+			wantCost:  0.067,
+		},
+		{
+			name:      "gemini 3.1 flash 2K pricing",
+			provider:  flash31Provider,
+			imageSize: "2K",
+			wantCost:  0.101,
+		},
+		{
+			name:      "gemini 3.1 flash 4K pricing",
 			provider:  flash31Provider,
 			imageSize: "4K",
-			wantCost:  0.05, // must not get Pro 3's variable pricing
+			wantCost:  0.151,
+		},
+		{
+			name:     "gemini 3.1 flash default pricing",
+			provider: flash31Provider,
+			wantCost: 0.067, // defaults to 1K tier
 		},
 		{
 			name:      "gemini 3 pro 4K pricing",
@@ -313,16 +337,34 @@ func TestGetProviderPricing(t *testing.T) {
 			wantCost:  0.134,
 		},
 		{
-			name:       "nova canvas small",
-			provider:   novaProvider,
-			dimensions: "1024x1024",
-			wantCost:   0.04,
+			name:        "nova canvas standard small",
+			provider:    novaProvider,
+			dimensions:  "1024x1024",
+			wantCost:    0.04,
+			wantDisplay: "$0.0400/image (≤1024px)",
 		},
 		{
-			name:       "nova canvas large",
-			provider:   novaProvider,
-			dimensions: "2048x2048",
-			wantCost:   0.08,
+			name:        "nova canvas premium small",
+			provider:    novaProvider,
+			dimensions:  "1024x1024",
+			style:       "photorealistic",
+			wantCost:    0.06,
+			wantDisplay: "$0.0600/image (≤1024px, premium)",
+		},
+		{
+			name:        "nova canvas standard large",
+			provider:    novaProvider,
+			dimensions:  "2048x2048",
+			wantCost:    0.06,
+			wantDisplay: "$0.0600/image (>1024px)",
+		},
+		{
+			name:        "nova canvas premium large",
+			provider:    novaProvider,
+			dimensions:  "2048x2048",
+			style:       "premium",
+			wantCost:    0.08,
+			wantDisplay: "$0.0800/image (>1024px, premium)",
 		},
 		{
 			name:       "nova canvas default dimensions",
@@ -344,7 +386,7 @@ func TestGetProviderPricing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pricing := GetProviderPricing(tt.provider, tt.imageSize, tt.dimensions)
+			pricing := GetProviderPricing(tt.provider, tt.imageSize, tt.dimensions, tt.style)
 
 			if tt.wantDisplay != "" {
 				assert.Equal(t, tt.wantDisplay, pricing.Display)
@@ -365,11 +407,11 @@ func TestGetProviderPricingExpensiveFlag(t *testing.T) {
 	flashProvider, _ := reg.Get("gemini/flash-2.5")
 
 	// 4K Gemini 3 Pro should be expensive ($0.24 > $0.05)
-	expensive := GetProviderPricing(pro3Provider, "4K", "")
+	expensive := GetProviderPricing(pro3Provider, "4K", "", "")
 	assert.True(t, expensive.IsExpensive, "4K Gemini 3 Pro should be marked expensive")
 
 	// Gemini Flash should not be expensive ($0.039 < $0.05)
-	cheap := GetProviderPricing(flashProvider, "", "")
+	cheap := GetProviderPricing(flashProvider, "", "", "")
 	assert.False(t, cheap.IsExpensive, "Gemini Flash should not be marked expensive")
 }
 
@@ -433,6 +475,85 @@ func TestProviderRequiredEnvVars(t *testing.T) {
 			for _, want := range tt.wantEnvVars {
 				assert.Contains(t, envNames, want, "should require %s", want)
 			}
+		})
+	}
+}
+
+func TestModelPricingRegistry(t *testing.T) {
+	// Every entry must populate the required audit fields.
+	for modelID, entry := range ModelPricing {
+		t.Run("metadata_"+modelID, func(t *testing.T) {
+			assert.Equal(t, modelID, entry.ModelID, "map key must match entry.ModelID")
+			assert.NotEmpty(t, entry.Summary, "Summary required for audit display")
+			assert.NotZero(t, entry.Representative, "Representative price required")
+			assert.NotNil(t, entry.Calculate, "Calculate function required")
+			assert.NotEmpty(t, entry.Source, "Source URL required for audit")
+			assert.NotEmpty(t, entry.Verified, "Verified date required")
+		})
+	}
+
+	// Every provider whose ModelID is non-empty must have a ModelPricing entry.
+	// This guard catches drift when a new provider is added without updating
+	// pricing.go.
+	reg := GetProviderRegistry()
+	for _, p := range reg.List() {
+		t.Run("coverage_"+p.ID, func(t *testing.T) {
+			entry, ok := LookupPricing(p.ModelID)
+			require.True(t, ok, "provider %s (model %s) has no ModelPricing entry", p.ID, p.ModelID)
+
+			if p.Pricing.CostPerImage != nil {
+				assert.InDelta(t, entry.Representative, *p.Pricing.CostPerImage, 0.0001,
+					"provider.Pricing.CostPerImage must match ModelPricing[%s].Representative", p.ModelID)
+			}
+		})
+	}
+
+	// Known exact-price checkpoints. These are the numbers we verified against
+	// authoritative sources on the Verified date. If any change, update the
+	// corresponding ModelPricing entry AND document the source.
+	checkpoints := []struct {
+		modelID   string
+		imageSize string
+		dims      string
+		style     string
+		want      float64
+	}{
+		{modelID: "gemini-2.5-flash-image", want: 0.039},
+		{modelID: "gemini-3-pro-image-preview", imageSize: "1K", want: 0.134},
+		{modelID: "gemini-3-pro-image-preview", imageSize: "2K", want: 0.134},
+		{modelID: "gemini-3-pro-image-preview", imageSize: "4K", want: 0.24},
+		{modelID: "gemini-3-pro-image-preview", want: 0.134},
+		{modelID: "gemini-3.1-flash-image-preview", imageSize: "0.5K", want: 0.045},
+		{modelID: "gemini-3.1-flash-image-preview", imageSize: "1K", want: 0.067},
+		{modelID: "gemini-3.1-flash-image-preview", imageSize: "2K", want: 0.101},
+		{modelID: "gemini-3.1-flash-image-preview", imageSize: "4K", want: 0.151},
+		{modelID: "gemini-3.1-flash-image-preview", want: 0.067},
+		{modelID: "imagen-4.0-generate-001", want: 0.04},
+		{modelID: "imagen-4.0-fast-generate-001", want: 0.02},
+		{modelID: "imagen-4.0-ultra-generate-001", want: 0.06},
+		{modelID: "imagen-3.0-generate-002", want: 0.04},
+		{modelID: "imagen-3.0-generate-001", want: 0.04},
+		{modelID: "imagen-3.0-fast-generate-001", want: 0.02},
+		// Nova Canvas 2x2 matrix: (quality × size)
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", want: 0.04},                              // standard small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "photorealistic", want: 0.06},     // premium small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", want: 0.06},                              // standard large
+		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", style: "premium", want: 0.08},            // premium large
+		{modelID: "amazon.nova-canvas-v1:0", dims: "512x512", want: 0.04},                                // standard small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "ultra", want: 0.06},              // "ultra" maps to premium
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "artistic", want: 0.04},           // "artistic" is standard
+		{modelID: "grok-imagine-image", want: 0.02},
+		{modelID: "grok-imagine-image-pro", want: 0.07},
+		{modelID: "grok-2-image-1212", want: 0.07},
+	}
+	for _, c := range checkpoints {
+		name := "checkpoint_" + c.modelID + "_" + c.imageSize + "_" + c.dims + "_" + c.style
+		t.Run(name, func(t *testing.T) {
+			entry, ok := LookupPricing(c.modelID)
+			require.True(t, ok)
+			got := entry.Calculate(c.imageSize, c.dims, c.style)
+			assert.InDelta(t, c.want, got, 0.0001,
+				"%s @ imageSize=%q dims=%q style=%q", c.modelID, c.imageSize, c.dims, c.style)
 		})
 	}
 }

@@ -404,7 +404,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			if provider != nil {
 				modelDisplayName = provider.Name
 				// Use shared pricing helper for consistent pricing display
-				pricing := generate.GetProviderPricing(provider, imageSize, size)
+				pricing := generate.GetProviderPricing(provider, imageSize, size, style)
 				pricingInfo = pricing.Display
 			} else {
 				modelDisplayName = modelName
