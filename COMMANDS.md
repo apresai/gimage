@@ -83,6 +83,7 @@ gimage generate --prompt "your prompt" [flags]
 **Gemini API:**
 
 - `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
+- `gemini-3.1-flash-image-preview` - ~$0.05/image, 4K resolution, improved text rendering
 - `gemini-2.5-flash-image` - $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**

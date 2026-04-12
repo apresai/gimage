@@ -895,7 +895,7 @@ func (m *GenerateFlowModel) focusAdvancedInput() {
 func (m *GenerateFlowModel) viewAdvancedStep() string {
 	// Get provider info to show relevant options
 	provider := m.providers[m.selectedProvider]
-	isGemini3Pro := strings.Contains(provider.model, "gemini-3")
+	isGeminiAdvanced := strings.Contains(provider.model, "gemini-3")
 	isBedrock := provider.api == "bedrock"
 	isVertex := provider.api == "vertex"
 
@@ -946,11 +946,11 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 		focusIndicator = "> "
 	}
 	imageSizeValue := m.imageSizes[m.selectedImageSize].label
-	if isGemini3Pro {
+	if isGeminiAdvanced {
 		content += focusIndicator + FormatKeyValue("Native Resolution", imageSizeValue) + "\n"
 		content += MutedStyle.Render("    ←/→ to change: 1K, 2K, or 4K") + "\n\n"
 	} else {
-		content += MutedStyle.Render("  Native Resolution: (N/A - Gemini 3 Pro only)") + "\n\n"
+		content += MutedStyle.Render("  Native Resolution: (N/A - Gemini 3+ only)") + "\n\n"
 	}
 
 	// Output Format (Vertex AI only)

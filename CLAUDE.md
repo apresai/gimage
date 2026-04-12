@@ -124,6 +124,7 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 
 Model name implies backend (auto-detect):
 - `gemini-2.5-flash-image` → gemini ($0.039/image)
+- `gemini-3.1-flash-image-preview` → gemini (4K, improved text, $0.05/image)
 - `gemini-3-pro-image-preview` → gemini (native 4K, $0.134/image)
 - `imagen-4` → vertex ($0.04/image)
 - `imagen-4-fast` → vertex ($0.02/image)
@@ -142,6 +143,7 @@ Map informal names to exact model IDs:
 | User Input | Exact Model ID | API | Features |
 |-----------|---------------|-----|----------|
 | "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image-preview` | gemini | Native 4K, sharp text, $0.134/image (default) |
+| "gemini-3.1-flash", "gemini-3.1", "3.1-flash" | `gemini-3.1-flash-image-preview` | gemini | 4K, improved text rendering, $0.05/image |
 | "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | $0.039/image, 1024x1024 max |
 | "imagen", "imagen-4" | `imagen-4.0-generate-001` | vertex | High quality, $0.04/image |
 | "imagen-4-fast", "imagen-fast" | `imagen-4.0-fast-generate-001` | vertex | Speed-optimized, $0.02/image |
@@ -153,7 +155,7 @@ Map informal names to exact model IDs:
 | "grok-imagine-pro" | `grok-imagine-image-pro` | grok | Higher quality, $0.07/image |
 | "grok-2", "grok-2-image" (legacy) | `grok-2-image-1212` | grok | Legacy Aurora-powered, $0.07/image |
 
-**Gemini 3 Pro** supports native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
+**Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
 
 **Grok Imagine** supports `aspect_ratio` parameter (13 ratios including 1:1, 16:9, 9:16, 4:3, 3:4, etc.).
 

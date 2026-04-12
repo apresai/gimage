@@ -57,11 +57,24 @@ const (
 	CropRequestResponseFormatS3Url  CropRequestResponseFormat = "s3_url"
 )
 
+// Defines values for GenerateRequestImageSize.
+const (
+	N1K GenerateRequestImageSize = "1K"
+	N2K GenerateRequestImageSize = "2K"
+	N4K GenerateRequestImageSize = "4K"
+)
+
 // Defines values for GenerateRequestModel.
 const (
+	AmazonNovaCanvasV10                 GenerateRequestModel = "amazon.nova-canvas-v1:0"
 	Gemini20FlashPreviewImageGeneration GenerateRequestModel = "gemini-2.0-flash-preview-image-generation"
 	Gemini25FlashImage                  GenerateRequestModel = "gemini-2.5-flash-image"
-	Imagen30Generate001                 GenerateRequestModel = "imagen-3.0-generate-001"
+	Gemini31FlashImagePreview           GenerateRequestModel = "gemini-3.1-flash-image-preview"
+	Gemini3ProImagePreview              GenerateRequestModel = "gemini-3-pro-image-preview"
+	GrokImagineImage                    GenerateRequestModel = "grok-imagine-image"
+	GrokImagineImagePro                 GenerateRequestModel = "grok-imagine-image-pro"
+	Imagen30Generate002                 GenerateRequestModel = "imagen-3.0-generate-002"
+	Imagen4                             GenerateRequestModel = "imagen-4"
 	Imagen40FastGenerate001             GenerateRequestModel = "imagen-4.0-fast-generate-001"
 	Imagen40Generate001                 GenerateRequestModel = "imagen-4.0-generate-001"
 	Imagen40UltraGenerate001            GenerateRequestModel = "imagen-4.0-ultra-generate-001"
@@ -219,6 +232,12 @@ type ErrorResponse struct {
 
 // GenerateRequest defines model for GenerateRequest.
 type GenerateRequest struct {
+	// AspectRatio Aspect ratio for Gemini 3 Pro (alternative to size). E.g., '1:1', '16:9', '9:16', '4:3', '3:4'
+	AspectRatio *string `json:"aspect_ratio,omitempty"`
+
+	// ImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
+	ImageSize *GenerateRequestImageSize `json:"image_size,omitempty"`
+
 	// Model AI model to use for generation
 	Model *GenerateRequestModel `json:"model,omitempty"`
 
@@ -240,6 +259,9 @@ type GenerateRequest struct {
 	// Style Image style/aesthetic
 	Style *GenerateRequestStyle `json:"style,omitempty"`
 }
+
+// GenerateRequestImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
+type GenerateRequestImageSize string
 
 // GenerateRequestModel AI model to use for generation
 type GenerateRequestModel string

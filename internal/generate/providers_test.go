@@ -26,6 +26,7 @@ func TestRegistryGet(t *testing.T) {
 		wantErr     bool
 	}{
 		{"gemini flash", "gemini/flash-2.5", "gemini-2.5-flash-image", false},
+		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image-preview", false},
 		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image-preview", false},
 		{"vertex imagen 4", "vertex/imagen-4", "imagen-4.0-generate-001", false},
 		{"vertex imagen 4 fast", "vertex/imagen-4-fast", "imagen-4.0-fast-generate-001", false},
@@ -56,8 +57,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 10 providers (2 gemini + 5+ vertex + 1 bedrock + 3 grok)
-	assert.GreaterOrEqual(t, len(providers), 10, "should have at least 10 providers")
+	// Should have at least 12 providers (3 gemini + 5+ vertex + 1 bedrock + 3 grok)
+	assert.GreaterOrEqual(t, len(providers), 12, "should have at least 12 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -75,7 +76,7 @@ func TestRegistryListByAPI(t *testing.T) {
 		api      string
 		minCount int
 	}{
-		{"gemini providers", "gemini", 2},
+		{"gemini providers", "gemini", 3},
 		{"vertex providers", "vertex", 4},
 		{"bedrock providers", "bedrock", 1},
 		{"grok providers", "grok", 3},
@@ -269,6 +270,7 @@ func TestGetProviderPricing(t *testing.T) {
 	reg := GetProviderRegistry()
 
 	flashProvider, _ := reg.Get("gemini/flash-2.5")
+	flash31Provider, _ := reg.Get("gemini/flash-3.1")
 	pro3Provider, _ := reg.Get("gemini/pro-3")
 	novaProvider, _ := reg.Get("bedrock/nova-canvas")
 	grokProvider, _ := reg.Get("grok/grok-imagine")
@@ -285,6 +287,12 @@ func TestGetProviderPricing(t *testing.T) {
 			name:     "gemini flash pricing",
 			provider: flashProvider,
 			wantCost: 0.039,
+		},
+		{
+			name:      "gemini 3.1 flash flat pricing at 4K",
+			provider:  flash31Provider,
+			imageSize: "4K",
+			wantCost:  0.05, // must not get Pro 3's variable pricing
 		},
 		{
 			name:      "gemini 3 pro 4K pricing",

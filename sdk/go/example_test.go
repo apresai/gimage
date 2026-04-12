@@ -25,7 +25,7 @@ func Example() {
 	// Generate an image
 	resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt: "sunset over mountains",
-		Model:  stringPtr("gemini-2.5-flash-image"),
+		Model:  modelPtr(gimage.Gemini25FlashImage),
 		Size:   stringPtr("1024x1024"),
 	})
 	if err != nil {
@@ -36,8 +36,8 @@ func Example() {
 	fmt.Printf("Status: %d\n", resp.StatusCode)
 }
 
-// ExampleWithAPIKey demonstrates authentication with API Gateway API key
-func ExampleWithAPIKey() {
+// Example_withAPIKey demonstrates authentication with API Gateway API key
+func Example_withAPIKey() {
 	baseURL := "https://cf3xrk9w63.execute-api.us-east-1.amazonaws.com/production"
 	apiKey := "your-api-key-here"
 
@@ -55,12 +55,12 @@ func ExampleWithAPIKey() {
 	// Generate image with custom options
 	resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt:         "futuristic city with flying cars",
-		Model:          stringPtr("gemini-2.5-flash-image"),
+		Model:          modelPtr(gimage.Gemini25FlashImage),
 		Size:           stringPtr("1024x1024"),
-		Style:          (*gimage.ImageStyle)(stringPtr("photorealistic")),
+		Style:          stylePtr(gimage.Photorealistic),
 		NegativePrompt: stringPtr("people, text"),
-		Seed:           intPtr(42),
-		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("base64")),
+		Seed:           int64Ptr(42),
+		ResponseFormat: respFmtPtr(gimage.GenerateRequestResponseFormatBase64),
 	})
 	if err != nil {
 		log.Fatalf("Failed to generate image: %v", err)
@@ -70,8 +70,8 @@ func ExampleWithAPIKey() {
 	fmt.Printf("Status: %d\n", resp.StatusCode)
 }
 
-// ExampleHealthCheck demonstrates checking API health
-func ExampleHealthCheck() {
+// Example_healthCheck demonstrates checking API health
+func Example_healthCheck() {
 	baseURL := "https://cf3xrk9w63.execute-api.us-east-1.amazonaws.com/production"
 	apiKey := "your-api-key-here"
 
@@ -96,10 +96,17 @@ func ExampleHealthCheck() {
 }
 
 // Helper functions
-func stringPtr(s string) *string {
+func stringPtr(s string) *string { return &s }
+func int64Ptr(i int64) *int64    { return &i }
+
+func modelPtr(m gimage.GenerateRequestModel) *gimage.GenerateRequestModel {
+	return &m
+}
+
+func stylePtr(s gimage.GenerateRequestStyle) *gimage.GenerateRequestStyle {
 	return &s
 }
 
-func intPtr(i int) *int {
-	return &i
+func respFmtPtr(r gimage.GenerateRequestResponseFormat) *gimage.GenerateRequestResponseFormat {
+	return &r
 }

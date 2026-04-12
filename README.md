@@ -341,6 +341,12 @@ gimage auth status  # Shows which credentials are active and their sources
   - Native 4K resolution, sharp text rendering
   - Best for: Professional work, text-heavy images, diagrams
 
+- **`gemini-3.1-flash-image-preview`** (4K flash)
+
+  - Pricing: ~$0.05/image
+  - 4K resolution, improved text rendering
+  - Best for: High-quality images at flash speed
+
 - **`gemini-2.5-flash-image`** (affordable, recommended for beginners)
 
   - Pricing: $0.039/image

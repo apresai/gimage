@@ -176,6 +176,45 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
+	// Gemini 3.1 Flash Image Preview via Gemini API
+	r.Register(&Provider{
+		ID:          "gemini/flash-3.1",
+		Name:        "Gemini 3.1 Flash (via Gemini API)",
+		API:         "gemini",
+		ModelID:     "gemini-3.1-flash-image-preview",
+		Description: "4K resolution, improved text rendering - fast and affordable",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GEMINI_API_KEY",
+				ConfigKey:   "gemini_api_key",
+				Description: "API key from https://aistudio.google.com",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		// TODO(gemini-3.1-flash): pricing and MaxPromptLength are estimates —
+		// ai.google.dev/gemini-api/docs/pricing does not list the preview model
+		// as of 2026-04-12. Verify once Google publishes official pricing.
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.05),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsNegativePrompt: true,
+			SupportsSeed:           true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GEMINI_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GEMINI_API_KEY is required")
+			}
+			return NewGeminiRESTClient(apiKey)
+		},
+	})
+
 	// Gemini 3 Pro Image Preview via Gemini API
 	r.Register(&Provider{
 		ID:          "gemini/pro-3",
@@ -956,57 +995,61 @@ func (r *ProviderRegistry) GetAuthStatus() []AuthStatus {
 	return statuses
 }
 
+// providerAliases maps user-friendly names to canonical provider IDs.
+// Kept at package scope so ResolveProvider doesn't re-allocate on every call.
+var providerAliases = map[string]string{
+	// Default "gemini" maps to Gemini 3 Pro
+	"gemini":                     "gemini/pro-3",
+	"gemini-3":                   "gemini/pro-3",
+	"gemini-3-pro":               "gemini/pro-3",
+	"gemini3":                    "gemini/pro-3",
+	"pro-3":                      "gemini/pro-3",
+	"gemini-3-pro-image-preview": "gemini/pro-3",
+	// Gemini 3.1 Flash
+	"gemini-3.1-flash":               "gemini/flash-3.1",
+	"gemini-3.1":                     "gemini/flash-3.1",
+	"3.1-flash":                      "gemini/flash-3.1",
+	"gemini-3.1-flash-image-preview": "gemini/flash-3.1",
+	// Gemini 2.5 Flash
+	"gemini-flash":           "gemini/flash-2.5",
+	"flash":                  "gemini/flash-2.5",
+	"gemini-2.5":             "gemini/flash-2.5",
+	"gemini-2.5-flash":       "gemini/flash-2.5",
+	"gemini-2.5-flash-image": "gemini/flash-2.5",
+	// Vertex/Imagen
+	"imagen":                        "vertex/imagen-4",
+	"imagen-4":                      "vertex/imagen-4",
+	"imagen-4.0-generate-001":       "vertex/imagen-4",
+	"imagen-4-fast":                 "vertex/imagen-4-fast",
+	"imagen-fast":                   "vertex/imagen-4-fast",
+	"imagen-4.0-fast-generate-001":  "vertex/imagen-4-fast",
+	"imagen-4-ultra":                "vertex/imagen-4-ultra",
+	"imagen-ultra":                  "vertex/imagen-4-ultra",
+	"imagen-4.0-ultra-generate-001": "vertex/imagen-4-ultra",
+	// Bedrock
+	"nova":                    "bedrock/nova-canvas",
+	"nova-canvas":             "bedrock/nova-canvas",
+	"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
+	// Grok
+	"grok":                   "grok/grok-imagine",
+	"grok-imagine":           "grok/grok-imagine",
+	"grok-imagine-image":     "grok/grok-imagine",
+	"grok-imagine-pro":       "grok/grok-imagine-pro",
+	"grok-imagine-image-pro": "grok/grok-imagine-pro",
+	"grok-2":                 "grok/grok-2-image",
+	"grok-2-image":           "grok/grok-2-image",
+	"grok-2-image-1212":      "grok/grok-2-image",
+	"xai":                    "grok/grok-imagine",
+	"aurora":                 "grok/grok-imagine",
+}
+
 // ResolveProvider finds a provider by various identifiers
 func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
-	// Try exact match first
 	if p, err := r.Get(input); err == nil {
 		return p, nil
 	}
 
-	// Try common aliases
-	input = strings.ToLower(input)
-	aliases := map[string]string{
-		// Default "gemini" now maps to Gemini 3 Pro
-		"gemini":                     "gemini/pro-3",
-		"gemini-3":                   "gemini/pro-3",
-		"gemini-3-pro":               "gemini/pro-3",
-		"gemini3":                    "gemini/pro-3",
-		"pro-3":                      "gemini/pro-3",
-		"gemini-3-pro-image-preview": "gemini/pro-3",
-		// Explicit aliases for Gemini 2.5 Flash
-		"gemini-flash":           "gemini/flash-2.5",
-		"flash":                  "gemini/flash-2.5",
-		"gemini-2.5":             "gemini/flash-2.5",
-		"gemini-2.5-flash":       "gemini/flash-2.5",
-		"gemini-2.5-flash-image": "gemini/flash-2.5",
-		// Vertex/Imagen aliases
-		"imagen":                       "vertex/imagen-4",
-		"imagen-4":                     "vertex/imagen-4",
-		"imagen-4.0-generate-001":      "vertex/imagen-4",
-		"imagen-4-fast":                "vertex/imagen-4-fast",
-		"imagen-fast":                  "vertex/imagen-4-fast",
-		"imagen-4.0-fast-generate-001": "vertex/imagen-4-fast",
-		"imagen-4-ultra":               "vertex/imagen-4-ultra",
-		"imagen-ultra":                 "vertex/imagen-4-ultra",
-		"imagen-4.0-ultra-generate-001": "vertex/imagen-4-ultra",
-		// Bedrock aliases
-		"nova":                    "bedrock/nova-canvas",
-		"nova-canvas":             "bedrock/nova-canvas",
-		"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
-		// Grok aliases (default → Grok Imagine)
-		"grok":                   "grok/grok-imagine",
-		"grok-imagine":           "grok/grok-imagine",
-		"grok-imagine-image":     "grok/grok-imagine",
-		"grok-imagine-pro":       "grok/grok-imagine-pro",
-		"grok-imagine-image-pro": "grok/grok-imagine-pro",
-		"grok-2":                 "grok/grok-2-image",
-		"grok-2-image":           "grok/grok-2-image",
-		"grok-2-image-1212":      "grok/grok-2-image",
-		"xai":                    "grok/grok-imagine",
-		"aurora":                 "grok/grok-imagine",
-	}
-
-	if providerID, ok := aliases[input]; ok {
+	if providerID, ok := providerAliases[strings.ToLower(input)]; ok {
 		return r.Get(providerID)
 	}
 
@@ -1099,7 +1142,7 @@ func GetProviderPricing(provider *Provider, imageSize, dimensions string) Calcul
 	info.Cost = *provider.Pricing.CostPerImage
 
 	// Handle variable pricing models
-	if strings.Contains(provider.ModelID, "gemini-3") || strings.Contains(provider.ModelID, "pro-image-preview") {
+	if strings.Contains(provider.ModelID, "gemini-3-pro") {
 		info.Cost = getGemini3ProCost(imageSize)
 		info.Display = fmt.Sprintf("$%.4f/image (%s)", info.Cost, ImageSizeLabel(imageSize))
 	} else if strings.Contains(provider.ModelID, "nova-canvas") {

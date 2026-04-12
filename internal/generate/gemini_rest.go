@@ -106,9 +106,9 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 	return nil, fmt.Errorf("failed after %d attempts: %w", maxRetries, lastErr)
 }
 
-// isGemini3Pro returns true if the model is Gemini 3 Pro
-func isGemini3Pro(modelName string) bool {
-	return strings.Contains(modelName, "gemini-3") || strings.Contains(modelName, "pro-image-preview")
+// isGeminiAdvanced returns true if the model supports TEXT+IMAGE modalities and imageConfig (Gemini 3+ models)
+func isGeminiAdvanced(modelName string) bool {
+	return strings.Contains(modelName, "gemini-3")
 }
 
 // generateWithRetry performs a single generation attempt using REST API
@@ -126,11 +126,11 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 	// Build generation config based on model
 	genConfig := &geminiGenerationConfig{}
 
-	// Gemini 3 Pro uses TEXT+IMAGE modalities and supports imageConfig
-	if isGemini3Pro(modelName) {
+	// Gemini 3+ models use TEXT+IMAGE modalities and support imageConfig
+	if isGeminiAdvanced(modelName) {
 		genConfig.ResponseModalities = []string{"TEXT", "IMAGE"}
 
-		// Add imageConfig for Gemini 3 Pro (supports 4K, aspect ratio)
+		// Add imageConfig for Gemini 3+ (supports 4K, aspect ratio)
 		imageConfig := &geminiImageConfig{}
 
 		// Set imageSize if specified (1K, 2K, 4K)
@@ -139,7 +139,6 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			c.log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
-		// Set negative prompt if provided (Gemini 3 Pro support)
 		if options.NegativePrompt != "" {
 			imageConfig.NegativePrompt = options.NegativePrompt
 			c.log.Debug("Using negativePrompt: %s", options.NegativePrompt)
@@ -150,7 +149,6 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			imageConfig.AspectRatio = options.AspectRatio
 			c.log.Debug("Using explicit aspectRatio: %s", imageConfig.AspectRatio)
 		} else if options.Size != "" && width > 0 && height > 0 {
-			// Infer aspect ratio from Size dimensions for Gemini 3 Pro
 			imageConfig.AspectRatio = InferAspectRatio(width, height, nil)
 			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, imageConfig.AspectRatio)
 		} else if imageConfig.ImageSize != "" {
@@ -313,7 +311,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 		// Determine dimensions
 		finalWidth, finalHeight := width, height
-		if isGemini3Pro(modelName) && options.ImageSize != "" {
+		if isGeminiAdvanced(modelName) && options.ImageSize != "" {
 			finalWidth, finalHeight = 0, 0
 		}
 
@@ -406,14 +404,13 @@ type geminiGenerationConfig struct {
 	TopK               *int               `json:"topK,omitempty"`
 	CandidateCount     *int               `json:"candidateCount,omitempty"`
 	Seed               *int64             `json:"seed,omitempty"`
-	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"` // For Gemini 3 Pro
+	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"`
 }
 
-// geminiImageConfig configures image generation for Gemini 3 Pro
 type geminiImageConfig struct {
-	AspectRatio    string `json:"aspectRatio,omitempty"`    // e.g., "16:9", "1:1", "4:3"
-	ImageSize      string `json:"imageSize,omitempty"`      // "1K", "2K", "4K" (uppercase required)
-	NegativePrompt string `json:"negativePrompt,omitempty"` // Gemini 3 Pro support
+	AspectRatio    string `json:"aspectRatio,omitempty"`
+	ImageSize      string `json:"imageSize,omitempty"` // "1K", "2K", "4K" — API requires uppercase
+	NegativePrompt string `json:"negativePrompt,omitempty"`
 }
 
 type geminiGenerateContentResponse struct {

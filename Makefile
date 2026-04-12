@@ -492,10 +492,9 @@ generate-sdk:
 	@oapi-codegen -generate client -package gimage -o $(SDK_DIR)/client.gen.go openapi.yaml
 	@echo "Step 4: Generating spec..."
 	@oapi-codegen -generate spec -package gimage -o $(SDK_DIR)/spec.gen.go openapi.yaml
-	@echo "Step 5: Creating README..."
-	@echo "# Gimage Go SDK\n\nGenerated from OpenAPI spec v$(VERSION)\n\n## Installation\n\n\`\`\`bash\ngo get $(SDK_PKG)\n\`\`\`\n\n## Usage\n\n\`\`\`go\nimport \"$(SDK_PKG)\"\n\nclient, _ := gimage.NewClient(\"https://your-api.execute-api.us-east-1.amazonaws.com/prod\")\nresp, _ := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{\n    Prompt: \"sunset over mountains\",\n})\n\`\`\`\n\nSee [openapi.yaml](../../openapi.yaml) for full API documentation.\n" > $(SDK_DIR)/README.md
 	@echo ""
 	@echo "✓ SDK generated successfully at $(SDK_DIR)/"
+	@echo "  (README.md is hand-written and preserved)"
 	@echo ""
 	@echo "Files created:"
 	@ls -lh $(SDK_DIR)
