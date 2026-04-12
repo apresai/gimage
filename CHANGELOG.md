@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.119] - 2026-04-12
+
+### Added
+- Gemini 3.1 Flash (`gemini-3.1-flash-image-preview`) model with tiered resolution pricing ($0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
+- Centralized pricing system (`internal/generate/pricing.go`) as single source of truth for all provider/model cost data
+- Full Nova Canvas quality × size pricing matrix (standard/premium × ≤1024/>1024)
+
+### Changed
+- Updated Go dependencies (`go.mod`, `go.sum`)
+
+### Fixed
+- Pricing display bug in provider listings
+
+
 ## [1.2.115] - 2026-02-13
 
 ### Added
