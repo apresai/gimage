@@ -58,14 +58,18 @@ Gemini excels at legible text rendering:
 gimage generate "vintage coffee shop menu board with chalk lettering reading 'Fresh Roasted Daily', weathered wooden frame, warm ambient lighting"
 ```
 
-For professional text-heavy assets, Gemini 3 Pro is the default and best choice:
+For professional text-heavy assets, Gemini 3 Pro is the default and best choice. Gemini 3.1 Flash offers the same native-resolution features at flash speed:
 ```bash
 gimage generate "modern tech startup logo with text 'SKYWARD' in bold geometric sans-serif"
 ```
 
 For native 4K resolution with sharp text:
 ```bash
+# Gemini 3 Pro (premium quality)
 gimage generate "detailed infographic about climate change" --image-size 4K
+
+# Gemini 3.1 Flash (faster, tiered pricing)
+gimage generate "detailed infographic about climate change" --model gemini-3.1-flash --image-size 4K
 ```
 
 ### Product Photography
@@ -124,8 +128,11 @@ gimage generate "..." --size 1792x1024
 # Portrait (1024x1792) - phone wallpapers, portraits
 gimage generate "..." --size 1024x1792
 
-# 4K with Gemini 3 Pro
+# 4K with Gemini 3 Pro (premium)
 gimage generate "..." --model gemini-3-pro --image-size 4K
+
+# 4K with Gemini 3.1 Flash (faster, cheaper)
+gimage generate "..." --model gemini-3.1-flash --image-size 4K
 ```
 
 ## Iteration Tips

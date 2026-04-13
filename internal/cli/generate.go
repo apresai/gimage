@@ -227,8 +227,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	size, _ := cmd.Flags().GetString("size")
-	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3 Pro: 1K, 2K, 4K
-	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3 Pro: 1:1, 16:9, etc.
+	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
+	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 	style, _ := cmd.Flags().GetString("style")
 	negative, _ := cmd.Flags().GetString("negative")
 	seed, _ := cmd.Flags().GetInt64("seed")
@@ -647,8 +647,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 // runGenerateWithProvider handles image generation using the new provider system
 func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, size, style, negative string, seed int64) error {
-	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3 Pro: 1K, 2K, 4K
-	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3 Pro: 1:1, 16:9, etc.
+	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
+	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 	registry := generate.GetProviderRegistry()
 
 	// Resolve provider
@@ -692,8 +692,8 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	options := models.GenerateOptions{
 		Model:          provider.ModelID,
 		Size:           size,
-		ImageSize:      imageSize,   // For Gemini 3 Pro: 1K, 2K, 4K
-		AspectRatio:    aspectRatio, // For Gemini 3 Pro: 1:1, 16:9, etc.
+		ImageSize:      imageSize,   // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
+		AspectRatio:    aspectRatio, // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 		Style:          style,
 		NegativePrompt: negative,
 		Seed:           seed,
@@ -1018,8 +1018,9 @@ func printPromptHowto() error {
 │   gimage generate "vintage coffee shop chalkboard menu with hand-lettered       │
 │   text reading 'Fresh Roasted Daily', weathered wooden frame, warm lighting"    │
 │                                                                                 │
-│ For professional text-heavy assets, use Gemini 3 Pro:                           │
+│ For professional text-heavy assets, use Gemini 3 Pro or 3.1 Flash:              │
 │   gimage generate "..." --model gemini-3-pro --image-size 4K                    │
+│   gimage generate "..." --model gemini-3.1-flash --image-size 4K                │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
@@ -1103,15 +1104,19 @@ func printPromptHowto() error {
 │   gimage generate "..." --size 1792x1024    # Landscape                         │
 │   gimage generate "..." --size 1024x1792    # Portrait                          │
 │                                                                                 │
-│ Gemini 3 Pro native options (--image-size, --aspect-ratio):                     │
+│ Gemini 3+ native options (--image-size, --aspect-ratio):                        │
 │   gimage generate "..." --model gemini-3-pro --image-size 4K                    │
 │   gimage generate "..." --model gemini-3-pro --aspect-ratio 16:9                │
-│   gimage generate "..." --model gemini-3-pro --image-size 2K --aspect-ratio 5:4 │
+│   gimage generate "..." --model gemini-3.1-flash --image-size 2K                │
+│   gimage generate "..." --model gemini-3.1-flash --aspect-ratio 16:9            │
 │                                                                                 │
 │ Supported aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3          │
 │                                                                                 │
 │ Gemini 3 Pro pricing (varies by size):                                          │
 │   1K/2K: $0.134/image    4K: $0.24/image                                        │
+│                                                                                 │
+│ Gemini 3.1 Flash pricing (tiered by resolution):                                │
+│   0.5K: $0.045    1K: $0.067    2K: $0.101    4K: $0.151                        │
 │                                                                                 │
 │ Nova Canvas pricing (varies by dimensions):                                     │
 │   ≤1024x1024: $0.04/image    >1024x1024: $0.08/image                            │
@@ -1151,8 +1156,8 @@ func init() {
 	generateCmd.Flags().Bool("list-providers", false, "List all available providers with pricing and auth status")
 	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
-	generateCmd.Flags().String("image-size", "", "Native resolution for Gemini 3 Pro: 1K, 2K, or 4K (sharp text/diagrams)")
-	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3 Pro (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
+	generateCmd.Flags().String("image-size", "", "Native resolution for Gemini 3+ models (Pro/3.1 Flash): 1K, 2K, or 4K (sharp text/diagrams)")
+	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime")
 	generateCmd.Flags().String("negative", "", "Negative prompt to avoid certain features")
 	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility (0 for random)")

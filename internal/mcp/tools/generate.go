@@ -96,7 +96,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"aspect_ratio": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"},
-					"description": "Aspect ratio for Gemini 3 Pro and Grok Imagine models. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
+					"description": "Aspect ratio for Gemini 3+ (gemini-3-pro-image-preview, gemini-3.1-flash-image-preview) and Grok Imagine models. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
 				},
 				"cfg_scale": map[string]interface{}{
 					"type":        "number",
@@ -177,8 +177,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 
 			style, _ := args["style"].(string)
 			negative, _ := args["negative"].(string)
-			imageSize, _ := args["image_size"].(string)     // For Gemini 3 Pro: 1K, 2K, 4K
-			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3 Pro
+			imageSize, _ := args["image_size"].(string)     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
+			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3+ and Grok Imagine
 			outputFormat, _ := args["output_format"].(string)
 
 			// Parse optional numeric parameters with type coercion (accepts string or number)
@@ -210,8 +210,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Style:          style,
 				NegativePrompt: negative,
 				Seed:           seed,
-				ImageSize:      imageSize,   // Native resolution for Gemini 3 Pro
-				AspectRatio:    aspectRatio, // For Gemini 3 Pro
+				ImageSize:      imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
+				AspectRatio:    aspectRatio, // For Gemini 3+ and Grok Imagine
 				CfgScale:       cfgScale,    // For Bedrock Nova Canvas
 				NumberOfImages: count,
 				OutputFormat:   outputFormat,

@@ -33,8 +33,8 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `output`        | string  | No       | Auto-generated               | Output file path                                                                               |
 | `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
 | `model`         | string  | No       | "gemini-3-pro-image-preview" | AI model to use                                                                                |
-| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3 Pro: "1K", "2K", or "4K"                                        |
-| `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3 Pro: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
+| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"                           |
+| `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3+ and Grok Imagine: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
 | `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
 | `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
@@ -68,6 +68,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 **Google Gemini API:**
 
 - **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
+- **gemini-3.1-flash-image-preview** (native 4K at flash speed, tiered pricing: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
 - **gemini-2.5-flash-image** ($0.039/image, up to 1024x1024)
 
 **Google Vertex AI:**
