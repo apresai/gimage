@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.122] - 2026-04-13
+
+### Added
+- `gemini-3.1-flash-image-preview` listed in MCP tools documentation with tiered pricing ($0.045/0.5K → $0.151/4K)
+
+### Changed
+- `--image-size` flag now supports Gemini 3.1 Flash in addition to Gemini 3 Pro (updated help text and CLI descriptions)
+- `--aspect-ratio` flag documentation updated to reflect support for all Gemini 3+ models
+- MCP `aspect_ratio` tool description updated to include `gemini-3.1-flash-image-preview`
+- Prompt guide and help output updated with Gemini 3.1 Flash examples for native 4K generation
+
+
 ## [1.2.120] - 2026-04-13
 
 ### Changed
