@@ -75,7 +75,7 @@ gimage generate --prompt "your prompt" [flags]
 | `--list-models`    | bool   | List all available models with pricing                                                  | `false`                      |
 | `--list-providers` | bool   | List all providers with auth status                                                     | `false`                      |
 | `--prompt-howto`   | bool   | Show tips and examples for writing effective prompts                                    | `false`                      |
-| `--image-size`     | string | Native resolution for Gemini 3 Pro: `1K`, `2K`, or `4K`                                 | -                            |
+| `--image-size`     | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | -                            |
 | `--aspect-ratio`   | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`) | -                            |
 
 ### Available Models
@@ -101,8 +101,7 @@ gimage generate --prompt "your prompt" [flags]
 **xAI Grok (Paid):**
 
 - `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model)
-- `grok-imagine-image-pro` - $0.07/image, higher quality
-- `grok-2-image` - $0.07/image, legacy Aurora-powered (prefer Grok Imagine)
+- `grok-imagine-image-quality` - $0.05/image, quality tier (replaces deprecated `-pro` retired by xAI 2026-05-15)
 
 ### Examples
 
@@ -196,10 +195,10 @@ gimage generate "architectural visualization" --model imagen-4-ultra
 gimage generate "robot waving hello" --model grok
 ```
 
-**Using Grok Imagine Pro (higher quality):**
+**Using Grok Imagine Quality (higher quality):**
 
 ```bash
-gimage generate "detailed portrait" --model grok-imagine-pro
+gimage generate "detailed portrait" --model grok-imagine-quality
 ```
 
 **Using Grok Imagine with aspect ratio:**

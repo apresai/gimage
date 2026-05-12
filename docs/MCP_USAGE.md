@@ -133,7 +133,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **Reproducible results**: Use seeds for consistent generation
 - **Advanced controls**:
   - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
-  - Native resolution (Gemini 3 Pro: 1K, 2K, 4K)
+  - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
   - Output format (Vertex AI: PNG, JPEG, WebP)
   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
   - Batch generation (max count varies by provider)
@@ -479,9 +479,8 @@ export VERTEX_PROJECT="your-gcp-project"
 
 **xAI Grok Models**:
 
-- `grok-imagine-image` (fast, $0.02/image, supports aspect ratio)
-- `grok-imagine-image-pro` (higher quality, $0.07/image, supports aspect ratio)
-- `grok-2-image` (legacy Aurora-powered, $0.07/image)
+- `grok-imagine-image` (fast, $0.02/image, supports aspect ratio and resolution)
+- `grok-imagine-image-quality` (quality tier, $0.05/image, replaces deprecated `-pro` retired by xAI 2026-05-15)
 
 **Examples**:
 
@@ -544,7 +543,7 @@ Claude can chain multiple operations:
    - Imagen 4 Ultra: Premium Vertex AI quality at $0.06/image
    - Nova Canvas: AWS integration, CFG scale for creativity control
    - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
-   - Grok Imagine Pro: Higher quality xAI generation ($0.07/image)
+   - Grok Imagine Quality: Higher quality xAI generation ($0.05/image, replaces deprecated `-pro`)
 
 5. **Use provider-specific features**:
 

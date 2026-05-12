@@ -33,7 +33,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `output`        | string  | No       | Auto-generated               | Output file path                                                                               |
 | `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
 | `model`         | string  | No       | "gemini-3-pro-image-preview" | AI model to use                                                                                |
-| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"                           |
+| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
 | `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3+ and Grok Imagine: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
 | `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
@@ -85,11 +85,10 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **xAI Grok:**
 
-- **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio)
-- **grok-imagine-image-pro** (higher quality, $0.07/image, supports aspect ratio)
-- **grok-2-image** (legacy Aurora-powered, $0.07/image)
+- **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio and resolution)
+- **grok-imagine-image-quality** (quality tier, $0.05/image, replaces deprecated `-pro` retired by xAI 2026-05-15)
   - Note: Grok models do not support size, style, negative prompts, or seed parameters
-  - Grok Imagine models support `aspect_ratio` parameter
+  - Grok Imagine models support `aspect_ratio` and `resolution` parameters
 
 ### Returns
 
@@ -200,10 +199,10 @@ Generate a 1173x640 panoramic landscape using Nova Canvas model
 Generate a creative artistic image using grok model
 ```
 
-**xAI Grok Imagine Pro (higher quality):**
+**xAI Grok Imagine Quality (higher quality):**
 
 ```
-Generate a detailed portrait using grok-imagine-pro model
+Generate a detailed portrait using grok-imagine-quality model
 ```
 
 **xAI Grok with aspect ratio:**
@@ -681,9 +680,9 @@ Different providers support different advanced parameters:
 
 - `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
 
-**Gemini 3 Pro Only:**
+**Gemini 3+ and Grok Imagine:**
 
-- `image_size`: Native resolution upscaling (1K, 2K, 4K)
+- `image_size`: Native resolution upscaling. Gemini 3 Pro / 3.1 Flash accept `1K`, `2K`, `4K`. Grok Imagine and Grok Imagine Quality accept `1K`, `2K` only (4K emits a stderr warning and falls back to xAI default).
 
 **Vertex AI Only:**
 
@@ -719,7 +718,7 @@ Different providers support different advanced parameters:
    - Use **Imagen 4 Ultra** for highest Vertex AI quality ($0.06/image)
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
    - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
-   - Use **Grok Imagine Pro** for higher quality xAI generation ($0.07/image)
+   - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05/image, replaces deprecated `-pro`)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---

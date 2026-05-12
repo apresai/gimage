@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 
 const (
 	grokBaseURL      = "https://api.x.ai/v1"
-	grokDefaultModel = "grok-2-image-1212" // Versioned model name works more reliably
+	grokDefaultModel = "grok-imagine-image"
 )
 
 // GrokClient handles interactions with the xAI Grok API for image generation
@@ -35,6 +36,8 @@ type GrokImageRequest struct {
 	N              int    `json:"n,omitempty"`
 	ResponseFormat string `json:"response_format,omitempty"`
 	AspectRatio    string `json:"aspect_ratio,omitempty"`
+	// Resolution is the xAI native resolution: "1k" or "2k". Only honored by grok-imagine-* models.
+	Resolution string `json:"resolution,omitempty"`
 }
 
 // GrokImageResponse represents the response from Grok image generation
@@ -73,39 +76,53 @@ func NewGrokClient(apiKey string) (*GrokClient, error) {
 	}, nil
 }
 
+// buildGrokImageRequest assembles the xAI request body from generation options.
+// Resolves user-typed aliases (e.g. "grok-imagine-pro") via the provider registry
+// since the Lambda handler doesn't pre-resolve. Maps --image-size 1K/2K to xAI's
+// lowercase resolution param; emits a stderr warning for unsupported values
+// (4K, etc.) so users learn the request was downgraded.
+func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions) GrokImageRequest {
+	numImages := 1
+	if options.NumberOfImages > 0 && options.NumberOfImages <= 10 {
+		numImages = options.NumberOfImages
+	}
+
+	modelID := grokDefaultModel
+	if options.Model != "" {
+		modelID = ResolveModelName(options.Model)
+	}
+	request := GrokImageRequest{
+		Model:          modelID,
+		Prompt:         enhancedPrompt,
+		N:              numImages,
+		ResponseFormat: "b64_json",
+	}
+
+	isImagine := isGrokImagineModel(request.Model)
+	if options.AspectRatio != "" && isImagine {
+		request.AspectRatio = options.AspectRatio
+	}
+	if isImagine && options.ImageSize != "" {
+		switch options.ImageSize {
+		case "1K", "1k":
+			request.Resolution = "1k"
+		case "2K", "2k":
+			request.Resolution = "2k"
+		default:
+			fmt.Fprintf(os.Stderr, "warning: --image-size %q not supported on Grok (only 1K/2K); using xAI default\n", options.ImageSize)
+		}
+	}
+
+	return request
+}
+
 // GenerateImage generates an image from a text prompt using the Grok API
 func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	if prompt == "" {
 		return nil, fmt.Errorf("prompt cannot be empty")
 	}
 
-	// Enhance the prompt for better results
-	enhancedPrompt := EnhancePrompt(prompt)
-
-	// Determine number of images (Grok supports 1-10)
-	numImages := 1
-	if options.NumberOfImages > 0 && options.NumberOfImages <= 10 {
-		numImages = options.NumberOfImages
-	}
-
-	// Build request - Grok doesn't support size/quality/style parameters
-	request := GrokImageRequest{
-		Model:          grokDefaultModel,
-		Prompt:         enhancedPrompt,
-		N:              numImages,
-		ResponseFormat: "b64_json", // Get base64 data directly
-	}
-
-	// Use custom model if specified (skip known aliases that should use the default)
-	if options.Model != "" && options.Model != "grok" && options.Model != "grok-2-image" &&
-		options.Model != "grok-imagine" && options.Model != "xai" && options.Model != "aurora" {
-		request.Model = options.Model
-	}
-
-	// Set aspect ratio for grok-imagine models (not supported on grok-2-image)
-	if options.AspectRatio != "" && isGrokImagineModel(request.Model) {
-		request.AspectRatio = options.AspectRatio
-	}
+	request := buildGrokImageRequest(EnhancePrompt(prompt), options)
 
 	// Execute through circuit breaker
 	result, err := c.circuitBreaker.Execute(func() (interface{}, error) {

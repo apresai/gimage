@@ -131,8 +131,7 @@ Model name implies backend (auto-detect):
 - `imagen-4-ultra` → vertex ($0.06/image)
 - `amazon.nova-canvas-v1:0` → bedrock
 - `grok-imagine-image` → grok ($0.02/image)
-- `grok-imagine-image-pro` → grok ($0.07/image)
-- `grok-2-image-1212` → grok ($0.07/image, legacy)
+- `grok-imagine-image-quality` → grok ($0.05/image, replaces -pro retired 2026-05-15)
 
 Optional `--api` flag overrides auto-detection.
 
@@ -152,10 +151,9 @@ Map informal names to exact model IDs:
 | "imagen-3-fast" (legacy) | `imagen-3.0-fast-generate-001` | vertex | Legacy, prefer Imagen 4 Fast, $0.02/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration; std/prem × ≤1024/>1024 = $0.04/$0.06/$0.06/$0.08 |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
-| "grok-imagine-pro" | `grok-imagine-image-pro` | grok | Higher quality, $0.07/image |
-| "grok-2", "grok-2-image" (legacy) | `grok-2-image-1212` | grok | Legacy Aurora-powered, $0.07/image |
+| "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
 
-**Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`.
+**Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`. **Grok Imagine** and **Grok Imagine Quality** also accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
 
 **Grok Imagine** supports `aspect_ratio` parameter (13 ratios including 1:1, 16:9, 9:16, 4:3, 3:4, etc.).
 

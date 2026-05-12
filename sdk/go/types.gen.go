@@ -72,7 +72,7 @@ const (
 	Gemini31FlashImagePreview           GenerateRequestModel = "gemini-3.1-flash-image-preview"
 	Gemini3ProImagePreview              GenerateRequestModel = "gemini-3-pro-image-preview"
 	GrokImagineImage                    GenerateRequestModel = "grok-imagine-image"
-	GrokImagineImagePro                 GenerateRequestModel = "grok-imagine-image-pro"
+	GrokImagineImageQuality             GenerateRequestModel = "grok-imagine-image-quality"
 	Imagen30Generate002                 GenerateRequestModel = "imagen-3.0-generate-002"
 	Imagen4                             GenerateRequestModel = "imagen-4"
 	Imagen40FastGenerate001             GenerateRequestModel = "imagen-4.0-fast-generate-001"

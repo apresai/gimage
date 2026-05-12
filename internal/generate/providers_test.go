@@ -33,8 +33,7 @@ func TestRegistryGet(t *testing.T) {
 		{"vertex imagen 4 ultra", "vertex/imagen-4-ultra", "imagen-4.0-ultra-generate-001", false},
 		{"bedrock nova canvas", "bedrock/nova-canvas", "amazon.nova-canvas-v1:0", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
-		{"grok imagine pro", "grok/grok-imagine-pro", "grok-imagine-image-pro", false},
-		{"grok 2 image", "grok/grok-2-image", "grok-2-image-1212", false},
+		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
 		{"nonexistent", "nonexistent", "", true},
 	}
 
@@ -57,8 +56,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 12 providers (3 gemini + 5+ vertex + 1 bedrock + 3 grok)
-	assert.GreaterOrEqual(t, len(providers), 12, "should have at least 12 providers")
+	// Should have at least 11 providers (3 gemini + 5+ vertex + 1 bedrock + 2 grok)
+	assert.GreaterOrEqual(t, len(providers), 11, "should have at least 11 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -79,7 +78,7 @@ func TestRegistryListByAPI(t *testing.T) {
 		{"gemini providers", "gemini", 3},
 		{"vertex providers", "vertex", 4},
 		{"bedrock providers", "bedrock", 1},
-		{"grok providers", "grok", 3},
+		{"grok providers", "grok", 2},
 		{"invalid api empty", "invalid", 0},
 	}
 
@@ -165,8 +164,10 @@ func TestResolveProvider(t *testing.T) {
 		{"nova-canvas alias", "nova-canvas", "bedrock/nova-canvas", false},
 		{"grok alias", "grok", "grok/grok-imagine", false},
 		{"grok-imagine alias", "grok-imagine", "grok/grok-imagine", false},
-		{"grok-imagine-pro alias", "grok-imagine-pro", "grok/grok-imagine-pro", false},
-		{"grok-2 alias", "grok-2", "grok/grok-2-image", false},
+		{"grok-imagine-quality alias", "grok-imagine-quality", "grok/grok-imagine-quality", false},
+		{"grok-quality alias", "grok-quality", "grok/grok-imagine-quality", false},
+		{"grok-imagine-pro deprecated alias resolves to quality", "grok-imagine-pro", "grok/grok-imagine-quality", false},
+		{"grok-imagine-image-pro deprecated alias resolves to quality", "grok-imagine-image-pro", "grok/grok-imagine-quality", false},
 		{"xai alias", "xai", "grok/grok-imagine", false},
 		{"aurora alias", "aurora", "grok/grok-imagine", false},
 		{"exact provider ID", "gemini/flash-2.5", "gemini/flash-2.5", false},
@@ -543,8 +544,7 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "ultra", want: 0.06},              // "ultra" maps to premium
 		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "artistic", want: 0.04},           // "artistic" is standard
 		{modelID: "grok-imagine-image", want: 0.02},
-		{modelID: "grok-imagine-image-pro", want: 0.07},
-		{modelID: "grok-2-image-1212", want: 0.07},
+		{modelID: "grok-imagine-image-quality", want: 0.05},
 	}
 	for _, c := range checkpoints {
 		name := "checkpoint_" + c.modelID + "_" + c.imageSize + "_" + c.dims + "_" + c.style

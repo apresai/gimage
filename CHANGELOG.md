@@ -7,7 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Added
+- `grok-imagine-image-quality` provider ($0.05/image), replacing the deprecated `grok-imagine-image-pro` retired by xAI on 2026-05-15
+- Aliases `grok-quality`, `grok-imagine-quality`, `grok-imagine-image-quality` resolving to the new provider
+- Grok Imagine `--image-size 1K`/`2K` support, mapped to xAI's `resolution` request param (4K is unsupported on Grok and emits a stderr warning)
+- New `internal/generate/grok_test.go` covering request-shape building (alias resolution, image-size mapping, aspect-ratio gating)
+
+### Changed
+- Grok client default model: `grok-2-image-1212` → `grok-imagine-image` (cheaper $0.02 vs $0.07, gains aspect-ratio + resolution support)
+- CLI Grok fallback (`internal/cli/generate.go`): same default flip for empty `--model`
+- MCP `isGrokModel` helper now delegates to the provider registry (fixes a latent routing bug where `grok-imagine-image` and other imagine aliases were silently routed to Gemini)
+- Grok request-shape build extracted into `buildGrokImageRequest` for unit-testability
+
+### Deprecated
+- `grok-imagine-image-pro` retires 2026-05-15 per xAI; aliases `grok-imagine-pro` and `grok-imagine-image-pro` now redirect to `grok-imagine-image-quality` so existing scripts keep working through the cutoff
+
+### Removed
+- `grok-2-image-1212` (Grok 2 Image / Aurora) provider, pricing entry, and aliases (`grok-2`, `grok-2-image`, `grok-2-image-1212`); MCP tool enum entries dropped. The model is no longer in xAI's pricing docs and was already marked legacy.
+
+### Breaking (SDK consumers only)
+- Provider registry ID renamed `grok/grok-imagine-pro` → `grok/grok-imagine-quality`
+- Generated SDK constant `GrokImagineImagePro` → `GrokImagineImageQuality` (`sdk/go/types.gen.go`); direct consumers must update imports
+- Provider registry ID `grok/grok-2-image` removed (model retired by xAI)
 
 ## [1.2.122] - 2026-04-13
 

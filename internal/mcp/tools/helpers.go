@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/disintegration/imaging"
+	"github.com/apresai/gimage/internal/generate"
 	gimaging "github.com/apresai/gimage/internal/imaging"
 )
 
@@ -208,21 +209,11 @@ func isBedrockModel(model string) bool {
 	return false
 }
 
-// isGrokModel checks if a model is an xAI Grok model
+// isGrokModel checks if a model is an xAI Grok model. Delegates to the
+// provider registry so this list never drifts from providerAliases.
 func isGrokModel(model string) bool {
-	grokModels := []string{
-		"grok",
-		"grok-2",
-		"grok-2-image",
-		"xai",
-		"aurora",
-	}
-	for _, gm := range grokModels {
-		if model == gm {
-			return true
-		}
-	}
-	return false
+	api, err := generate.DetectAPIFromModel(model)
+	return err == nil && api == "grok"
 }
 
 // formatBytes formats bytes as human-readable string

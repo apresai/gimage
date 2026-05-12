@@ -457,7 +457,7 @@ components:
             - imagen-4.0-ultra-generate-001
             - amazon.nova-canvas-v1:0
             - grok-imagine-image
-            - grok-imagine-image-pro
+            - grok-imagine-image-quality
         size:
           type: string
           description: Image dimensions (WIDTHxHEIGHT)

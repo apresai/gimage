@@ -636,13 +636,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Grok Imagine Pro via xAI (higher quality)
+	// Grok Imagine Quality via xAI (replaces deprecated -pro retired 2026-05-15)
 	r.Register(&Provider{
-		ID:          "grok/grok-imagine-pro",
-		Name:        "Grok Imagine Pro (via xAI)",
+		ID:          "grok/grok-imagine-quality",
+		Name:        "Grok Imagine Quality (via xAI)",
 		API:         "grok",
-		ModelID:     "grok-imagine-image-pro",
-		Description: "xAI's premium image generation model - higher quality",
+		ModelID:     "grok-imagine-image-quality",
+		Description: "xAI's quality-tier image generation - replaces deprecated grok-imagine-image-pro",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -653,7 +653,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.07),
+			CostPerImage: float64Ptr(0.05),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -662,42 +662,6 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
 			MaxPromptLength:        8000,
-		},
-		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
-			apiKey := creds["GROK_API_KEY"]
-			if apiKey == "" {
-				return nil, fmt.Errorf("GROK_API_KEY is required")
-			}
-			return NewGrokClient(apiKey)
-		},
-	})
-
-	// Grok 2 Image via xAI (legacy)
-	r.Register(&Provider{
-		ID:          "grok/grok-2-image",
-		Name:        "Grok 2 Image (via xAI)",
-		API:         "grok",
-		ModelID:     "grok-2-image-1212", // Versioned model name works more reliably
-		Description: "xAI's Aurora-powered image generation model (legacy, prefer Grok Imagine)",
-		RequiredEnvVars: []EnvVar{
-			{
-				Name:        "GROK_API_KEY",
-				ConfigKey:   "grok_api_key",
-				Description: "API key from https://console.x.ai",
-				Required:    true,
-				Secret:      true,
-			},
-		},
-		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.07),
-			FreeTier:     false,
-			Currency:     "USD",
-		},
-		Capabilities: ModelCapabilities{
-			SupportsStyles:         false,
-			SupportsNegativePrompt: false,
-			SupportsSeed:           false,
-			MaxPromptLength:        4000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
 			apiKey := creds["GROK_API_KEY"]
@@ -1031,14 +995,15 @@ var providerAliases = map[string]string{
 	"nova-canvas":             "bedrock/nova-canvas",
 	"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
 	// Grok
-	"grok":                   "grok/grok-imagine",
-	"grok-imagine":           "grok/grok-imagine",
-	"grok-imagine-image":     "grok/grok-imagine",
-	"grok-imagine-pro":       "grok/grok-imagine-pro",
-	"grok-imagine-image-pro": "grok/grok-imagine-pro",
-	"grok-2":                 "grok/grok-2-image",
-	"grok-2-image":           "grok/grok-2-image",
-	"grok-2-image-1212":      "grok/grok-2-image",
+	"grok":                       "grok/grok-imagine",
+	"grok-imagine":               "grok/grok-imagine",
+	"grok-imagine-image":         "grok/grok-imagine",
+	"grok-quality":               "grok/grok-imagine-quality",
+	"grok-imagine-quality":       "grok/grok-imagine-quality",
+	"grok-imagine-image-quality": "grok/grok-imagine-quality",
+	// Deprecated -pro aliases redirect to quality (xAI retires -pro 2026-05-15)
+	"grok-imagine-pro":       "grok/grok-imagine-quality",
+	"grok-imagine-image-pro": "grok/grok-imagine-quality",
 	"xai":                    "grok/grok-imagine",
 	"aurora":                 "grok/grok-imagine",
 }

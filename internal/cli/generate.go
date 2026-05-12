@@ -560,7 +560,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		// Use default model if not specified
 		modelName := model
 		if modelName == "" {
-			modelName = "grok-2-image"
+			modelName = "grok-imagine-image"
 		}
 
 		// Get provider info and announce selection
@@ -1156,7 +1156,7 @@ func init() {
 	generateCmd.Flags().Bool("list-providers", false, "List all available providers with pricing and auth status")
 	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
-	generateCmd.Flags().String("image-size", "", "Native resolution for Gemini 3+ models (Pro/3.1 Flash): 1K, 2K, or 4K (sharp text/diagrams)")
+	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3+ (Pro/3.1 Flash): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only.")
 	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime")
 	generateCmd.Flags().String("negative", "", "Negative prompt to avoid certain features")

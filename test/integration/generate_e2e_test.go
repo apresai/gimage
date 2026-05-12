@@ -321,7 +321,7 @@ func TestGrokImagineE2E(t *testing.T) {
 	}
 }
 
-func TestGrokImagineProE2E(t *testing.T) {
+func TestGrokImagineQualityE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
 	}
@@ -333,7 +333,7 @@ func TestGrokImagineProE2E(t *testing.T) {
 	if apiKey == "" {
 		cfg, err := config.LoadConfig()
 		if err != nil || cfg.GrokAPIKey == "" {
-			t.Skip("GROK_API_KEY not set, skipping Grok Imagine Pro E2E test")
+			t.Skip("GROK_API_KEY not set, skipping Grok Imagine Quality E2E test")
 		}
 		apiKey = cfg.GrokAPIKey
 	}
@@ -346,24 +346,24 @@ func TestGrokImagineProE2E(t *testing.T) {
 
 	ctx := context.Background()
 	options := models.GenerateOptions{
-		Model: "grok-imagine-image-pro",
+		Model: "grok-imagine-image-quality",
 	}
 
-	t.Log("Generating test image with xAI Grok Imagine Pro...")
-	t.Log("This will cost approximately $0.07")
+	t.Log("Generating test image with xAI Grok Imagine Quality...")
+	t.Log("This will cost approximately $0.05")
 
 	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
-		t.Fatalf("Grok Imagine Pro image generation failed: %v", err)
+		t.Fatalf("Grok Imagine Quality image generation failed: %v", err)
 	}
 
 	if len(results) == 0 {
-		t.Fatal("Grok Imagine Pro returned no images")
+		t.Fatal("Grok Imagine Quality returned no images")
 	}
 
 	for i, img := range results {
-		t.Logf("Grok Imagine Pro E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
-		saveAndLogImage(t, img, fmt.Sprintf("grok_imagine_pro_%d", i+1))
+		t.Logf("Grok Imagine Quality E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("grok_imagine_quality_%d", i+1))
 	}
 }
 
@@ -438,5 +438,5 @@ func TestAllAPIsE2E(t *testing.T) {
 	t.Run("VertexUnifiedSDK", TestVertexAIUnifiedSDKE2E)
 	t.Run("Bedrock", TestBedrockNovaCanvasE2E)
 	t.Run("GrokImagine", TestGrokImagineE2E)
-	t.Run("GrokImaginePro", TestGrokImagineProE2E)
+	t.Run("GrokImagineQuality", TestGrokImagineQualityE2E)
 }

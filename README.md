@@ -117,7 +117,7 @@ gimage auth test gemini
 - **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Flash $0.039/image, Gemini 3 Pro $0.134/image)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
-- **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Pro $0.07/image)
+- **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Quality $0.05/image)
 
 ### 3. Generate Your First Image
 
@@ -399,16 +399,12 @@ gimage auth status  # Shows which credentials are active and their sources
   - Supports aspect ratio (13 ratios: 1:1, 16:9, 9:16, 4:3, 3:4, etc.)
   - Best for: Quick iterations, affordable image generation
 
-- **`grok-imagine-image-pro`** (higher quality)
+- **`grok-imagine-image-quality`** (quality tier, replaces deprecated `-pro` retired by xAI 2026-05-15)
 
-  - Pricing: $0.07/image
-  - Supports aspect ratio
+  - Pricing: $0.05/image
+  - Supports aspect ratio and resolution (`1k`, `2k`)
   - Best for: Higher quality creative images
-
-- **`grok-2-image`** (legacy, Aurora-powered)
-  - Pricing: $0.07/image
-  - Note: Does not support size, style, negative prompt, or aspect ratio parameters
-  - Prefer Grok Imagine for new projects
+  - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here
 
 **View all models with live pricing:**
 

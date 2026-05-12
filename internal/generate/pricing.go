@@ -143,22 +143,14 @@ var ModelPricing = map[string]PricingEntry{
 		Source:         "https://docs.x.ai/docs/models",
 		Verified:       "2026-04-12",
 	},
-	"grok-imagine-image-pro": {
-		ModelID:        "grok-imagine-image-pro",
-		Summary:        "$0.07/image",
-		Representative: 0.07,
-		Calculate:      flatPrice(0.07),
-		Source:         "https://docs.x.ai/docs/models",
-		Verified:       "2026-04-12",
-	},
-	"grok-2-image-1212": {
-		ModelID:        "grok-2-image-1212",
-		Summary:        "$0.07/image (legacy)",
-		Representative: 0.07,
-		Calculate:      flatPrice(0.07),
-		Source:         "https://docs.x.ai/docs/models",
-		Verified:       "2026-04-12",
-		Note:           "Legacy Aurora model, retired from xAI docs",
+	"grok-imagine-image-quality": {
+		ModelID:        "grok-imagine-image-quality",
+		Summary:        "$0.05/image",
+		Representative: 0.05,
+		Calculate:      flatPrice(0.05),
+		Source:         "https://docs.x.ai/developers/models",
+		Verified:       "2026-05-08",
+		Note:           "Replaces grok-imagine-image-pro retired by xAI 2026-05-15",
 	},
 }
 
