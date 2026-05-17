@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.127] - 2026-05-17
+
+### Changed
+- Updated provider test counts to reflect Imagen 3 removal
+
+
 ## [1.2.125] - 2026-05-17
 
 ### Added
