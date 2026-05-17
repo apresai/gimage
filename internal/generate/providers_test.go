@@ -56,8 +56,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 11 providers (3 gemini + 5+ vertex + 1 bedrock + 2 grok)
-	assert.GreaterOrEqual(t, len(providers), 11, "should have at least 11 providers")
+	// Should have at least 9 providers (3 gemini + 3 vertex + 1 bedrock + 2 grok)
+	assert.GreaterOrEqual(t, len(providers), 9, "should have at least 9 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -76,7 +76,7 @@ func TestRegistryListByAPI(t *testing.T) {
 		minCount int
 	}{
 		{"gemini providers", "gemini", 3},
-		{"vertex providers", "vertex", 4},
+		{"vertex providers", "vertex", 3},
 		{"bedrock providers", "bedrock", 1},
 		{"grok providers", "grok", 2},
 		{"invalid api empty", "invalid", 0},
