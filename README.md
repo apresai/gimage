@@ -374,15 +374,6 @@ gimage auth status  # Shows which credentials are active and their sources
   - Highest quality Vertex AI model
   - Best for: Print-ready, marketing materials
 
-- **`imagen-3.0-generate-002`** (Imagen 3, legacy)
-
-  - Pricing: $0.04/image
-  - Resolution: up to 1536x1536
-  - Note: Prefer Imagen 4 for new projects
-
-- **`imagen-3.0-fast-generate-001`** (Imagen 3 Fast, legacy)
-  - Pricing: $0.02/image
-  - Note: Prefer Imagen 4 Fast for new projects
 
 ### AWS Bedrock - Paid
 

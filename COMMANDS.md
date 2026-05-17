@@ -91,8 +91,6 @@ gimage generate --prompt "your prompt" [flags]
 - `imagen-4` - $0.04/image, up to 2048x2048
 - `imagen-4-fast` - $0.02/image, speed-optimized
 - `imagen-4-ultra` - $0.06/image, premium quality
-- `imagen-3.0-generate-002` - $0.04/image, legacy (prefer Imagen 4)
-- `imagen-3.0-fast-generate-001` - $0.02/image, legacy (prefer Imagen 4 Fast)
 
 **AWS Bedrock (Paid):**
 

@@ -147,8 +147,6 @@ Map informal names to exact model IDs:
 | "imagen", "imagen-4" | `imagen-4.0-generate-001` | vertex | High quality, $0.04/image |
 | "imagen-4-fast", "imagen-fast" | `imagen-4.0-fast-generate-001` | vertex | Speed-optimized, $0.02/image |
 | "imagen-4-ultra", "imagen-ultra" | `imagen-4.0-ultra-generate-001` | vertex | Premium quality, $0.06/image |
-| "imagen-3" (legacy) | `imagen-3.0-generate-002` | vertex | Legacy, prefer Imagen 4, $0.04/image |
-| "imagen-3-fast" (legacy) | `imagen-3.0-fast-generate-001` | vertex | Legacy, prefer Imagen 4 Fast, $0.02/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration; std/prem × ≤1024/>1024 = $0.04/$0.06/$0.06/$0.08 |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
 | "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
