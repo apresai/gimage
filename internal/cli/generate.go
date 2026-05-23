@@ -1160,6 +1160,36 @@ func printPromptHowto() error {
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
+│ GEMINI 3+ ADVANCED FEATURES (silently ignored on other models)                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│ Compositional editing (Nano Banana style): pass one or more reference images    │
+│ via --input-image and describe the transformation in the prompt.                │
+│   Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14                 │
+│   Formats: PNG, JPEG, WebP. Each image capped at 20 MB.                         │
+│                                                                                 │
+│   gimage generate "place this on a marble counter, soft studio light" \         │
+│     --model gemini-3.1-flash --input-image product.png                          │
+│                                                                                 │
+│   gimage generate "this character in this scene, cinematic lighting" \          │
+│     --model gemini-3-pro --input-image character.png --input-image scene.jpg    │
+│                                                                                 │
+│ Thinking mode: dial up reasoning depth for text-heavy or complex layouts.       │
+│   Levels: minimal | low (default) | medium | high                               │
+│   Higher = better layout/text, slightly slower.                                 │
+│                                                                                 │
+│   gimage generate "Q3 infographic 'Revenue +18%'" \                             │
+│     --model gemini-3-pro --image-size 4K --thinking high                        │
+│                                                                                 │
+│ Google Search grounding: enable for accurate renders of real-world entities.    │
+│   Billed per search query in addition to the per-image cost.                    │
+│                                                                                 │
+│   gimage generate "official Nintendo Switch 2 console front view" \             │
+│     --model gemini-3-pro --grounding                                            │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
 │ TIPS FOR BETTER RESULTS                                                         │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │

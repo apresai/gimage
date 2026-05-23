@@ -85,6 +85,83 @@ Structure prompts with studio details:
 gimage generate "luxury wristwatch with rose gold case and black leather strap, positioned at 45-degree angle on white marble surface, three-point softbox lighting, macro detail on watch face, clean white background"
 ```
 
+## Gemini 3+ Advanced Features
+
+These flags are exclusive to Gemini 3+ models (`gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`). They are silently ignored on Gemini 2.5 Flash and non-Gemini providers, so it's safe to leave them in your default invocation.
+
+### Compositional Editing with Reference Images
+
+Pass one or more reference images via `--input-image` (repeatable) for Nano Banana-style compositional editing. The prompt then describes how to combine or transform them. Per-model caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. PNG/JPEG/WebP only; each file is capped at 20 MB.
+
+```bash
+# Drop a product into a new scene
+gimage generate "place this product on a marble counter, soft studio light" \
+  --model gemini-3.1-flash --input-image product.png
+
+# Combine a character and a background
+gimage generate "this character standing in this environment, cinematic lighting" \
+  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+
+# Multi-object composition (Gemini 3.1 Flash, up to 14 refs)
+gimage generate "an office group photo of these people making funny faces" \
+  --model gemini-3.1-flash \
+  --input-image person1.png --input-image person2.png --input-image person3.png
+```
+
+**Tips:**
+- The prompt should describe the *transformation*, not re-describe the references — the model already sees them.
+- For "place X in Y" tasks, the FIRST reference image tends to anchor as the subject.
+- Empty / whitespace-only paths are silently dropped, so it's safe to wire this through scripts that may not always have a reference.
+
+### Thinking Mode
+
+Gemini 3+ models can be told how much to "think" before generating. Higher levels improve layout, text rendering, and prompt adherence at the cost of latency.
+
+```bash
+# Low (default): fast, good for casual generation
+gimage generate "abstract poster"
+
+# Medium: better for layouts with multiple elements
+gimage generate "menu board with 5 items and prices" --thinking medium
+
+# High: best for text-heavy or complex composition
+gimage generate "infographic: 'Q3 revenue up 18%' with 4 bullet points" \
+  --model gemini-3-pro --image-size 4K --thinking high
+```
+
+**When to dial it up:**
+- Text-heavy assets (logos, posters, infographics, menus)
+- Complex multi-element compositions
+- Geometric or precise layout (UI mockups, diagrams)
+
+**When to leave it at default (or `minimal`):**
+- Single-subject illustrations
+- Stylistic exploration (you want creative variance, not careful planning)
+- High-volume / cost-sensitive workloads
+
+### Google Search Grounding
+
+Enable `--grounding` to let Gemini pull real-time visual references from the web before generating. Billed per search query in addition to the per-image cost. Useful when the prompt references current entities (products, news, brands, places).
+
+```bash
+# Generate based on current real-world visual references
+gimage generate "official Nintendo Switch 2 console front view, white background" \
+  --model gemini-3-pro --grounding
+
+# Anchor a stylized version to a real reference
+gimage generate "watercolor painting of the Sydney Opera House at sunset" \
+  --model gemini-3.1-flash --grounding
+```
+
+**When grounding helps:**
+- Real products with specific brand visuals
+- Recent / topical references (recently released games, current events)
+- Public figures or landmarks where accuracy matters
+
+**When to skip it:**
+- Pure imagination / fantasy prompts (no real-world anchor needed)
+- Prompts where the per-search billing isn't justified
+
 ## Quick Reference
 
 ### Transform Weak Prompts
