@@ -13,6 +13,11 @@ type GenerateOptions struct {
 	NumberOfImages int     // Number of images to generate (1-4, default 1)
 	OutputFormat   string  // Output format: "png", "jpeg", "webp" (default varies by API)
 	ResizeMode     string  // "stretch", "fit", "crop" (default "crop")
+
+	// Gemini 3+ exclusive features (ignored by other providers / older Gemini models)
+	ThinkingLevel      string   // "minimal", "low", "medium", "high" — controls reasoning depth on Gemini 3+
+	WebSearchGrounding bool     // Enables Google Search grounding via tools field on Gemini 3+
+	InputImages        []string // Local file paths to reference images for compositional editing (Nano Banana)
 }
 
 // GeneratedImage represents the result of an AI image generation request

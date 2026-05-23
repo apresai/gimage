@@ -159,6 +159,20 @@ gimage generate "fantasy landscape" --count 3
 # Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
 gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
 
+# Compositional editing with reference images (Gemini 3+, Nano Banana style)
+gimage generate "place this product on a marble counter, soft light" \
+  --model gemini-3.1-flash --input-image product.png
+
+# Combine multiple references (character + scene) — caps: 3 (2.5 Flash), 11 (3 Pro), 14 (3.1 Flash)
+gimage generate "this character in this environment, cinematic" \
+  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+
+# Higher reasoning for complex layouts/text (Gemini 3+)
+gimage generate "infographic 'Q3 +18%'" --model gemini-3-pro --image-size 4K --thinking high
+
+# Google Search grounding for current/real visual references (Gemini 3+, billed per search)
+gimage generate "official PlayStation 5 Slim front view" --model gemini-3-pro --grounding
+
 # Control output format with Vertex AI (png, jpeg, webp)
 gimage generate "portrait" --api vertex --output-format webp
 

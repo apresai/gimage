@@ -502,6 +502,29 @@ components:
           type: string
           description: Aspect ratio for Gemini 3 Pro (alternative to size). E.g., '1:1', '16:9', '9:16', '4:3', '3:4'
           example: "16:9"
+        thinking_level:
+          type: string
+          description: Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+          enum:
+            - minimal
+            - low
+            - medium
+            - high
+          example: "low"
+        grounding:
+          type: boolean
+          description: Enable Google Search grounding for Gemini 3+ models. Billed per search query in addition to the per-image cost.
+          example: false
+          default: false
+        input_images:
+          type: array
+          items:
+            type: string
+          description: Local file paths to reference images for compositional editing (Nano Banana style). PNG/JPEG/WebP only. Per-model caps - Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
+          maxItems: 14
+          example:
+            - "/tmp/character.png"
+            - "/tmp/background.jpg"
 
     ResizeRequest:
       type: object

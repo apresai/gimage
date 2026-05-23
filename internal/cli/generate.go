@@ -74,6 +74,23 @@ func padRight(s string, width int) string {
 	return s + strings.Repeat(" ", padding)
 }
 
+// sanitizeInputImagePaths trims whitespace from each path and drops empty
+// entries. This keeps CLI behavior consistent with the MCP server's
+// coerceStringArray, so `--input-image ""` (or whitespace-only paths) are
+// silently ignored rather than passed downstream as broken paths.
+func sanitizeInputImagePaths(paths []string) []string {
+	if len(paths) == 0 {
+		return paths
+	}
+	out := paths[:0]
+	for _, p := range paths {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
+
 func formatImageSize(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
@@ -238,6 +255,10 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	listModels, _ := cmd.Flags().GetBool("list-models")
 	listProviders, _ := cmd.Flags().GetBool("list-providers")
 	resizeMode, _ := cmd.Flags().GetString("resize-mode")
+	thinkingLevel, _ := cmd.Flags().GetString("thinking")     // Gemini 3+ only
+	grounding, _ := cmd.Flags().GetBool("grounding")          // Gemini 3+ only
+	inputImages, _ := cmd.Flags().GetStringArray("input-image") // Reference images for compositional editing
+	inputImages = sanitizeInputImagePaths(inputImages)
 
 	// Handle --list-providers flag
 	if listProviders {
@@ -357,25 +378,32 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	// Create unified generation options
 	options := models.GenerateOptions{
-		Model:          model,
-		Size:           size,
-		ImageSize:      imageSize,
-		AspectRatio:    aspectRatio,
-		Style:          style,
-		NegativePrompt: negative,
-		Seed:           seed,
-		CfgScale:       cfgScale,
-		NumberOfImages: count,
-		OutputFormat:   outputFormat,
-		ResizeMode:     resizeMode,
+		Model:              model,
+		Size:               size,
+		ImageSize:          imageSize,
+		AspectRatio:        aspectRatio,
+		Style:              style,
+		NegativePrompt:     negative,
+		Seed:               seed,
+		CfgScale:           cfgScale,
+		NumberOfImages:     count,
+		OutputFormat:       outputFormat,
+		ResizeMode:         resizeMode,
+		ThinkingLevel:      thinkingLevel,
+		WebSearchGrounding: grounding,
+		InputImages:        inputImages,
 	}
 
 	// Generate based on API selection
 	if selectedAPI == "gemini" {
 		// Use Gemini API (REST implementation)
-		key, err := config.GetGeminiAPIKey(apiKey)
-		if err != nil {
-			return fmt.Errorf("failed to get Gemini API key: %w\nHint: Set GEMINI_API_KEY environment variable or use --api-key flag", err)
+		// NOTE: use distinct names for inner errors so the outer `err` (declared
+		// above) is correctly assigned by `generatedImages, err = client.GenerateImage(...)`
+		// below. Otherwise the `err :=` here would shadow it and API errors would
+		// be silently dropped when the if-block ends.
+		key, keyErr := config.GetGeminiAPIKey(apiKey)
+		if keyErr != nil {
+			return fmt.Errorf("failed to get Gemini API key: %w\nHint: Set GEMINI_API_KEY environment variable or use --api-key flag", keyErr)
 		}
 
 		modelName := model
@@ -394,9 +422,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		printInfo("Generating image...")
 
 		// Use REST client instead of SDK client
-		client, err := generate.NewGeminiRESTClient(key)
-		if err != nil {
-			return fmt.Errorf("failed to create Gemini client: %w", err)
+		client, clientErr := generate.NewGeminiRESTClient(key)
+		if clientErr != nil {
+			return fmt.Errorf("failed to create Gemini client: %w", clientErr)
 		}
 		defer client.Close()
 
@@ -421,10 +449,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// Check for Vertex API key (Express Mode)
-		vertexAPIKey, err := config.GetVertexAPIKey(apiKey)
-		if err != nil {
-			return fmt.Errorf("failed to get Vertex API key: %w", err)
+		// Check for Vertex API key (Express Mode). Use a distinct error name so
+		// the outer `err` survives to capture the eventual GenerateImage error.
+		vertexAPIKey, keyErr := config.GetVertexAPIKey(apiKey)
+		if keyErr != nil {
+			return fmt.Errorf("failed to get Vertex API key: %w", keyErr)
 		}
 
 		modelName := model
@@ -463,9 +492,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				}
 			}
 
-			client, err := generate.NewVertexRESTClient(vertexAPIKey, project, location)
-			if err != nil {
-				return fmt.Errorf("failed to create Vertex AI REST client: %w", err)
+			client, clientErr := generate.NewVertexRESTClient(vertexAPIKey, project, location)
+			if clientErr != nil {
+				return fmt.Errorf("failed to create Vertex AI REST client: %w", clientErr)
 			}
 			defer client.Close()
 
@@ -475,9 +504,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			// Full Mode - Use unified SDK client with ADC/service account
 			printVerbose("Using Vertex AI Full Mode (ADC/service account authentication)")
 
-			client, err := generate.NewVertexUnifiedClient(ctx, project, location)
-			if err != nil {
-				return fmt.Errorf("failed to create Vertex AI client: %w", err)
+			client, clientErr := generate.NewVertexUnifiedClient(ctx, project, location)
+			if clientErr != nil {
+				return fmt.Errorf("failed to create Vertex AI client: %w", clientErr)
 			}
 			defer client.Close()
 
@@ -529,9 +558,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			// Use REST client with bearer token
 			printVerbose("Using Bedrock REST API with bearer token authentication")
 
-			client, err := generate.NewBedrockRESTClient(bearerToken, region)
-			if err != nil {
-				return fmt.Errorf("failed to create AWS Bedrock REST client: %w", err)
+			client, clientErr := generate.NewBedrockRESTClient(bearerToken, region)
+			if clientErr != nil {
+				return fmt.Errorf("failed to create AWS Bedrock REST client: %w", clientErr)
 			}
 			defer client.Close()
 
@@ -541,9 +570,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			// Use SDK client with IAM/keys/profile
 			printVerbose("Using Bedrock SDK with IAM/keys/profile authentication")
 
-			client, err := generate.NewBedrockSDKClient(ctx, region)
-			if err != nil {
-				return fmt.Errorf("failed to create AWS Bedrock SDK client: %w", err)
+			client, clientErr := generate.NewBedrockSDKClient(ctx, region)
+			if clientErr != nil {
+				return fmt.Errorf("failed to create AWS Bedrock SDK client: %w", clientErr)
 			}
 			defer client.Close()
 
@@ -551,10 +580,10 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			generatedImages, err = client.GenerateImage(ctx, prompt, bedrockOptions)
 		}
 	} else if selectedAPI == "grok" {
-		// Use xAI Grok API
-		key, err := config.GetGrokAPIKey("")
-		if err != nil {
-			return fmt.Errorf("failed to get Grok API key: %w", err)
+		// Use xAI Grok API. Distinct error name to avoid shadowing outer `err`.
+		key, keyErr := config.GetGrokAPIKey("")
+		if keyErr != nil {
+			return fmt.Errorf("failed to get Grok API key: %w", keyErr)
 		}
 
 		// Use default model if not specified
@@ -573,9 +602,9 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		printInfo("Generating image...")
 
-		client, err := generate.NewGrokClient(key)
-		if err != nil {
-			return fmt.Errorf("failed to create Grok client: %w", err)
+		client, clientErr := generate.NewGrokClient(key)
+		if clientErr != nil {
+			return fmt.Errorf("failed to create Grok client: %w", clientErr)
 		}
 		defer client.Close()
 
@@ -689,17 +718,24 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale")
 	count, _ := cmd.Flags().GetInt("count")
 	outputFormat, _ := cmd.Flags().GetString("output-format")
+	thinkingLevel, _ := cmd.Flags().GetString("thinking")
+	grounding, _ := cmd.Flags().GetBool("grounding")
+	inputImages, _ := cmd.Flags().GetStringArray("input-image")
+	inputImages = sanitizeInputImagePaths(inputImages)
 	options := models.GenerateOptions{
-		Model:          provider.ModelID,
-		Size:           size,
-		ImageSize:      imageSize,   // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
-		AspectRatio:    aspectRatio, // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
-		Style:          style,
-		NegativePrompt: negative,
-		Seed:           seed,
-		CfgScale:       cfgScale,     // For Bedrock Nova Canvas (1.0-10.0)
-		NumberOfImages: count,        // Number of images to generate (1-5)
-		OutputFormat:   outputFormat, // For all APIs: png, jpeg, webp
+		Model:              provider.ModelID,
+		Size:               size,
+		ImageSize:          imageSize,   // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
+		AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
+		Style:              style,
+		NegativePrompt:     negative,
+		Seed:               seed,
+		CfgScale:           cfgScale,     // For Bedrock Nova Canvas (1.0-10.0)
+		NumberOfImages:     count,        // Number of images to generate (1-5)
+		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
+		ThinkingLevel:      thinkingLevel,
+		WebSearchGrounding: grounding,
+		InputImages:        inputImages,
 	}
 
 	// Generate image
@@ -1165,6 +1201,9 @@ func init() {
 	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (1-5, default 1)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
+	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Ignored for Gemini 2.5 Flash.")
+	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query).")
+	generateCmd.Flags().StringArray("input-image", []string{}, "Local path to a reference image for compositional editing. Repeatable. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
 
 	// Bind to viper for config file support
 	viper.BindPFlag("generate.api", generateCmd.Flags().Lookup("api"))

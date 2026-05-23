@@ -115,6 +115,22 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"enum":        []string{"png", "jpeg", "webp"},
 					"description": "Output format. Only supported by Vertex AI Imagen. Default: png.",
 				},
+				"thinking": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"minimal", "low", "medium", "high"},
+					"description": "Reasoning depth for Gemini 3+ models. Higher = more planning before generation (slower, may improve layout/text). Ignored for Gemini 2.5 Flash and non-Gemini providers.",
+				},
+				"grounding": map[string]interface{}{
+					"type":        "boolean",
+					"description": "Enable Google Search grounding for Gemini 3+ models. Lets the model pull real-time web context (logos, current events) before generating. Billed per search query in addition to the per-image cost.",
+					"default":     false,
+				},
+				"input_images": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "Optional local file paths to reference images for compositional editing (Nano Banana style). Accepted formats: PNG, JPEG, WebP. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Ignored by non-Gemini providers.",
+					"maxItems":    14,
+				},
 			},
 			"required": []string{"prompt"},
 		},
@@ -179,6 +195,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			imageSize, _ := args["image_size"].(string)     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
 			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3+ and Grok Imagine
 			outputFormat, _ := args["output_format"].(string)
+			thinkingLevel, _ := args["thinking"].(string)
+			grounding, _ := args["grounding"].(bool)
+			inputImages := coerceStringArray(args["input_images"])
 
 			// Parse optional numeric parameters with type coercion (accepts string or number)
 			var seed int64
@@ -204,24 +223,32 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 
 			// Create generate options
 			opts := models.GenerateOptions{
-				Model:          modelName,
-				Size:           size,
-				Style:          style,
-				NegativePrompt: negative,
-				Seed:           seed,
-				ImageSize:      imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
-				AspectRatio:    aspectRatio, // For Gemini 3+ and Grok Imagine
-				CfgScale:       cfgScale,    // For Bedrock Nova Canvas
-				NumberOfImages: count,
-				OutputFormat:   outputFormat,
+				Model:              modelName,
+				Size:               size,
+				Style:              style,
+				NegativePrompt:     negative,
+				Seed:               seed,
+				ImageSize:          imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
+				AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine
+				CfgScale:           cfgScale,    // For Bedrock Nova Canvas
+				NumberOfImages:     count,
+				OutputFormat:       outputFormat,
+				ThinkingLevel:      thinkingLevel,
+				WebSearchGrounding: grounding,
+				InputImages:        inputImages,
 			}
 
 			log.LogGenerationStart(prompt, map[string]interface{}{
-				"model":      modelName,
-				"size":       size,
-				"style":      style,
-				"image_size": imageSize,
-				"seed":       seed,
+				"model":              modelName,
+				"size":               size,
+				"style":              style,
+				"image_size":         imageSize,
+				"aspect_ratio":       aspectRatio,
+				"negative_prompt":    negative,
+				"seed":               seed,
+				"thinking":           thinkingLevel,
+				"grounding":          grounding,
+				"input_images_count": len(inputImages),
 			})
 
 			// Determine which backend to use based on model

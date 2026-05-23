@@ -1,6 +1,6 @@
 # Gimage Go SDK
 
-Type-safe Go client for the Gimage API, generated from OpenAPI spec v1.2.64.
+Type-safe Go client for the Gimage API, generated from [`openapi.yaml`](https://github.com/apresai/gimage/blob/main/openapi.yaml) via [`oapi-codegen`](https://github.com/oapi-codegen/oapi-codegen).
 
 ## Features
 
@@ -168,32 +168,20 @@ if resp.StatusCode == 200 {
 
 ## Type Safety
 
-All request and response types are generated from the OpenAPI spec:
+All request and response types are generated from the OpenAPI spec at build time —
+this README intentionally does NOT inline the struct definitions because they
+drift the moment the spec is updated. Refer to the generated source or godoc for
+the authoritative shapes:
 
-```go
-type GenerateImageJSONRequestBody struct {
-	Prompt         string           `json:"prompt"`
-	Model          *string          `json:"model,omitempty"`
-	Size           *string          `json:"size,omitempty"`
-	Style          *ImageStyle      `json:"style,omitempty"`
-	NegativePrompt *string          `json:"negative_prompt,omitempty"`
-	Seed           *int             `json:"seed,omitempty"`
-	ResponseFormat *ResponseFormat  `json:"response_format,omitempty"`
-}
+- **Go source**: [`types.gen.go`](./types.gen.go) — every request body, response, and enum
+- **godoc**: <https://pkg.go.dev/github.com/apresai/gimage/sdk/go>
 
-type ImageStyle string
-const (
-	ImageStylePhotorealistic ImageStyle = "photorealistic"
-	ImageStyleArtistic      ImageStyle = "artistic"
-	ImageStyleAnime         ImageStyle = "anime"
-)
-
-type ResponseFormat string
-const (
-	ResponseFormatBase64 ResponseFormat = "base64"
-	ResponseFormatS3Url  ResponseFormat = "s3_url"
-)
-```
+`GenerateImageJSONRequestBody` currently exposes optional pointer fields for all
+generation knobs including `Model`, `Size`, `Style`, `NegativePrompt`, `Seed`,
+`ResponseFormat`, `ImageSize`, `AspectRatio`, `ThinkingLevel`, `Grounding`, and
+`InputImages`. Enums like `ImageStyle`, `ResponseFormat`, and
+`GenerateRequestThinkingLevel` are exported as typed string constants — see
+`types.gen.go` for the full set.
 
 ## Error Handling
 

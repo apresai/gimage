@@ -493,6 +493,30 @@ func TestModelPricingRegistry(t *testing.T) {
 		})
 	}
 
+	// Gemini-specific audit: assert the most recent re-verification date and the
+	// Note pointing to the separate batch endpoint. This creates a maintenance
+	// signal — when pricing is re-verified next, bump geminiVerifiedDate here
+	// in the same commit as the pricing.go Verified field. Without this guard,
+	// the Notes silently rot.
+	const geminiVerifiedDate = "2026-05-23"
+	geminiEntries := []string{
+		"gemini-2.5-flash-image",
+		"gemini-3-pro-image-preview",
+		"gemini-3.1-flash-image-preview",
+	}
+	for _, modelID := range geminiEntries {
+		t.Run("gemini_audit_"+modelID, func(t *testing.T) {
+			entry, ok := LookupPricing(modelID)
+			require.True(t, ok, "expected Gemini entry %s", modelID)
+			assert.Equal(t, geminiVerifiedDate, entry.Verified,
+				"Gemini entries were re-verified %s — bump this constant when re-verified again", geminiVerifiedDate)
+			assert.NotEmpty(t, entry.Note,
+				"Gemini entries should document the separate batch endpoint in Note")
+			assert.Contains(t, entry.Note, "batchGenerateContent",
+				"Note should mention the batch endpoint as future work")
+		})
+	}
+
 	// Every provider whose ModelID is non-empty must have a ModelPricing entry.
 	// This guard catches drift when a new provider is added without updating
 	// pricing.go.

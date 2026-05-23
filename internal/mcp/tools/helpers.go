@@ -106,6 +106,28 @@ func coerceToFloat(value interface{}, name string) (float64, error) {
 	}
 }
 
+// coerceStringArray extracts and sanitizes a []string from a JSON-RPC arg that
+// arrives as []interface{}. Non-string entries are dropped; empty and
+// whitespace-only strings are filtered. Returns nil for unknown / wrong types
+// (callers treat nil and empty slice the same way).
+func coerceStringArray(value interface{}) []string {
+	list, ok := value.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(list))
+	for _, v := range list {
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		if trimmed := strings.TrimSpace(s); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
+
 // validatePositiveInt validates that a value is a positive integer.
 // Uses coerceToInt to accept various numeric types including strings.
 func validatePositiveInt(value interface{}, name string) (int, error) {

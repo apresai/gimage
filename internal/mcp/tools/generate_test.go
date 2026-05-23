@@ -81,8 +81,12 @@ func TestGenerateImageTool_InputSchema(t *testing.T) {
 		t.Error("prompt property missing")
 	}
 
-	// Verify optional properties
-	optionalProps := []string{"output", "size", "model", "style", "negative", "seed"}
+	// Verify optional properties — full enumeration to catch silent schema drift.
+	optionalProps := []string{
+		"output", "size", "model", "style", "negative", "seed",
+		"image_size", "aspect_ratio", "cfg_scale", "count", "output_format",
+		"thinking", "grounding", "input_images",
+	}
 	for _, prop := range optionalProps {
 		if _, exists := properties[prop]; !exists {
 			t.Errorf("optional property '%s' missing", prop)

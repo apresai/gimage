@@ -93,6 +93,14 @@ const (
 	Photorealistic GenerateRequestStyle = "photorealistic"
 )
 
+// Defines values for GenerateRequestThinkingLevel.
+const (
+	High    GenerateRequestThinkingLevel = "high"
+	Low     GenerateRequestThinkingLevel = "low"
+	Medium  GenerateRequestThinkingLevel = "medium"
+	Minimal GenerateRequestThinkingLevel = "minimal"
+)
+
 // Defines values for HealthResponseApis.
 const (
 	Available     HealthResponseApis = "available"
@@ -235,8 +243,14 @@ type GenerateRequest struct {
 	// AspectRatio Aspect ratio for Gemini 3 Pro (alternative to size). E.g., '1:1', '16:9', '9:16', '4:3', '3:4'
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
 
+	// Grounding Enable Google Search grounding for Gemini 3+ models. Billed per search query in addition to the per-image cost.
+	Grounding *bool `json:"grounding,omitempty"`
+
 	// ImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
 	ImageSize *GenerateRequestImageSize `json:"image_size,omitempty"`
+
+	// InputImages Local file paths to reference images for compositional editing (Nano Banana style). PNG/JPEG/WebP only. Per-model caps - Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
+	InputImages *[]string `json:"input_images,omitempty"`
 
 	// Model AI model to use for generation
 	Model *GenerateRequestModel `json:"model,omitempty"`
@@ -258,6 +272,9 @@ type GenerateRequest struct {
 
 	// Style Image style/aesthetic
 	Style *GenerateRequestStyle `json:"style,omitempty"`
+
+	// ThinkingLevel Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+	ThinkingLevel *GenerateRequestThinkingLevel `json:"thinking_level,omitempty"`
 }
 
 // GenerateRequestImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
@@ -271,6 +288,9 @@ type GenerateRequestResponseFormat string
 
 // GenerateRequestStyle Image style/aesthetic
 type GenerateRequestStyle string
+
+// GenerateRequestThinkingLevel Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+type GenerateRequestThinkingLevel string
 
 // HealthResponse defines model for HealthResponse.
 type HealthResponse struct {

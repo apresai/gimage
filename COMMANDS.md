@@ -77,6 +77,9 @@ gimage generate --prompt "your prompt" [flags]
 | `--prompt-howto`   | bool   | Show tips and examples for writing effective prompts                                    | `false`                      |
 | `--image-size`     | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | -                            |
 | `--aspect-ratio`   | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`) | -                            |
+| `--thinking`       | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | -                            |
+| `--grounding`      | bool   | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false`                      |
+| `--input-image`    | string | Local path to a reference image for compositional editing. Repeatable. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | -                            |
 
 ### Available Models
 
@@ -131,6 +134,34 @@ gimage generate "forest scene" --negative "people, buildings, cars"
 
 ```bash
 gimage generate "random pattern" --seed 12345
+```
+
+**Compositional editing with reference images (Gemini 3+):**
+
+```bash
+# Single reference: drop a product into a new scene
+gimage generate "place this on a marble counter, soft studio light" \
+  --model gemini-3.1-flash --input-image product.png
+
+# Multi-reference: combine character and background
+gimage generate "this character standing in this environment, cinematic lighting" \
+  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+```
+
+**Thinking mode (Gemini 3+):**
+
+```bash
+# More planning for complex layouts/text rendering
+gimage generate "infographic showing 'Q3 revenue up 18%'" \
+  --model gemini-3-pro --image-size 4K --thinking high
+```
+
+**Google Search grounding (Gemini 3+):**
+
+```bash
+# Let the model pull current visual references from the web
+gimage generate "official Nintendo Switch 2 console front view" \
+  --model gemini-3-pro --grounding
 ```
 
 **Custom output path:**
