@@ -143,11 +143,38 @@ func main() {
 		fmt.Printf("  Size: %dx%d\n\n", result.Width, result.Height)
 	}
 
+	// Example 4: Gemini 3+ compositional editing with reference images + thinking
+	fmt.Println("4. Compositional editing with Gemini 3.1 Flash...")
+	thinkingLevel := gimage.GenerateRequestThinkingLevelLow
+	composeResp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
+		Prompt:        "place this character on a beach at golden hour, cinematic lighting",
+		Model:         stringPtr("gemini-3.1-flash-image-preview"),
+		ImageSize:     stringPtr("2K"),
+		AspectRatio:   stringPtr("16:9"),
+		// InputImages on the wire are local paths the server reads; for the
+		// HTTP API surface this field is expected as a string slice — see
+		// the OpenAPI spec for the deployment-specific convention.
+		InputImages:   &[]string{"/path/to/character.png"},
+		ThinkingLevel: &thinkingLevel,
+		Grounding:     boolPtr(false), // enable for current/real-world references
+	})
+	if err != nil {
+		log.Fatalf("Compositional edit failed: %v", err)
+	}
+	defer composeResp.Body.Close()
+	if composeResp.StatusCode == 200 {
+		fmt.Println("✓ Compositional edit complete (Gemini 3+ exclusive — silently ignored on other providers)")
+	}
+
 	fmt.Println("✓ All examples completed successfully!")
 }
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
 ```
 

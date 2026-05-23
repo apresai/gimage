@@ -47,7 +47,7 @@ The server exposes 10 tools covering all gimage operations. For a complete param
 
 ### 1. Image Generation
 
-- `generate_image`: Generate AI images from text prompts.
+- `generate_image`: Generate AI images from text prompts. Gemini 3+ models additionally support `input_images` (Nano Banana compositional editing — up to 3/11/14 reference images depending on model), `thinking` (reasoning depth: `minimal|low|medium|high`), and `grounding` (Google Search grounding for current/real references).
 - `list_models`: List available providers, models, and pricing.
 
 ### 2. Single Image Processing
