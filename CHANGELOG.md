@@ -7,21 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(empty - ready for next release)
+
+## [1.2.129] - 2026-05-23
+
 ### Added
-- `--thinking` flag for Gemini 3+ image models (`minimal`, `low`, `medium`, `high`) to control reasoning depth before generation. Ignored by Gemini 2.5 Flash and non-Gemini providers.
-- `--grounding` flag to enable Google Search grounding for Gemini 3+ image models (billed per search query in addition to per-image cost).
-- `--input-image` repeatable flag to attach reference images for compositional editing (Nano Banana style). PNG/JPEG/WebP accepted. Per-model caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Each reference image is capped at 20 MB to fail fast before base64-encoding.
-- MCP `generate_image` tool now accepts `thinking`, `grounding`, and `input_images` parameters matching the new CLI flags.
-- OpenAPI `GenerateRequest` schema includes `thinking_level`, `grounding`, and `input_images` fields. SDK types regenerated.
-- MCP `LogGenerationStart` now records `thinking`, `grounding`, `aspect_ratio`, `negative_prompt`, and `input_images_count` for better debug observability. File paths are NOT logged (count only) to avoid leaking PII-bearing filesystem paths.
-- New helper `coerceStringArray` in MCP tools, with full table-driven test coverage for mixed-type JSON-RPC `[]interface{}` inputs (drops non-strings, trims whitespace, filters empties).
+- Gemini 3+ thinking control via `--thinking` flag (`minimal|low|medium|high`) to tune reasoning depth before generation.
+- Google Search grounding for Gemini 3+ via `--grounding` flag, billed per search query.
+- Multi-image compositional editing via repeatable `--input-image` flag for Nano Banana-style reference inputs (caps: 3 for Gemini 2.5 Flash, 11 for Gemini 3 Pro, 14 for Gemini 3.1 Flash).
+- MCP `generate_image` tool support for `thinking`, `grounding`, and `input_images` parameters.
+- OpenAPI spec and SDK types updated to surface the new Gemini parameters.
 
 ### Changed
-- Bumped pricing `Verified` field to `2026-05-23` for all three Gemini image models. Added a `Note` documenting that Batch tier (~50% off) is available via Google's separate `:batchGenerateContent` async endpoint, not yet wired into the gimage CLI.
-- CLI `--input-image` now trims whitespace and drops empty paths to match the MCP server's coercion behavior. Both surfaces now produce the same `GenerateOptions.InputImages` for equivalent inputs.
+- Gemini REST client now constructs requests with `thinkingConfig`, `tools`, and inline image parts when the new options are supplied.
 
-### Fixed
-- **Silent error swallowing in `gimage generate`**: every provider branch (gemini/vertex/bedrock/grok) shadowed the outer `err` via `:=` when reading credentials and constructing clients, so the final `generatedImages, err = client.GenerateImage(...)` wrote to a scoped-inner `err` that was discarded when the if-block ended. The user saw `internal error: no images generated but no error was returned - please report this bug` instead of the actual API/IO error. Renamed each branch's inner errors (`keyErr`, `clientErr`) so the outer `err` correctly captures the GenerateImage result. This bug pre-dated the Gemini Enhancement Pack but was exposed by the new `--input-image` cap-violation and read-error paths.
 
 ## [1.2.127] - 2026-05-17
 
