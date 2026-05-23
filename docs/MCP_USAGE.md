@@ -137,6 +137,10 @@ Generate stunning images from text descriptions using state-of-the-art AI models
   - Output format (Vertex AI: PNG, JPEG, WebP)
   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
   - Batch generation (max count varies by provider)
+- **Gemini 3+ exclusives** (ignored by other providers):
+  - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
+  - `grounding` (bool): enables Google Search grounding (billed per search query)
+  - `input_images` (array of file paths): reference images for compositional editing — Nano Banana style. Caps: 2.5 Flash=3, 3 Pro=11, 3.1 Flash=14
 
 **Example Prompts:**
 
@@ -149,6 +153,10 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 "Create 3 variations of a fantasy dragon in flight"
 "Generate an abstract art image with maximum creativity (CFG scale 10)"
 "Generate a portrait in WebP format for web optimization"
+"Drop this product on a marble counter under soft studio light" (with input_images=["product.png"])
+"Place this character in this environment, cinematic lighting" (with input_images=["character.png","scene.jpg"])
+"Generate an infographic showing Q3 revenue with sharp text" (with thinking="high", image_size="4K")
+"Generate the official Nintendo Switch 2 console" (with grounding=true)
 ```
 
 ### 🖼️ Image Processing

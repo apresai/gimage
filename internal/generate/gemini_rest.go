@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -111,8 +112,16 @@ func isGeminiAdvanced(modelName string) bool {
 	return strings.Contains(modelName, "gemini-3")
 }
 
-// generateWithRetry performs a single generation attempt using REST API
-func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
+// buildGenerateContentRequest assembles the full generateContent request payload
+// for a given model + prompt + options. It returns the struct (not a serialized
+// payload) so unit tests can introspect the assembled shape without an HTTP
+// roundtrip. Returns an error early if the multi-image cap is exceeded or a
+// reference image cannot be read.
+//
+// Gemini 3+ exclusive fields (thinkingConfig, tools[google_search]) are gated
+// here via isGeminiAdvanced so callers that pass them on Gemini 2.5 Flash get
+// a quietly-stripped request rather than an API-side rejection.
+func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string, options models.GenerateOptions) (geminiGenerateContentRequest, error) {
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
@@ -162,6 +171,12 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		if imageConfig.ImageSize != "" || imageConfig.AspectRatio != "" {
 			genConfig.ImageConfig = imageConfig
 		}
+
+		// Thinking config (Gemini 3+ only). "off" or empty omits the field entirely.
+		if level := strings.ToLower(options.ThinkingLevel); level != "" && level != "off" {
+			genConfig.ThinkingConfig = &geminiThinkingConfig{ThinkingLevel: level}
+			c.log.Debug("Using thinkingLevel: %s", level)
+		}
 	} else {
 		// Standard Gemini 2.5 Flash: IMAGE only, supports aspectRatio but not imageSize
 		genConfig.ResponseModalities = []string{"IMAGE"}
@@ -195,19 +210,48 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		c.log.Debug("Using candidateCount: %d", count)
 	}
 
-	// Build request payload using Gemini's generateContent API format
-	request := geminiGenerateContentRequest{
-		Contents: []geminiContent{
-			{
-				Parts: []geminiPart{
-					{
-						Text: fullPrompt,
-					},
-				},
-			},
-		},
-		GenerationConfig: genConfig,
+	// Build parts list: text first, then any reference images for compositional editing.
+	parts := []geminiPart{{Text: fullPrompt}}
+	if len(options.InputImages) > 0 {
+		maxImages := maxInputImagesForModel(modelName)
+		if len(options.InputImages) > maxImages {
+			return geminiGenerateContentRequest{}, fmt.Errorf("model %s supports at most %d input images, got %d", modelName, maxImages, len(options.InputImages))
+		}
+		for _, path := range options.InputImages {
+			part, err := readInputImageAsInlineData(path)
+			if err != nil {
+				return geminiGenerateContentRequest{}, fmt.Errorf("read input image %s: %w", path, err)
+			}
+			parts = append(parts, part)
+			c.log.Debug("Attached input image: %s (%s)", path, part.InlineData.MimeType)
+		}
 	}
+
+	// Build tools list (Google Search grounding is Gemini 3+ only).
+	var tools []geminiTool
+	if options.WebSearchGrounding && isGeminiAdvanced(modelName) {
+		tools = append(tools, geminiTool{GoogleSearch: &geminiGoogleSearch{}})
+		c.log.Debug("Google Search grounding enabled")
+	}
+
+	return geminiGenerateContentRequest{
+		Contents:         []geminiContent{{Parts: parts}},
+		GenerationConfig: genConfig,
+		Tools:            tools,
+	}, nil
+}
+
+// generateWithRetry performs a single generation attempt using REST API
+func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
+	request, err := c.buildGenerateContentRequest(modelName, prompt, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse requested dimensions (used to populate response metadata for
+	// non-native-upscale models). buildGenerateContentRequest already used these
+	// internally; we re-derive them here for the response-shaping logic below.
+	width, height := ParseSizeString(options.Size)
 
 	// Marshal request to JSON
 	requestBody, err := json.Marshal(request)
@@ -380,6 +424,7 @@ func (c *GeminiRESTClient) Close() error {
 type geminiGenerateContentRequest struct {
 	Contents         []geminiContent         `json:"contents"`
 	GenerationConfig *geminiGenerationConfig `json:"generationConfig,omitempty"`
+	Tools            []geminiTool            `json:"tools,omitempty"`
 }
 
 type geminiContent struct {
@@ -398,13 +443,14 @@ type geminiInlineData struct {
 }
 
 type geminiGenerationConfig struct {
-	ResponseModalities []string           `json:"responseModalities,omitempty"`
-	Temperature        *float64           `json:"temperature,omitempty"`
-	TopP               *float64           `json:"topP,omitempty"`
-	TopK               *int               `json:"topK,omitempty"`
-	CandidateCount     *int               `json:"candidateCount,omitempty"`
-	Seed               *int64             `json:"seed,omitempty"`
-	ImageConfig        *geminiImageConfig `json:"imageConfig,omitempty"`
+	ResponseModalities []string              `json:"responseModalities,omitempty"`
+	Temperature        *float64              `json:"temperature,omitempty"`
+	TopP               *float64              `json:"topP,omitempty"`
+	TopK               *int                  `json:"topK,omitempty"`
+	CandidateCount     *int                  `json:"candidateCount,omitempty"`
+	Seed               *int64                `json:"seed,omitempty"`
+	ImageConfig        *geminiImageConfig    `json:"imageConfig,omitempty"`
+	ThinkingConfig     *geminiThinkingConfig `json:"thinkingConfig,omitempty"`
 }
 
 type geminiImageConfig struct {
@@ -412,6 +458,22 @@ type geminiImageConfig struct {
 	ImageSize      string `json:"imageSize,omitempty"` // "1K", "2K", "4K" — API requires uppercase
 	NegativePrompt string `json:"negativePrompt,omitempty"`
 }
+
+// geminiThinkingConfig controls reasoning depth on Gemini 3+ models.
+// Values: "minimal", "low", "medium", "high". Image variants of Gemini 3
+// support this knob for layout/composition planning.
+type geminiThinkingConfig struct {
+	ThinkingLevel string `json:"thinkingLevel,omitempty"`
+}
+
+// geminiTool wraps tool declarations. For image generation, only google_search
+// grounding is meaningful here.
+type geminiTool struct {
+	GoogleSearch *geminiGoogleSearch `json:"google_search,omitempty"`
+}
+
+// geminiGoogleSearch is sent as an empty object to enable Google Search grounding.
+type geminiGoogleSearch struct{}
 
 type geminiGenerateContentResponse struct {
 	Candidates []geminiCandidate `json:"candidates"`
@@ -461,4 +523,73 @@ func enhanceError(err error) error {
 	}
 
 	return err
+}
+
+// Per-model caps for input reference images, per Gemini docs:
+// - Gemini 2.5 Flash Image: works best with up to 3 input images
+// - Gemini 3 Pro Image Preview: up to 6 objects + 5 characters = 11 total
+// - Gemini 3.1 Flash Image Preview: up to 10 objects + 4 characters = 14 total
+// The API doesn't distinguish object vs character classes in the request payload,
+// so gimage enforces a single combined total.
+const (
+	geminiFlash25MaxRefImages = 3
+	geminiPro3MaxRefImages    = 11
+	geminiFlash31MaxRefImages = 14
+)
+
+// maxInputImageBytes caps each reference image at 20 MB to fail fast before
+// reading + base64-encoding a huge file. Gemini's documented inline_data limits
+// are ambiguous; 20 MB is generous for legitimate references and catches
+// mis-targeted paths (logs, archives) before they OOM the process.
+const maxInputImageBytes = 20 * 1024 * 1024
+
+// maxInputImagesForModel returns the cap on reference input images for a model.
+// Unknown models default to the most conservative cap.
+func maxInputImagesForModel(modelName string) int {
+	switch {
+	case strings.Contains(modelName, "gemini-3.1-flash-image"):
+		return geminiFlash31MaxRefImages
+	case strings.Contains(modelName, "gemini-3-pro-image"):
+		return geminiPro3MaxRefImages
+	case strings.Contains(modelName, "gemini-2.5-flash-image"):
+		return geminiFlash25MaxRefImages
+	default:
+		return geminiFlash25MaxRefImages
+	}
+}
+
+// readInputImageAsInlineData reads a local image file and returns a geminiPart
+// wrapping its base64-encoded content. MIME type is detected from the file
+// header via http.DetectContentType; only image/png, image/jpeg, and image/webp
+// are accepted (these are the formats Gemini documents for image input).
+// The file is rejected before any I/O if its size exceeds maxInputImageBytes.
+func readInputImageAsInlineData(path string) (geminiPart, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return geminiPart{}, err
+	}
+	if info.Size() > maxInputImageBytes {
+		return geminiPart{}, fmt.Errorf("input image %s exceeds %d-byte limit (%d bytes)", path, maxInputImageBytes, info.Size())
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return geminiPart{}, err
+	}
+	if len(data) == 0 {
+		return geminiPart{}, fmt.Errorf("input image is empty")
+	}
+	mimeType := http.DetectContentType(data)
+	// http.DetectContentType returns "image/jpeg" for jpg, "image/png" for png, "image/webp" for webp.
+	switch mimeType {
+	case "image/png", "image/jpeg", "image/webp":
+		// ok
+	default:
+		return geminiPart{}, fmt.Errorf("unsupported MIME type %q (expected image/png, image/jpeg, or image/webp)", mimeType)
+	}
+	return geminiPart{
+		InlineData: &geminiInlineData{
+			MimeType: mimeType,
+			Data:     base64.StdEncoding.EncodeToString(data),
+		},
+	}, nil
 }

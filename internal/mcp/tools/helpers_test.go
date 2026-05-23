@@ -586,3 +586,66 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+func TestCoerceStringArray(t *testing.T) {
+	tests := []struct {
+		name  string
+		input interface{}
+		want  []string
+	}{
+		{
+			name:  "all strings happy path",
+			input: []interface{}{"a.png", "b.jpg", "c.webp"},
+			want:  []string{"a.png", "b.jpg", "c.webp"},
+		},
+		{
+			name:  "mixed types filtered to strings",
+			input: []interface{}{1, "a.png", nil, "b.jpg", 3.14, true},
+			want:  []string{"a.png", "b.jpg"},
+		},
+		{
+			name:  "empty and whitespace-only dropped",
+			input: []interface{}{"", "   ", "\t\n", "valid.png"},
+			want:  []string{"valid.png"},
+		},
+		{
+			name:  "trailing/leading whitespace trimmed",
+			input: []interface{}{"  spaced.png  ", "\ttab.png\t"},
+			want:  []string{"spaced.png", "tab.png"},
+		},
+		{
+			name:  "non-array input returns nil",
+			input: "not-an-array",
+			want:  nil,
+		},
+		{
+			name:  "nil input returns nil",
+			input: nil,
+			want:  nil,
+		},
+		{
+			name:  "empty array returns empty slice",
+			input: []interface{}{},
+			want:  []string{},
+		},
+		{
+			name:  "all-empty array returns empty slice",
+			input: []interface{}{"", "  ", "\n"},
+			want:  []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := coerceStringArray(tt.input)
+			if len(got) != len(tt.want) {
+				t.Errorf("coerceStringArray() length = %d, want %d (got=%v want=%v)", len(got), len(tt.want), got, tt.want)
+				return
+			}
+			for i, g := range got {
+				if g != tt.want[i] {
+					t.Errorf("coerceStringArray()[%d] = %q, want %q", i, g, tt.want[i])
+				}
+			}
+		})
+	}
+}

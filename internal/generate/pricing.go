@@ -42,7 +42,8 @@ var ModelPricing = map[string]PricingEntry{
 		Representative: 0.039,
 		Calculate:      flatPrice(0.039),
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-04-12",
+		Verified:       "2026-05-23",
+		Note:           "Batch (50% off, $0.0195) and Priority (1.8x, $0.0702) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3-pro-image-preview": {
 		ModelID:        "gemini-3-pro-image-preview",
@@ -54,7 +55,8 @@ var ModelPricing = map[string]PricingEntry{
 		}),
 		DisplayContext: imageSizeSuffix,
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-04-12",
+		Verified:       "2026-05-23",
+		Note:           "Batch (50% off, $0.067 @1K/2K) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3.1-flash-image-preview": {
 		ModelID:        "gemini-3.1-flash-image-preview",
@@ -66,7 +68,8 @@ var ModelPricing = map[string]PricingEntry{
 		}),
 		DisplayContext: imageSizeSuffix,
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-04-12",
+		Verified:       "2026-05-23",
+		Note:           "Batch (~50% off, $0.022 @0.5K, $0.034 @1K, $0.050 @2K, $0.076 @4K) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"imagen-4.0-generate-001": {
 		ModelID:        "imagen-4.0-generate-001",
