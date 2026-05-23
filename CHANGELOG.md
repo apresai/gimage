@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.131] - 2026-05-23
+
+### Added
+- Documentation for Gemini 3 thinking levels, Google Search grounding, and compositional editing with reference images in `docs/MCP_EXAMPLES.md`, `docs/PROMPT_GUIDE.md`, and `sdk/go/EXAMPLE.md`.
+- CLI help text for `--thinking`, `--grounding`, and `--input-image` flags on the `generate` command.
+
+### Changed
+- Updated `mcp.md` to reflect new Gemini 3 capabilities.
+
+
 ## [1.2.129] - 2026-05-23
 
 ### Added
