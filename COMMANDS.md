@@ -63,7 +63,7 @@ gimage generate --prompt "your prompt" [flags]
 | `-p, --prompt`     | string | Text prompt (alternative to positional arg)                                             | -                            |
 | `--provider`       | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/imagen-4`)                               | Auto-detected                |
 | `--api`            | string | API to use: `gemini`, `vertex`, or `bedrock` (deprecated, use `--provider`)             | Auto-detected from model     |
-| `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image-preview` |
+| `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image` |
 | `--size`           | string | Image size (WxH)                                                                        | `1024x1024`                  |
 | `--style`          | string | Style: `photorealistic`, `artistic`, `anime` (Bedrock: `standard`, `premium`)           | -                            |
 | `--negative`       | string | Negative prompt to avoid features                                                       | -                            |
@@ -85,15 +85,15 @@ gimage generate --prompt "your prompt" [flags]
 
 **Gemini API:**
 
-- `gemini-3-pro-image-preview` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
-- `gemini-3.1-flash-image-preview` - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
+- `gemini-3-pro-image` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
+- `gemini-3.1-flash-image` - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
 - `gemini-2.5-flash-image` - $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**
 
-- `imagen-4` - $0.04/image, up to 2048x2048
-- `imagen-4-fast` - $0.02/image, speed-optimized
-- `imagen-4-ultra` - $0.06/image, premium quality
+- `imagen-4` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
+- `imagen-4-fast` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
+- `imagen-4-ultra` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
 
 **AWS Bedrock (Paid):**
 

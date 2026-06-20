@@ -472,13 +472,15 @@ export VERTEX_PROJECT="your-gcp-project"
 
 **Gemini Models**:
 
-- `gemini-3-pro-image-preview` (default, native 4K, sharp text, $0.134-$0.24/image)
+- `gemini-3-pro-image` (default, native 4K, sharp text, $0.134-$0.24/image)
+- `gemini-3.1-flash-image` (native 4K at flash speed, tiered pricing: $0.045-$0.151/image)
 - `gemini-2.5-flash-image` ($0.039/image, up to 1024x1024)
+
 **Vertex AI Models** (Premium Quality):
 
-- `imagen-4` (highest quality, $0.04/image, up to 2048x2048)
-- `imagen-4-fast` (speed-optimized, $0.02/image)
-- `imagen-4-ultra` (premium quality, $0.06/image)
+- `imagen-4` (migrated to gemini-3.1-flash-image, premium quality, $0.067/image, up to 2048x2048)
+- `imagen-4-fast` (migrated to gemini-3.1-flash-image, speed-optimized, $0.067/image)
+- `imagen-4-ultra` (migrated to gemini-3.1-flash-image, premium quality, $0.067/image)
 - `imagen-3.0-generate-002` (legacy, $0.04/image)
 
 **AWS Bedrock Models**:

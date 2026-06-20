@@ -32,7 +32,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `prompt`        | string  | Yes      | -                            | Text description of the image to generate                                                      |
 | `output`        | string  | No       | Auto-generated               | Output file path                                                                               |
 | `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
-| `model`         | string  | No       | "gemini-3-pro-image-preview" | AI model to use                                                                                |
+| `model`         | string  | No       | "gemini-3-pro-image"         | AI model to use                                                                                |
 | `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
 | `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3+ and Grok Imagine: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
@@ -70,15 +70,15 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **Google Gemini API:**
 
-- **gemini-3-pro-image-preview** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
-- **gemini-3.1-flash-image-preview** (native 4K at flash speed, tiered pricing: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
+- **gemini-3-pro-image** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
+- **gemini-3.1-flash-image** (native 4K at flash speed, tiered pricing: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
 - **gemini-2.5-flash-image** ($0.039/image, up to 1024x1024)
 
 **Google Vertex AI:**
 
-- **imagen-4** (highest quality, $0.04/image, up to 2048x2048)
-- **imagen-4-fast** (speed-optimized, $0.02/image)
-- **imagen-4-ultra** (premium quality, $0.06/image)
+- **imagen-4** (migrated to gemini-3.1-flash-image, premium quality, $0.067/image, up to 2048x2048)
+- **imagen-4-fast** (migrated to gemini-3.1-flash-image, speed-optimized, $0.067/image)
+- **imagen-4-ultra** (migrated to gemini-3.1-flash-image, premium quality, $0.067/image)
 - **imagen-3.0-generate-002** (Imagen 3, legacy, $0.04/image)
 - **imagen-3.0-fast-generate-001** (Imagen 3 Fast, legacy, $0.02/image)
 
@@ -105,7 +105,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
   ],
   "count": 2,
   "size": "1024x1024",
-  "model": "gemini-3-pro-image-preview",
+  "model": "gemini-3-pro-image",
   "prompt": "a sunset over mountains"
 }
 ```

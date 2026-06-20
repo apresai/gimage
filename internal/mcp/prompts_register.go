@@ -21,7 +21,7 @@ STEP 2: Generate a simple image
 Call generate_image with:
 - prompt: "a sunset over mountains"
 - output: "~/Desktop/sunset.png"
-- (defaults to gemini-3-pro-image-preview)
+- (defaults to gemini-3-pro-image)
 
 EXAMPLE:
 generate_image(

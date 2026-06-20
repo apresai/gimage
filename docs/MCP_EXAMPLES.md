@@ -35,7 +35,7 @@ Generate an image of a sunset over mountain peaks with orange and purple sky
 ```
 Generated image saved to: generated_1730400123.png
 Size: 1024x1024
-Model: gemini-3-pro-image-preview
+Model: gemini-3-pro-image
 ```
 
 **Want FREE generation?** Specify `model="gemini-2.5-flash-image"` for the free tier (500/day).
@@ -176,7 +176,7 @@ Note: This requires Vertex AI authentication. The result will be higher quality 
 
 ## Gemini 3+ Advanced Features (Compositional Editing, Thinking, Grounding)
 
-These three capabilities are exclusive to Gemini 3+ models (`gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`). They are silently ignored on other providers, so passing them is always safe.
+These three capabilities are exclusive to Gemini 3+ models (`gemini-3-pro-image`, `gemini-3.1-flash-image`). They are silently ignored on other providers, so passing them is always safe.
 
 ### Example 7a: Compositional Editing with One Reference Image
 
@@ -189,7 +189,7 @@ I have a product photo at ~/Pictures/sneaker.png. Place it on a marble counter u
 ```
 Using Gemini 3.1 Flash for Nano Banana-style compositional editing.
 
-[Calls generate_image with prompt="place this product on a marble counter, soft three-point studio light, shallow depth of field", model="gemini-3.1-flash-image-preview", input_images=["~/Pictures/sneaker.png"], image_size="2K", output="~/Desktop/sneaker-styled.png"]
+[Calls generate_image with prompt="place this product on a marble counter, soft three-point studio light, shallow depth of field", model="gemini-3.1-flash-image", input_images=["~/Pictures/sneaker.png"], image_size="2K", output="~/Desktop/sneaker-styled.png"]
 
 The original product is preserved in the composition; only the environment and lighting are generated.
 ```
@@ -210,7 +210,7 @@ Combine these three reference images — a character (character.png), a backgrou
 ```
 Using Gemini 3.1 Flash with three reference images for multi-object composition. The model can take up to 14 references on this variant.
 
-[Calls generate_image with prompt="this character standing in this forest holding this sword, cinematic lighting, low angle, dramatic shadows", model="gemini-3.1-flash-image-preview", input_images=["character.png", "forest.jpg", "sword.png"], aspect_ratio="16:9", output="~/Desktop/composed.png"]
+[Calls generate_image with prompt="this character standing in this forest holding this sword, cinematic lighting, low angle, dramatic shadows", model="gemini-3.1-flash-image", input_images=["character.png", "forest.jpg", "sword.png"], aspect_ratio="16:9", output="~/Desktop/composed.png"]
 
 All three references contribute to the composition. The prompt describes how to combine them, not what they look like.
 ```
@@ -230,7 +230,7 @@ Generate a Q3 2026 revenue infographic with these data points: revenue up 18%, g
 ```
 This is a text-heavy multi-element layout — exactly where thinking mode pays off. Using Gemini 3 Pro at 4K with high thinking level for careful text rendering and composition planning.
 
-[Calls generate_image with prompt="corporate infographic for Q3 2026: 'Revenue up 18%' as headline, three labeled sections — 'Gross Margin +4pp', '3 New Product Launches', and a small trend chart. Navy and gold palette, modern sans-serif typography, clean white background", model="gemini-3-pro-image-preview", image_size="4K", thinking="high", output="~/Desktop/q3-infographic.png"]
+[Calls generate_image with prompt="corporate infographic for Q3 2026: 'Revenue up 18%' as headline, three labeled sections — 'Gross Margin +4pp', '3 New Product Launches', and a small trend chart. Navy and gold palette, modern sans-serif typography, clean white background", model="gemini-3-pro-image", image_size="4K", thinking="high", output="~/Desktop/q3-infographic.png"]
 
 Higher thinking levels add latency but materially improve text legibility and element alignment on dense layouts.
 ```
@@ -254,7 +254,7 @@ Generate an official-looking product photo of the Nintendo Switch 2 console, fro
 ```
 The user wants an accurate rendering of a real product. Enabling Google Search grounding so Gemini can pull current visual references before generating. Note: each search query inside grounding is billed in addition to the image cost.
 
-[Calls generate_image with prompt="Nintendo Switch 2 console, front view, white background, product photography style", model="gemini-3-pro-image-preview", grounding=true, output="~/Desktop/switch2.png"]
+[Calls generate_image with prompt="Nintendo Switch 2 console, front view, white background, product photography style", model="gemini-3-pro-image", grounding=true, output="~/Desktop/switch2.png"]
 
 Grounding is most useful for products, public figures, and landmarks where visual accuracy matters. For pure imagination prompts, skip it to avoid the extra search billing.
 ```

@@ -26,11 +26,11 @@ func TestRegistryGet(t *testing.T) {
 		wantErr     bool
 	}{
 		{"gemini flash", "gemini/flash-2.5", "gemini-2.5-flash-image", false},
-		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image-preview", false},
-		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image-preview", false},
-		{"vertex imagen 4", "vertex/imagen-4", "imagen-4.0-generate-001", false},
-		{"vertex imagen 4 fast", "vertex/imagen-4-fast", "imagen-4.0-fast-generate-001", false},
-		{"vertex imagen 4 ultra", "vertex/imagen-4-ultra", "imagen-4.0-ultra-generate-001", false},
+		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image", false},
+		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image", false},
+		{"vertex imagen 4", "vertex/imagen-4", "gemini-3.1-flash-image", false},
+		{"vertex imagen 4 fast", "vertex/imagen-4-fast", "gemini-3.1-flash-image", false},
+		{"vertex imagen 4 ultra", "vertex/imagen-4-ultra", "gemini-3.1-flash-image", false},
 		{"bedrock nova canvas", "bedrock/nova-canvas", "amazon.nova-canvas-v1:0", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
 		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
@@ -195,7 +195,7 @@ func TestResolveModelName(t *testing.T) {
 		wantID  string
 	}{
 		{"flash alias resolves", "flash", "gemini-2.5-flash-image"},
-		{"imagen alias resolves", "imagen", "imagen-4.0-generate-001"},
+		{"imagen alias resolves", "imagen", "gemini-3.1-flash-image"},
 		{"nova alias resolves", "nova", "amazon.nova-canvas-v1:0"},
 		{"grok alias resolves", "grok", "grok-imagine-image"},
 		{"unknown returns original", "unknown-model", "unknown-model"},
@@ -501,8 +501,8 @@ func TestModelPricingRegistry(t *testing.T) {
 	const geminiVerifiedDate = "2026-05-23"
 	geminiEntries := []string{
 		"gemini-2.5-flash-image",
-		"gemini-3-pro-image-preview",
-		"gemini-3.1-flash-image-preview",
+		"gemini-3-pro-image",
+		"gemini-3.1-flash-image",
 	}
 	for _, modelID := range geminiEntries {
 		t.Run("gemini_audit_"+modelID, func(t *testing.T) {
@@ -544,15 +544,15 @@ func TestModelPricingRegistry(t *testing.T) {
 		want      float64
 	}{
 		{modelID: "gemini-2.5-flash-image", want: 0.039},
-		{modelID: "gemini-3-pro-image-preview", imageSize: "1K", want: 0.134},
-		{modelID: "gemini-3-pro-image-preview", imageSize: "2K", want: 0.134},
-		{modelID: "gemini-3-pro-image-preview", imageSize: "4K", want: 0.24},
-		{modelID: "gemini-3-pro-image-preview", want: 0.134},
-		{modelID: "gemini-3.1-flash-image-preview", imageSize: "0.5K", want: 0.045},
-		{modelID: "gemini-3.1-flash-image-preview", imageSize: "1K", want: 0.067},
-		{modelID: "gemini-3.1-flash-image-preview", imageSize: "2K", want: 0.101},
-		{modelID: "gemini-3.1-flash-image-preview", imageSize: "4K", want: 0.151},
-		{modelID: "gemini-3.1-flash-image-preview", want: 0.067},
+		{modelID: "gemini-3-pro-image", imageSize: "1K", want: 0.134},
+		{modelID: "gemini-3-pro-image", imageSize: "2K", want: 0.134},
+		{modelID: "gemini-3-pro-image", imageSize: "4K", want: 0.24},
+		{modelID: "gemini-3-pro-image", want: 0.134},
+		{modelID: "gemini-3.1-flash-image", imageSize: "0.5K", want: 0.045},
+		{modelID: "gemini-3.1-flash-image", imageSize: "1K", want: 0.067},
+		{modelID: "gemini-3.1-flash-image", imageSize: "2K", want: 0.101},
+		{modelID: "gemini-3.1-flash-image", imageSize: "4K", want: 0.151},
+		{modelID: "gemini-3.1-flash-image", want: 0.067},
 		{modelID: "imagen-4.0-generate-001", want: 0.04},
 		{modelID: "imagen-4.0-fast-generate-001", want: 0.02},
 		{modelID: "imagen-4.0-ultra-generate-001", want: 0.06},

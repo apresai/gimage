@@ -45,8 +45,8 @@ var ModelPricing = map[string]PricingEntry{
 		Verified:       "2026-05-23",
 		Note:           "Batch (50% off, $0.0195) and Priority (1.8x, $0.0702) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
-	"gemini-3-pro-image-preview": {
-		ModelID:        "gemini-3-pro-image-preview",
+	"gemini-3-pro-image": {
+		ModelID:        "gemini-3-pro-image",
 		Summary:        "$0.134/image (1K/2K), $0.24/image (4K)",
 		Representative: 0.134,
 		Calculate: imageSizeTieredPrice(map[string]float64{
@@ -58,8 +58,8 @@ var ModelPricing = map[string]PricingEntry{
 		Verified:       "2026-05-23",
 		Note:           "Batch (50% off, $0.067 @1K/2K) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
-	"gemini-3.1-flash-image-preview": {
-		ModelID:        "gemini-3.1-flash-image-preview",
+	"gemini-3.1-flash-image": {
+		ModelID:        "gemini-3.1-flash-image",
 		Summary:        "$0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)",
 		Representative: 0.067,
 		Calculate: imageSizeTieredPrice(map[string]float64{
@@ -78,6 +78,7 @@ var ModelPricing = map[string]PricingEntry{
 		Calculate:      flatPrice(0.04),
 		Source:         "https://cloud.google.com/vertex-ai/generative-ai/pricing#imagen-models",
 		Verified:       "2026-04-12",
+		Note:           "Deprecated — discontinued August 17, 2026 (replaced by gemini-3.1-flash-image)",
 	},
 	"imagen-4.0-fast-generate-001": {
 		ModelID:        "imagen-4.0-fast-generate-001",
@@ -86,6 +87,7 @@ var ModelPricing = map[string]PricingEntry{
 		Calculate:      flatPrice(0.02),
 		Source:         "https://cloud.google.com/vertex-ai/generative-ai/pricing#imagen-models",
 		Verified:       "2026-04-12",
+		Note:           "Deprecated — discontinued August 17, 2026 (replaced by gemini-3.1-flash-image)",
 	},
 	"imagen-4.0-ultra-generate-001": {
 		ModelID:        "imagen-4.0-ultra-generate-001",
@@ -94,6 +96,7 @@ var ModelPricing = map[string]PricingEntry{
 		Calculate:      flatPrice(0.06),
 		Source:         "https://cloud.google.com/vertex-ai/generative-ai/pricing#imagen-models",
 		Verified:       "2026-04-12",
+		Note:           "Deprecated — discontinued August 17, 2026 (replaced by gemini-3.1-flash-image)",
 	},
 	"imagen-3.0-generate-002": {
 		ModelID:        "imagen-3.0-generate-002",

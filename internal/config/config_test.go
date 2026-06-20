@@ -261,7 +261,7 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "us-east-1", cfg.AWSRegion)
 		assert.Equal(t, "us-central1", cfg.VertexLocation)
 		assert.Equal(t, "info", cfg.LogLevel)
-		assert.Equal(t, "gemini-3-pro-image-preview", cfg.DefaultModel)
+		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
 	})
 
 	t.Run("config file is loaded", func(t *testing.T) {

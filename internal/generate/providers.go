@@ -14,7 +14,7 @@ import (
 
 // Model ID constants for backward compatibility
 const (
-	DefaultModel    = "gemini-3-pro-image-preview"
+	DefaultModel    = "gemini-3-pro-image"
 	ModelNovaCanvas = "amazon.nova-canvas-v1:0"
 )
 
@@ -176,12 +176,12 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Gemini 3.1 Flash Image Preview via Gemini API
+	// Gemini 3.1 Flash Image via Gemini API
 	r.Register(&Provider{
 		ID:          "gemini/flash-3.1",
 		Name:        "Gemini 3.1 Flash (via Gemini API)",
 		API:         "gemini",
-		ModelID:     "gemini-3.1-flash-image-preview",
+		ModelID:     "gemini-3.1-flash-image",
 		Description: "4K resolution, improved text rendering - fast and affordable",
 		RequiredEnvVars: []EnvVar{
 			{
@@ -192,7 +192,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 				Secret:      true,
 			},
 		},
-		// Tiered by resolution: see ModelPricing["gemini-3.1-flash-image-preview"].
+		// Tiered by resolution: see ModelPricing["gemini-3.1-flash-image"].
 		// CostPerImage holds the 1K-tier price for list displays only —
 		// GetProviderPricing uses the full tier schedule from pricing.go.
 		Pricing: PricingInfo{
@@ -215,12 +215,12 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Gemini 3 Pro Image Preview via Gemini API
+	// Gemini 3 Pro Image via Gemini API
 	r.Register(&Provider{
 		ID:          "gemini/pro-3",
 		Name:        "Gemini 3 Pro (via Gemini API)",
 		API:         "gemini",
-		ModelID:     "gemini-3-pro-image-preview",
+		ModelID:     "gemini-3-pro-image",
 		Description: "Native 4K, sharp text rendering, grounded generation with Google Search",
 		RequiredEnvVars: []EnvVar{
 			{
@@ -257,8 +257,8 @@ func (r *ProviderRegistry) registerAllProviders() {
 		ID:          "vertex/imagen-4",
 		Name:        "Imagen 4 (via Vertex AI)",
 		API:         "vertex",
-		ModelID:     "imagen-4.0-generate-001",
-		Description: "Google's premium image generation model",
+		ModelID:     "gemini-3.1-flash-image",
+		Description: "Google's premium image generation model (migrated to Gemini 3.1 Flash)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -283,7 +283,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.04),
+			CostPerImage: float64Ptr(0.067),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -315,8 +315,8 @@ func (r *ProviderRegistry) registerAllProviders() {
 		ID:          "vertex/imagen-4-fast",
 		Name:        "Imagen 4 Fast (via Vertex AI)",
 		API:         "vertex",
-		ModelID:     "imagen-4.0-fast-generate-001",
-		Description: "Google's Imagen 4 optimized for speed",
+		ModelID:     "gemini-3.1-flash-image",
+		Description: "Google's Imagen 4 optimized for speed (migrated to Gemini 3.1 Flash)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -341,7 +341,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.02),
+			CostPerImage: float64Ptr(0.067),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -373,8 +373,8 @@ func (r *ProviderRegistry) registerAllProviders() {
 		ID:          "vertex/imagen-4-ultra",
 		Name:        "Imagen 4 Ultra (via Vertex AI)",
 		API:         "vertex",
-		ModelID:     "imagen-4.0-ultra-generate-001",
-		Description: "Google's Imagen 4 highest quality model",
+		ModelID:     "gemini-3.1-flash-image",
+		Description: "Google's Imagen 4 highest quality model (migrated to Gemini 3.1 Flash)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -399,7 +399,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.06),
+			CostPerImage: float64Ptr(0.067),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
@@ -796,9 +796,11 @@ var providerAliases = map[string]string{
 	"gemini-3-pro":               "gemini/pro-3",
 	"gemini3":                    "gemini/pro-3",
 	"pro-3":                      "gemini/pro-3",
+	"gemini-3-pro-image":         "gemini/pro-3",
 	"gemini-3-pro-image-preview": "gemini/pro-3",
 	// Gemini 3.1 Flash
 	"gemini-3.1-flash":               "gemini/flash-3.1",
+	"gemini-3.1-flash-image":         "gemini/flash-3.1",
 	"gemini-3.1":                     "gemini/flash-3.1",
 	"3.1-flash":                      "gemini/flash-3.1",
 	"gemini-3.1-flash-image-preview": "gemini/flash-3.1",

@@ -458,7 +458,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		modelName := model
 		if modelName == "" {
-			modelName = "imagen-4.0-generate-001" // Default Imagen model
+			modelName = "gemini-3.1-flash-image" // Default Imagen model
 		}
 
 		// Get provider info and announce selection

@@ -87,7 +87,7 @@ gimage generate "luxury wristwatch with rose gold case and black leather strap, 
 
 ## Gemini 3+ Advanced Features
 
-These flags are exclusive to Gemini 3+ models (`gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`). They are silently ignored on Gemini 2.5 Flash and non-Gemini providers, so it's safe to leave them in your default invocation.
+These flags are exclusive to Gemini 3+ models (`gemini-3-pro-image`, `gemini-3.1-flash-image`). They are silently ignored on Gemini 2.5 Flash and non-Gemini providers, so it's safe to leave them in your default invocation.
 
 ### Compositional Editing with Reference Images
 

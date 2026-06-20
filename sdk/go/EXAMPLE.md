@@ -148,7 +148,7 @@ func main() {
 	thinkingLevel := gimage.GenerateRequestThinkingLevelLow
 	composeResp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt:        "place this character on a beach at golden hour, cinematic lighting",
-		Model:         stringPtr("gemini-3.1-flash-image-preview"),
+		Model:         stringPtr("gemini-3.1-flash-image"),
 		ImageSize:     stringPtr("2K"),
 		AspectRatio:   stringPtr("16:9"),
 		// InputImages on the wire are local paths the server reads; for the

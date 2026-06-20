@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apresai/gimage/internal/observability"
@@ -90,10 +91,150 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 	// Enhance prompt for better results, including style
 	enhancedPrompt := buildPromptWithOptions(EnhancePrompt(prompt), options)
 
-	// Use custom model if provided, otherwise default to Imagen 4
+	// Use custom model if provided, otherwise default to Gemini 3.1 Flash Image
 	modelName := options.Model
 	if modelName == "" {
-		modelName = "imagen-4.0-generate-001"
+		modelName = "gemini-3.1-flash-image"
+	}
+
+	if strings.Contains(modelName, "gemini") {
+		// Prepare parts
+		parts := []*genai.Part{
+			{Text: enhancedPrompt},
+		}
+
+		// Handle options.InputImages
+		if len(options.InputImages) > 0 {
+			for _, imgPath := range options.InputImages {
+				// Read file bytes
+				data, err := os.ReadFile(imgPath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read input image %s: %w", imgPath, err)
+				}
+				mimeType := "image/png"
+				if strings.HasSuffix(strings.ToLower(imgPath), ".jpg") || strings.HasSuffix(strings.ToLower(imgPath), ".jpeg") {
+					mimeType = "image/jpeg"
+				} else if strings.HasSuffix(strings.ToLower(imgPath), ".webp") {
+					mimeType = "image/webp"
+				}
+				parts = append(parts, &genai.Part{
+					InlineData: &genai.Blob{
+						Data:     data,
+						MIMEType: mimeType,
+					},
+				})
+			}
+		}
+
+		contents := []*genai.Content{
+			{Parts: parts},
+		}
+
+		// Config
+		numberOfImages := 1
+		if options.NumberOfImages > 0 && options.NumberOfImages <= 4 {
+			numberOfImages = options.NumberOfImages
+		}
+
+		config := &genai.GenerateContentConfig{
+			ResponseModalities: []string{"TEXT", "IMAGE"},
+			CandidateCount:     int32(numberOfImages),
+		}
+
+		// Aspect Ratio and Image Size
+		imageConfig := &genai.ImageConfig{}
+		w, h := ParseSizeString(options.Size)
+		if options.AspectRatio != "" {
+			imageConfig.AspectRatio = options.AspectRatio
+		} else if options.Size != "" && w > 0 && h > 0 {
+			imageConfig.AspectRatio = InferAspectRatio(w, h, nil)
+		} else if options.ImageSize != "" {
+			imageConfig.AspectRatio = "1:1"
+		}
+
+		if options.ImageSize != "" {
+			imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
+		}
+
+		if imageConfig.AspectRatio != "" || imageConfig.ImageSize != "" {
+			config.ImageConfig = imageConfig
+		}
+
+		if options.Seed != 0 {
+			config.Seed = genai.Ptr[int32](int32(options.Seed))
+		}
+
+		c.log.Debug("Sending request to Vertex AI (GenerateContent)...")
+		result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
+			return c.client.Models.GenerateContent(ctx, modelName, contents, config)
+		})
+		if err != nil {
+			// Check if circuit breaker is open
+			if isCircuitBreakerError(err) {
+				c.log.Debug("Circuit breaker is open, failing fast")
+				return nil, fmt.Errorf("API circuit breaker is open (too many failures): %w", err)
+			}
+			c.log.Debug("Generation failed: %v", err)
+			return nil, fmt.Errorf("failed to generate image: %w", err)
+		}
+
+		resp := result.(*genai.GenerateContentResponse)
+		if len(resp.Candidates) == 0 {
+			c.log.Debug("No candidates in response")
+			return nil, fmt.Errorf("no image generated from prompt")
+		}
+
+		c.log.Debug("Got %d candidates", len(resp.Candidates))
+
+		var generatedImages []*models.GeneratedImage
+		for i, candidate := range resp.Candidates {
+			if candidate.Content == nil || len(candidate.Content.Parts) == 0 {
+				c.log.Debug("Candidate %d has no parts, skipping", i)
+				continue
+			}
+
+			var candidateData []byte
+			var format string = "png"
+			foundPart := false
+
+			for _, part := range candidate.Content.Parts {
+				if part.InlineData != nil && len(part.InlineData.Data) > 0 {
+					candidateData = part.InlineData.Data
+					format = extractFormatFromMimeType(part.InlineData.MIMEType)
+					foundPart = true
+					break
+				}
+			}
+
+			if !foundPart {
+				c.log.Debug("No image data found in candidate %d, skipping", i)
+				continue
+			}
+
+			generatedImages = append(generatedImages, &models.GeneratedImage{
+				Data:   candidateData,
+				Format: format,
+				Width:  w,
+				Height: h,
+				Metadata: map[string]string{
+					"model":       modelName,
+					"prompt":      prompt,
+					"style":       options.Style,
+					"api":         "vertex-unified-content",
+					"project":     c.project,
+					"location":    c.location,
+					"generated":   time.Now().UTC().Format(time.RFC3339),
+					"candidate":   fmt.Sprintf("%d", i),
+					"resize_mode": options.ResizeMode,
+				},
+			})
+		}
+
+		if len(generatedImages) == 0 {
+			return nil, fmt.Errorf("no valid images found in response")
+		}
+
+		return generatedImages, nil
 	}
 
 	c.log.Debug("Generating image with model: %s", modelName)

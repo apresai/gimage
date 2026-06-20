@@ -282,7 +282,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **aws_bedrock_api_key**: bearer-token
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
-**default_model**: gemini-3-pro-image-preview
+**default_model**: gemini-3-pro-image
 **default_size**: 1024x1024
 **log_level**: info
 ```
@@ -349,13 +349,13 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ### Gemini API (Google AI Studio)
 
-- **`gemini-3-pro-image-preview`** (default)
+- **`gemini-3-pro-image`** (default)
 
   - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
   - Native 4K resolution, sharp text rendering
   - Best for: Professional work, text-heavy images, diagrams
 
-- **`gemini-3.1-flash-image-preview`** (4K flash)
+- **`gemini-3.1-flash-image`** (4K flash)
 
   - Pricing tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
   - Improved text rendering vs Flash 2.5
@@ -370,22 +370,19 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ### Vertex AI (Google Cloud) - Paid
 
-- **`imagen-4`** (default Vertex model, highest quality)
+- **`imagen-4`** (migrated to gemini-3.1-flash-image)
 
-  - Pricing: $0.04/image
-  - Resolution: up to 2048x2048
+  - Pricing: resolution-tiered ($0.045-$0.151/image)
   - Best for: Professional work, final production images
 
-- **`imagen-4-fast`** (optimized for speed)
+- **`imagen-4-fast`** (migrated to gemini-3.1-flash-image)
 
-  - Pricing: $0.02/image
-  - Faster generation with good quality
+  - Pricing: resolution-tiered ($0.045-$0.151/image)
   - Best for: Quick iterations, batch processing
 
-- **`imagen-4-ultra`** (premium quality)
+- **`imagen-4-ultra`** (migrated to gemini-3.1-flash-image)
 
-  - Pricing: $0.06/image
-  - Highest quality Vertex AI model
+  - Pricing: resolution-tiered ($0.045-$0.151/image)
   - Best for: Print-ready, marketing materials
 
 

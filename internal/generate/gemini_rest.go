@@ -121,16 +121,16 @@ func isGeminiAdvanced(modelName string) bool {
 // Gemini 3+ exclusive fields (thinkingConfig, tools[google_search]) are gated
 // here via isGeminiAdvanced so callers that pass them on Gemini 2.5 Flash get
 // a quietly-stripped request rather than an API-side rejection.
-func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string, options models.GenerateOptions) (geminiGenerateContentRequest, error) {
+func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelName, prompt string, options models.GenerateOptions) (geminiGenerateContentRequest, error) {
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
 	// Parse dimensions from options
 	width, height := ParseSizeString(options.Size)
 
-	c.log.Debug("Building request for model: %s", modelName)
-	c.log.Debug("Full prompt: %s", fullPrompt)
-	c.log.Debug("Requested dimensions: %dx%d", width, height)
+	log.Debug("Building request for model: %s", modelName)
+	log.Debug("Full prompt: %s", fullPrompt)
+	log.Debug("Requested dimensions: %dx%d", width, height)
 
 	// Build generation config based on model
 	genConfig := &geminiGenerationConfig{}
@@ -145,26 +145,26 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 		// Set imageSize if specified (1K, 2K, 4K)
 		if options.ImageSize != "" {
 			imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
-			c.log.Debug("Using imageSize: %s", imageConfig.ImageSize)
+			log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
 		if options.NegativePrompt != "" {
 			imageConfig.NegativePrompt = options.NegativePrompt
-			c.log.Debug("Using negativePrompt: %s", options.NegativePrompt)
+			log.Debug("Using negativePrompt: %s", options.NegativePrompt)
 		}
 
 		// Set aspectRatio - use explicit value, infer from Size, or default to 1:1
 		if options.AspectRatio != "" {
 			imageConfig.AspectRatio = options.AspectRatio
-			c.log.Debug("Using explicit aspectRatio: %s", imageConfig.AspectRatio)
+			log.Debug("Using explicit aspectRatio: %s", imageConfig.AspectRatio)
 		} else if options.Size != "" && width > 0 && height > 0 {
 			imageConfig.AspectRatio = InferAspectRatio(width, height, nil)
-			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, imageConfig.AspectRatio)
+			log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, imageConfig.AspectRatio)
 		} else if imageConfig.ImageSize != "" {
 			// Default to 1:1 when imageSize is specified but no aspectRatio
 			// This prevents the API from defaulting to 16:9
 			imageConfig.AspectRatio = "1:1"
-			c.log.Debug("Using default aspectRatio 1:1 for imageSize %s", imageConfig.ImageSize)
+			log.Debug("Using default aspectRatio 1:1 for imageSize %s", imageConfig.ImageSize)
 		}
 
 		// Only add imageConfig if we have settings
@@ -175,7 +175,7 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 		// Thinking config (Gemini 3+ only). "off" or empty omits the field entirely.
 		if level := strings.ToLower(options.ThinkingLevel); level != "" && level != "off" {
 			genConfig.ThinkingConfig = &geminiThinkingConfig{ThinkingLevel: level}
-			c.log.Debug("Using thinkingLevel: %s", level)
+			log.Debug("Using thinkingLevel: %s", level)
 		}
 	} else {
 		// Standard Gemini 2.5 Flash: IMAGE only, supports aspectRatio but not imageSize
@@ -185,20 +185,20 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 		if options.AspectRatio != "" {
 			imageConfig := &geminiImageConfig{AspectRatio: options.AspectRatio}
 			genConfig.ImageConfig = imageConfig
-			c.log.Debug("Using aspectRatio for Gemini Flash: %s", options.AspectRatio)
+			log.Debug("Using aspectRatio for Gemini Flash: %s", options.AspectRatio)
 		} else if options.Size != "" && width > 0 && height > 0 {
 			// Infer aspect ratio from Size dimensions
 			aspectRatio := InferAspectRatio(width, height, nil)
 			imageConfig := &geminiImageConfig{AspectRatio: aspectRatio}
 			genConfig.ImageConfig = imageConfig
-			c.log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, aspectRatio)
+			log.Debug("Inferred aspectRatio from size %dx%d: %s", width, height, aspectRatio)
 		}
 	}
 
 	// Set common generation config (seed and count)
 	if options.Seed != 0 {
 		genConfig.Seed = &options.Seed
-		c.log.Debug("Using seed: %d", options.Seed)
+		log.Debug("Using seed: %d", options.Seed)
 	}
 
 	if options.NumberOfImages > 1 {
@@ -207,7 +207,7 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 			count = 4 // Gemini API max candidates is typically 4
 		}
 		genConfig.CandidateCount = &count
-		c.log.Debug("Using candidateCount: %d", count)
+		log.Debug("Using candidateCount: %d", count)
 	}
 
 	// Build parts list: text first, then any reference images for compositional editing.
@@ -223,7 +223,7 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 				return geminiGenerateContentRequest{}, fmt.Errorf("read input image %s: %w", path, err)
 			}
 			parts = append(parts, part)
-			c.log.Debug("Attached input image: %s (%s)", path, part.InlineData.MimeType)
+			log.Debug("Attached input image: %s (%s)", path, part.InlineData.MimeType)
 		}
 	}
 
@@ -231,7 +231,7 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 	var tools []geminiTool
 	if options.WebSearchGrounding && isGeminiAdvanced(modelName) {
 		tools = append(tools, geminiTool{GoogleSearch: &geminiGoogleSearch{}})
-		c.log.Debug("Google Search grounding enabled")
+		log.Debug("Google Search grounding enabled")
 	}
 
 	return geminiGenerateContentRequest{
@@ -241,6 +241,10 @@ func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string,
 	}, nil
 }
 
+func (c *GeminiRESTClient) buildGenerateContentRequest(modelName, prompt string, options models.GenerateOptions) (geminiGenerateContentRequest, error) {
+	return buildGeminiGenerateContentRequest(c.log, modelName, prompt, options)
+}
+
 // generateWithRetry performs a single generation attempt using REST API
 func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	request, err := c.buildGenerateContentRequest(modelName, prompt, options)
@@ -248,10 +252,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return nil, err
 	}
 
-	// Parse requested dimensions (used to populate response metadata for
-	// non-native-upscale models). buildGenerateContentRequest already used these
-	// internally; we re-derive them here for the response-shaping logic below.
-	width, height := ParseSizeString(options.Size)
+
 
 	// Marshal request to JSON
 	requestBody, err := json.Marshal(request)
@@ -312,18 +313,25 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return nil, fmt.Errorf("failed to parse response: %w (body: %s)", err, string(body))
 	}
 
+	return extractImagesFromGeminiGenerateContentResponse(c.log, response, modelName, prompt, options, "gemini-rest")
+}
+
+func extractImagesFromGeminiGenerateContentResponse(log *observability.VerboseLogger, response geminiGenerateContentResponse, modelName, prompt string, options models.GenerateOptions, apiName string) ([]*models.GeneratedImage, error) {
 	// Validate response structure
 	if len(response.Candidates) == 0 {
-		c.log.Debug("No candidates in response")
+		log.Debug("No candidates in response")
 		return nil, fmt.Errorf("no image generated from prompt")
 	}
 	var generatedImages []*models.GeneratedImage
-	c.log.Debug("Successfully generated %d potential image(s)", len(response.Candidates))
+	log.Debug("Successfully generated %d potential image(s)", len(response.Candidates))
+
+	// Parse dimensions from options
+	width, height := ParseSizeString(options.Size)
 
 	// Loop through all candidates and extract images
 	for i, candidate := range response.Candidates {
 		if candidate.Content.Parts == nil || len(candidate.Content.Parts) == 0 {
-			c.log.Debug("Candidate %d has no parts, skipping", i)
+			log.Debug("Candidate %d has no parts, skipping", i)
 			continue
 		}
 
@@ -335,7 +343,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 			if part.InlineData != nil && part.InlineData.Data != "" {
 				data, err := base64.StdEncoding.DecodeString(part.InlineData.Data)
 				if err != nil {
-					c.log.Debug("Failed to decode base64 from candidate %d: %v", i, err)
+					log.Debug("Failed to decode base64 from candidate %d: %v", i, err)
 					continue
 				}
 				candidateData = data
@@ -346,7 +354,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		}
 
 		if !foundPart {
-			c.log.Debug("No image data found in candidate %d, skipping", i)
+			log.Debug("No image data found in candidate %d, skipping", i)
 			continue
 		}
 
@@ -368,7 +376,7 @@ func (c *GeminiRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 				"model":       modelName,
 				"prompt":      prompt,
 				"style":       options.Style,
-				"api":         "gemini-rest",
+				"api":         apiName,
 				"imageSize":   options.ImageSize,
 				"seed":        fmt.Sprintf("%d", options.Seed),
 				"candidate":   fmt.Sprintf("%d", i),
@@ -527,8 +535,8 @@ func enhanceError(err error) error {
 
 // Per-model caps for input reference images, per Gemini docs:
 // - Gemini 2.5 Flash Image: works best with up to 3 input images
-// - Gemini 3 Pro Image Preview: up to 6 objects + 5 characters = 11 total
-// - Gemini 3.1 Flash Image Preview: up to 10 objects + 4 characters = 14 total
+// - Gemini 3 Pro Image: up to 6 objects + 5 characters = 11 total
+// - Gemini 3.1 Flash Image: up to 10 objects + 4 characters = 14 total
 // The API doesn't distinguish object vs character classes in the request payload,
 // so gimage enforces a single combined total.
 const (

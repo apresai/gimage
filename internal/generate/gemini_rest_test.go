@@ -17,8 +17,8 @@ func TestMaxInputImagesForModel(t *testing.T) {
 		want  int
 	}{
 		{"gemini-2.5-flash-image", geminiFlash25MaxRefImages},
-		{"gemini-3-pro-image-preview", geminiPro3MaxRefImages},
-		{"gemini-3.1-flash-image-preview", geminiFlash31MaxRefImages},
+		{"gemini-3-pro-image", geminiPro3MaxRefImages},
+		{"gemini-3.1-flash-image", geminiFlash31MaxRefImages},
 		{"unknown-model", geminiFlash25MaxRefImages}, // conservative fallback
 	}
 	for _, tt := range tests {
@@ -185,7 +185,7 @@ func newTestGeminiClient(t *testing.T) *GeminiRESTClient {
 func TestBuildGenerateContentRequest_AdvancedActivatesThinkingAndGrounding(t *testing.T) {
 	c := newTestGeminiClient(t)
 	req, err := c.buildGenerateContentRequest(
-		"gemini-3-pro-image-preview",
+		"gemini-3-pro-image",
 		"a sunset",
 		models.GenerateOptions{
 			ThinkingLevel:      "medium",

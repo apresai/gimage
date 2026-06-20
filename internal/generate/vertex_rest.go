@@ -53,7 +53,7 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 		apiKey:    apiKey,
 		projectID: projectID,
 		location:  location,
-		model:     "imagen-4.0-generate-001", // Default model (AI Studio API)
+		model:     "gemini-3.1-flash-image", // Default model
 		log:       observability.NewVerboseLogger(observability.ComponentVertex),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Minute,
@@ -125,6 +125,81 @@ func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 
 // generateWithRetry performs a single generation attempt using REST API
 func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
+	if strings.Contains(modelName, "gemini") {
+		// Build request using the shared gemini request builder
+		request, err := buildGeminiGenerateContentRequest(c.log, modelName, prompt, options)
+		if err != nil {
+			return nil, err
+		}
+
+		// Marshal request to JSON
+		requestJSON, err := json.Marshal(request)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request: %w", err)
+		}
+
+		c.log.Debug("Gemini request body: %s", string(requestJSON))
+
+		// Build API URL for Vertex AI generateContent endpoint
+		apiURL := fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent", c.location, c.projectID, c.location, modelName)
+
+		maskedKey := c.apiKey
+		if len(maskedKey) > 8 {
+			maskedKey = maskedKey[:8] + "***"
+		}
+		c.log.Debug("API URL: %s", apiURL)
+		c.log.Debug("Using API key: %s", maskedKey)
+
+		// Create HTTP request
+		req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(requestJSON))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-goog-api-key", c.apiKey)
+
+		c.log.Debug("Sending request to Vertex AI Platform API (generateContent)...")
+
+		// Execute request
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			c.log.Debug("Request failed: %v", err)
+			return nil, enhanceError(err)
+		}
+		defer resp.Body.Close()
+
+		c.log.Debug("Response status: %d %s", resp.StatusCode, resp.Status)
+
+		// Read response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		if len(body) > 500 {
+			c.log.Debug("Response body (first 500 chars): %s...", string(body[:500]))
+		} else {
+			c.log.Debug("Response body: %s", string(body))
+		}
+
+		// Check for HTTP errors
+		if resp.StatusCode != http.StatusOK {
+			return nil, c.handleHTTPError(resp.StatusCode, body)
+		}
+
+		// Parse response using Gemini's generateContent response format
+		var response geminiGenerateContentResponse
+		if err := json.Unmarshal(body, &response); err != nil {
+			c.log.Debug("Failed to parse response: %v", err)
+			return nil, fmt.Errorf("failed to parse response: %w (body: %s)", err, string(body))
+		}
+
+		// Extract images using shared helper
+		return extractImagesFromGeminiGenerateContentResponse(c.log, response, modelName, prompt, options, "vertex-rest")
+	}
+
 	// Build the prompt with options
 	fullPrompt := buildPromptWithOptions(prompt, options)
 
