@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(empty - ready for next release)
+
+## [1.2.133] - 2026-06-20
+
 ### Added
 - Support for Google Gemini 3 GA model endpoints (`gemini-3-pro-image` and `gemini-3.1-flash-image`), replacing deprecated `-preview` models.
 - Support for `generateContent` protocol in Vertex AI REST and Unified clients when targeting Gemini models.
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vertex AI Imagen 4 models (`imagen-4.0-generate-001`, `imagen-4.0-ultra-generate-001`, `imagen-4.0-fast-generate-001`) migrated to target the new `gemini-3.1-flash-image` model.
 - Kept `-preview` model aliases registered for backwards compatibility.
 - Updated MCP tool defaults, CLI options, openapi.yaml, Go SDK types, and documentation.
+
 
 ## [1.2.131] - 2026-05-23
 
