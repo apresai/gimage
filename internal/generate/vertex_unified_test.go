@@ -33,6 +33,9 @@ func TestBuildVertexGeminiGenerateContentRequest_Features(t *testing.T) {
 	if len(contents) != 1 || len(contents[0].Parts) != 2 {
 		t.Fatalf("expected text plus one inline image part, got %#v", contents)
 	}
+	if contents[0].Role != "user" {
+		t.Errorf("expected content role=user (Vertex requires it), got %q", contents[0].Role)
+	}
 	if contents[0].Parts[1].InlineData == nil || contents[0].Parts[1].InlineData.MIMEType != "image/png" {
 		t.Fatalf("expected PNG inline data, got %#v", contents[0].Parts[1].InlineData)
 	}

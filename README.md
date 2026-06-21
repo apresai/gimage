@@ -266,7 +266,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **gemini_api_key**: your-gemini-key
 **vertex_api_key**: your-vertex-key
 **vertex_project**: your-gcp-project
-**vertex_location**: us-central1
+**vertex_location**: global
 **vertex_credentials_path**: /path/to/service-account.json
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
@@ -289,7 +289,7 @@ export GEMINI_API_KEY="your-key"
 # Option 1: Express Mode (REST) - Simplest
 export VERTEX_API_KEY="your-key"
 export VERTEX_PROJECT="your-project-id"
-export VERTEX_LOCATION="us-central1"
+export VERTEX_LOCATION="global"
 
 # Option 2: Service Account - Production
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"

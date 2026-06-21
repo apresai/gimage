@@ -458,7 +458,7 @@ export GEMINI_API_KEY="your-key-here"
 # Vertex AI Express Mode
 export VERTEX_API_KEY="your-vertex-key"
 export VERTEX_PROJECT="your-gcp-project"
-export VERTEX_LOCATION="us-central1"
+export VERTEX_LOCATION="global"
 
 # Vertex AI Full Mode (Service Account)
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"

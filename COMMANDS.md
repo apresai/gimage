@@ -777,7 +777,7 @@ Credential Priority: CLI Flags > Environment Variables > Config File > Defaults
 ✓ Vertex AI (Configured)
   • Config file: vertex_api_key = AIza***xYzW (Express Mode)
   • Config file: vertex_project = my-gcp-project
-  • Environment: VERTEX_LOCATION = us-central1
+  • Environment: VERTEX_LOCATION = global
 ```
 
 ---
@@ -1080,7 +1080,7 @@ These environment variables can be used to configure gimage:
 | `GEMINI_API_KEY`                 | Gemini API key                       | `AIzaSy...`         |
 | `VERTEX_API_KEY`                 | Vertex AI Express Mode key           | `AIzaSy...`         |
 | `VERTEX_PROJECT`                 | Vertex AI project ID                 | `my-gcp-project`    |
-| `VERTEX_LOCATION`                | Vertex AI location                   | `us-central1`       |
+| `VERTEX_LOCATION`                | Vertex AI location                   | `global`       |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Service account file path            | `/path/to/key.json` |
 | `GROK_API_KEY`                   | xAI Grok API key                     | `xai-5zM...`        |
 | `GIMAGE_CONFIG`                  | Custom config file path              | `~/my-config.md`    |
