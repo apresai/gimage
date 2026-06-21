@@ -24,18 +24,6 @@ func TestBuildGrokImageRequest(t *testing.T) {
 			wantResolution: "",
 		},
 		{
-			name:           "deprecated -pro alias resolves to quality",
-			opts:           models.GenerateOptions{Model: "grok-imagine-pro"},
-			wantModel:      "grok-imagine-image-quality",
-			wantResolution: "",
-		},
-		{
-			name:           "deprecated long -pro alias resolves to quality",
-			opts:           models.GenerateOptions{Model: "grok-imagine-image-pro"},
-			wantModel:      "grok-imagine-image-quality",
-			wantResolution: "",
-		},
-		{
 			name:           "1K image-size mapped to 1k",
 			opts:           models.GenerateOptions{Model: "grok-imagine-image", ImageSize: "1K"},
 			wantModel:      "grok-imagine-image",

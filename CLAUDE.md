@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Vertex AI Imagen 4/Fast/Ultra, AWS Bedrock Nova Canvas, or xAI Grok
+- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Gemini 3.1 Flash via Vertex (standard/fast/ultra), AWS Bedrock Nova Canvas, or xAI Grok
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -126,9 +126,9 @@ Model name implies backend (auto-detect):
 - `gemini-2.5-flash-image` → gemini ($0.039/image)
 - `gemini-3.1-flash-image` → gemini (tiered: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
 - `gemini-3-pro-image` → gemini (native 4K, $0.134/image)
-- `imagen-4` → vertex (migrated to gemini-3.1-flash-image)
-- `imagen-4-fast` → vertex (migrated to gemini-3.1-flash-image)
-- `imagen-4-ultra` → vertex (migrated to gemini-3.1-flash-image)
+- `vertex-flash` → vertex (`vertex/flash-3.1`, Gemini 3.1 Flash via Vertex, medium thinking default)
+- `vertex-flash-fast` → vertex (`vertex/flash-3.1-fast`, Gemini 3.1 Flash via Vertex, minimal thinking default)
+- `vertex-flash-ultra` → vertex (`vertex/flash-3.1-ultra`, Gemini 3.1 Flash via Vertex, high thinking default)
 - `amazon.nova-canvas-v1:0` → bedrock
 - `grok-imagine-image` → grok ($0.02/image)
 - `grok-imagine-image-quality` → grok ($0.05/image at 1K, $0.07/image at 2K; replaces -pro retired 2026-05-15)
@@ -144,9 +144,9 @@ Map informal names to exact model IDs:
 | "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image` | gemini | Native 4K, sharp text, $0.134/image (default) |
 | "gemini-3.1-flash", "gemini-3.1", "3.1-flash" | `gemini-3.1-flash-image` | gemini | Tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K) |
 | "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | $0.039/image, 1024x1024 max |
-| "imagen", "imagen-4" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, medium thinking default |
-| "imagen-4-fast", "imagen-fast" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, minimal thinking default |
-| "imagen-4-ultra", "imagen-ultra" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, high thinking default |
+| "vertex-flash" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, medium thinking default; tiered $0.045-$0.151/image |
+| "vertex-flash-fast" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, minimal thinking default; tiered $0.045-$0.151/image |
+| "vertex-flash-ultra" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, high thinking default; tiered $0.045-$0.151/image |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration; std/prem × ≤1024/>1024 = $0.04/$0.06/$0.06/$0.08 |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
 | "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image at 1K, $0.07/image at 2K. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
@@ -163,6 +163,8 @@ Map informal names to exact model IDs:
 **Batch pricing tier (Gemini, ~50% off)** is available via Google's separate `:batchGenerateContent` async endpoint with a 24-hour SLA. This is **not** wired into the gimage CLI — adding it requires a job-submission/polling subsystem, tracked as future work.
 
 **Always use exact model IDs from the mapping table.**
+
+**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `grok-imagine-pro`, `grok-imagine-image-pro`. Passing any of these to `--model` or `--provider` returns an error with the correct current alias to use.
 
 ### Post-Generation: WebP Conversion
 

@@ -92,7 +92,7 @@ go test -short ./...
 
 ```bash
 export GEMINI_API_KEY="your-key-here"
-export VERTEX_API_KEY="your-vertex-key"  # Optional (for Imagen 4/Fast/Ultra)
+export VERTEX_API_KEY="your-vertex-key"  # Optional (for Gemini 3.1 Flash via Vertex)
 export AWS_ACCESS_KEY_ID="your-aws-key"  # Optional (for Nova Canvas)
 export GROK_API_KEY="your-grok-key"      # Optional (for Grok)
 ```
@@ -196,8 +196,8 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 **TestGeminiSquareImage** - Validates that Gemini generates correct dimensions
 - Tests: 1024x1024 square image generation
 - Validates: Exact dimensions with 10% tolerance
-- Provider: Gemini 2.5 Flash (FREE tier)
-- Cost: FREE
+- Provider: Gemini 2.5 Flash ($0.039/image)
+- Cost: $0.039/image
 
 **TestGemini3ProImageSize** - Tests native resolution options
 - Tests: 1K and 2K resolution generation
@@ -224,15 +224,15 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 **TestSeedReproducibility** - Tests seed-based reproducibility
 - Tests: Same seed generates similar results
 - Validates: Matching dimensions across two generations
-- Provider: Gemini 2.5 Flash (FREE tier)
-- Cost: FREE
+- Provider: Gemini 2.5 Flash ($0.039/image)
+- Cost: $0.039/image (two generations)
 - Note: Exact pixel-by-pixel matching not guaranteed
 
 **TestNegativePrompt** - Tests negative prompt processing
 - Tests: Negative prompts don't cause errors
 - Validates: Successful generation
-- Provider: Gemini 2.5 Flash (FREE tier)
-- Cost: FREE
+- Provider: Gemini 2.5 Flash ($0.039/image)
+- Cost: $0.039/image
 
 **TestBedrockCfgScale** - Tests CFG scale parameter
 - Tests: CFG values 1.0, 5.0, 10.0
@@ -245,23 +245,23 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 **TestSaveAndLoadImage** - Tests complete save/load cycle
 - Tests: Generate → Save → Load → Validate
 - Validates: File size, format, dimensions
-- Provider: Gemini 2.5 Flash (FREE tier)
-- Cost: FREE
+- Provider: Gemini 2.5 Flash ($0.039/image)
+- Cost: $0.039/image
 
 #### 5. Performance Benchmarks
 
 **BenchmarkGeneration** - Benchmarks generation speed
 - Measures: Time per image generation
-- Provider: Gemini 2.5 Flash (FREE tier)
-- Cost: FREE (uses existing allocations)
+- Provider: Gemini 2.5 Flash ($0.039/image)
+- Cost: $0.039/image per benchmark iteration
 
 ### Running Specific Tests
 
 ```bash
-# Run all Gemini tests (FREE tier mostly)
+# Run all Gemini tests ($0.039/image each)
 go test -tags=integration -v -run TestGemini ./test/integration/...
 
-# Run only square image test (FREE)
+# Run only square image test ($0.039)
 go test -tags=integration -v -run TestGeminiSquareImage ./test/integration/...
 
 # Run Bedrock tests (PAID)
@@ -273,7 +273,7 @@ go test -tags=integration -bench=. ./test/integration/...
 
 ### Cost Summary
 
-**FREE Tests** (using Gemini 2.5 Flash FREE tier):
+**Low-Cost Tests** (using Gemini 2.5 Flash at $0.039/image):
 - TestGeminiSquareImage
 - TestSeedReproducibility
 - TestNegativePrompt
@@ -507,12 +507,12 @@ Why?
 - Mocks test your mock, not the real API
 - API contracts change without warning
 - Real integration tests catch breaking changes
-- FREE tier available (Gemini 2.5 Flash)
+- Gemini 2.5 Flash is the lowest-cost option ($0.039/image)
 
 Instead:
 - Use integration tests with real APIs
 - Run manually before releases
-- Use FREE tier models when possible
+- Use Gemini 2.5 Flash ($0.039/image) when possible to minimize cost
 - Document costs clearly
 
 ---

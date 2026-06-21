@@ -61,7 +61,7 @@ gimage generate --prompt "your prompt" [flags]
 | Flag               | Type   | Description                                                                             | Default                      |
 | ------------------ | ------ | --------------------------------------------------------------------------------------- | ---------------------------- |
 | `-p, --prompt`     | string | Text prompt (alternative to positional arg)                                             | -                            |
-| `--provider`       | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/imagen-4`)                               | Auto-detected                |
+| `--provider`       | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/flash-3.1`)                              | Auto-detected                |
 | `--api`            | string | API to use: `gemini`, `vertex`, or `bedrock` (deprecated, use `--provider`)             | Auto-detected from model     |
 | `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image` |
 | `--size`           | string | Image size (WxH)                                                                        | `1024x1024`                  |
@@ -91,10 +91,11 @@ gimage generate --prompt "your prompt" [flags]
 
 **Vertex AI (Paid):**
 
-- `imagen-4` - deprecated Imagen alias using gemini-3.1-flash-image on Vertex (tiered $0.045-$0.151/image, medium thinking default)
-- `imagen-4-fast` - same backend with minimal thinking default
-- `imagen-4-ultra` - same backend with high thinking default
-- Negative prompts and seeds are ignored on migrated Imagen aliases.
+- `vertex-flash` (`vertex/flash-3.1`) - Gemini 3.1 Flash via Vertex, tiered $0.045-$0.151/image, medium thinking default
+- `vertex-flash-fast` (`vertex/flash-3.1-fast`) - same backend with minimal thinking default
+- `vertex-flash-ultra` (`vertex/flash-3.1-ultra`) - same backend with high thinking default
+- Gemini 3.1 Flash via Vertex does not support negative prompts or seeds; those options are ignored.
+- Retired names (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` or `-pro` variants) now error with guidance to use the `vertex-flash` aliases above.
 
 **AWS Bedrock (Paid):**
 
@@ -122,7 +123,7 @@ gimage generate "futuristic city" --size 1024x1024 --style photorealistic
 **Using Vertex AI:**
 
 ```bash
-gimage generate "abstract art" --api vertex --model imagen-4
+gimage generate "abstract art" --provider vertex/flash-3.1
 ```
 
 **With negative prompts:**
@@ -207,16 +208,16 @@ gimage generate "abstract art" --model nova-canvas --cfg-scale 10.0
 gimage generate "luxury product" --model nova-canvas --style premium
 ```
 
-**Using Imagen 4 Fast (speed-optimized):**
+**Using Gemini 3.1 Flash via Vertex - Fast (speed-optimized):**
 
 ```bash
-gimage generate "product mockup" --model imagen-4-fast
+gimage generate "product mockup" --model vertex-flash-fast
 ```
 
-**Using Imagen 4 Ultra (premium quality):**
+**Using Gemini 3.1 Flash via Vertex - Ultra (high quality):**
 
 ```bash
-gimage generate "architectural visualization" --model imagen-4-ultra
+gimage generate "architectural visualization" --model vertex-flash-ultra
 ```
 
 **Using xAI Grok Imagine (fast, $0.02/image):**
@@ -263,7 +264,7 @@ Common sizes (format: `WIDTHxHEIGHT`):
 - `512x512` - Small, fast generation
 - `1024x1024` - Default, balanced quality/speed
 - `1536x1536` - High quality
-- `2048x2048` - Maximum quality (Vertex AI and Bedrock at 1408x1408 max)
+- `1408x1408` - Bedrock Nova Canvas maximum; Gemini 3+ uses `--image-size 1K/2K/4K` for native resolution (not WxH)
 
 Custom sizes are supported by some models.
 
@@ -615,7 +616,7 @@ gimage auth setup <provider>
 
 | Argument   | Description          | Examples                                                               |
 | ---------- | -------------------- | ---------------------------------------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/imagen-4`, `bedrock/nova-canvas` |
+| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `bedrock/nova-canvas` |
 
 #### Examples
 
@@ -625,10 +626,10 @@ gimage auth setup <provider>
 gimage auth setup gemini
 ```
 
-**Setup Vertex AI Imagen 4:**
+**Setup Vertex AI (Gemini 3.1 Flash via Vertex):**
 
 ```bash
-gimage auth setup vertex/imagen-4
+gimage auth setup vertex/flash-3.1
 ```
 
 **Setup AWS Bedrock Nova Canvas:**
@@ -661,7 +662,7 @@ gimage auth test <provider>
 
 | Argument   | Description          | Examples                               |
 | ---------- | -------------------- | -------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `vertex/imagen-4`, `bedrock` |
+| `provider` | Provider ID or alias | `gemini`, `vertex/flash-3.1`, `bedrock` |
 
 #### Flags
 
@@ -1176,7 +1177,7 @@ Compare model outputs:
 
 ```bash
 gimage generate "sunset" --model gemini-2.5-flash-image --output gemini.png
-gimage generate "sunset" --api vertex --model imagen-4 --output imagen.png
+gimage generate "sunset" --provider vertex/flash-3.1 --output vertex-flash.png
 ```
 
 ### Process Only JPEGs

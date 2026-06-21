@@ -26,7 +26,7 @@ type ImageGenerator interface {
 
 // Provider represents a specific way to access a model (API + Model + Auth)
 type Provider struct {
-	// Unique identifier: "provider/model" e.g., "gemini/flash-2.5", "vertex/imagen-4"
+	// Unique identifier: "provider/model" e.g., "gemini/flash-2.5", "vertex/flash-3.1"
 	ID string
 
 	// Display information
@@ -269,13 +269,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 4 via Vertex AI
+	// Gemini 3.1 Flash via Vertex AI — standard preset (medium thinking)
 	r.Register(&Provider{
-		ID:          "vertex/imagen-4",
-		Name:        "Imagen 4 (via Vertex AI)",
+		ID:          "vertex/flash-3.1",
+		Name:        "Gemini 3.1 Flash via Vertex (medium thinking)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Imagen 4 retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
+		Description: "Gemini 3.1 Flash via Vertex generateContent; tiered image pricing. Default thinking: medium (--thinking overrides).",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -332,13 +332,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 4 Fast via Vertex AI
+	// Gemini 3.1 Flash via Vertex AI — fast preset (minimal thinking)
 	r.Register(&Provider{
-		ID:          "vertex/imagen-4-fast",
-		Name:        "Imagen 4 Fast (via Vertex AI)",
+		ID:          "vertex/flash-3.1-fast",
+		Name:        "Gemini 3.1 Flash via Vertex (fast, minimal thinking)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Imagen 4 Fast retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
+		Description: "Gemini 3.1 Flash via Vertex generateContent; tiered image pricing. Default thinking: minimal for lowest latency (--thinking overrides).",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -395,13 +395,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 4 Ultra via Vertex AI
+	// Gemini 3.1 Flash via Vertex AI — ultra preset (high thinking)
 	r.Register(&Provider{
-		ID:          "vertex/imagen-4-ultra",
-		Name:        "Imagen 4 Ultra (via Vertex AI)",
+		ID:          "vertex/flash-3.1-ultra",
+		Name:        "Gemini 3.1 Flash via Vertex (ultra, high thinking)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Imagen 4 Ultra retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
+		Description: "Gemini 3.1 Flash via Vertex generateContent; tiered image pricing. Default thinking: high for best layout/text (--thinking overrides).",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -458,7 +458,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 3 retired 2026-05-17. Use the Vertex Imagen aliases above, now backed by Gemini 3.1 Flash.
+	// Imagen retired entirely. Vertex now serves Gemini 3.1 Flash via the vertex/flash-3.1* presets above.
 
 	// Grok Imagine via xAI (new default)
 	r.Register(&Provider{
@@ -823,35 +823,27 @@ func (r *ProviderRegistry) GetAuthStatus() []AuthStatus {
 // Kept at package scope so ResolveProvider doesn't re-allocate on every call.
 var providerAliases = map[string]string{
 	// Default "gemini" maps to Gemini 3 Pro
-	"gemini":                     "gemini/pro-3",
-	"gemini-3":                   "gemini/pro-3",
-	"gemini-3-pro":               "gemini/pro-3",
-	"gemini3":                    "gemini/pro-3",
-	"pro-3":                      "gemini/pro-3",
-	"gemini-3-pro-image":         "gemini/pro-3",
-	"gemini-3-pro-image-preview": "gemini/pro-3",
+	"gemini":             "gemini/pro-3",
+	"gemini-3":           "gemini/pro-3",
+	"gemini-3-pro":       "gemini/pro-3",
+	"gemini3":            "gemini/pro-3",
+	"pro-3":              "gemini/pro-3",
+	"gemini-3-pro-image": "gemini/pro-3",
 	// Gemini 3.1 Flash
-	"gemini-3.1-flash":               "gemini/flash-3.1",
-	"gemini-3.1-flash-image":         "gemini/flash-3.1",
-	"gemini-3.1":                     "gemini/flash-3.1",
-	"3.1-flash":                      "gemini/flash-3.1",
-	"gemini-3.1-flash-image-preview": "gemini/flash-3.1",
+	"gemini-3.1-flash":       "gemini/flash-3.1",
+	"gemini-3.1-flash-image": "gemini/flash-3.1",
+	"gemini-3.1":             "gemini/flash-3.1",
+	"3.1-flash":              "gemini/flash-3.1",
 	// Gemini 2.5 Flash
 	"gemini-flash":           "gemini/flash-2.5",
 	"flash":                  "gemini/flash-2.5",
 	"gemini-2.5":             "gemini/flash-2.5",
 	"gemini-2.5-flash":       "gemini/flash-2.5",
 	"gemini-2.5-flash-image": "gemini/flash-2.5",
-	// Vertex/Imagen
-	"imagen":                        "vertex/imagen-4",
-	"imagen-4":                      "vertex/imagen-4",
-	"imagen-4.0-generate-001":       "vertex/imagen-4",
-	"imagen-4-fast":                 "vertex/imagen-4-fast",
-	"imagen-fast":                   "vertex/imagen-4-fast",
-	"imagen-4.0-fast-generate-001":  "vertex/imagen-4-fast",
-	"imagen-4-ultra":                "vertex/imagen-4-ultra",
-	"imagen-ultra":                  "vertex/imagen-4-ultra",
-	"imagen-4.0-ultra-generate-001": "vertex/imagen-4-ultra",
+	// Gemini 3.1 Flash via Vertex AI (thinking presets)
+	"vertex-flash":       "vertex/flash-3.1",
+	"vertex-flash-fast":  "vertex/flash-3.1-fast",
+	"vertex-flash-ultra": "vertex/flash-3.1-ultra",
 	// Bedrock
 	"nova":                    "bedrock/nova-canvas",
 	"nova-canvas":             "bedrock/nova-canvas",
@@ -863,11 +855,29 @@ var providerAliases = map[string]string{
 	"grok-quality":               "grok/grok-imagine-quality",
 	"grok-imagine-quality":       "grok/grok-imagine-quality",
 	"grok-imagine-image-quality": "grok/grok-imagine-quality",
-	// Deprecated -pro aliases redirect to quality (xAI retires -pro 2026-05-15)
-	"grok-imagine-pro":       "grok/grok-imagine-quality",
-	"grok-imagine-image-pro": "grok/grok-imagine-quality",
-	"xai":                    "grok/grok-imagine",
-	"aurora":                 "grok/grok-imagine",
+	"xai":                        "grok/grok-imagine",
+	"aurora":                     "grok/grok-imagine",
+}
+
+// retiredAliases are model names we used to accept but no longer run. They must
+// NOT resolve (so we never silently deliver a different model than asked) and
+// are never advertised. ResolveProvider returns a helpful error naming the real
+// replacement. The imagen-* names never ran Imagen — they were Gemini 3.1 Flash
+// via Vertex; we now say so plainly instead of advertising a model we don't run.
+var retiredAliases = map[string]string{
+	"imagen":                         `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
+	"imagen-4":                       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
+	"imagen-fast":                    `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
+	"imagen-4-fast":                  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
+	"imagen-ultra":                   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
+	"imagen-4-ultra":                 `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
+	"imagen-4.0-generate-001":        `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
+	"imagen-4.0-fast-generate-001":   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
+	"imagen-4.0-ultra-generate-001":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
+	"gemini-3-pro-image-preview":     `preview builds were discontinued; use "gemini-3-pro"`,
+	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash"`,
+	"grok-imagine-pro":               `xAI retired the -pro tier; use "grok-quality"`,
+	"grok-imagine-image-pro":         `xAI retired the -pro tier; use "grok-quality"`,
 }
 
 // ResolveProvider finds a provider by various identifiers
@@ -878,6 +888,10 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 
 	if providerID, ok := providerAliases[strings.ToLower(input)]; ok {
 		return r.Get(providerID)
+	}
+
+	if guidance, ok := retiredAliases[strings.ToLower(input)]; ok {
+		return nil, fmt.Errorf("model %q was retired: %s", input, guidance)
 	}
 
 	return nil, fmt.Errorf("no provider found for: %s", input)

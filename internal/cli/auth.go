@@ -19,7 +19,7 @@ requirements and pricing. Use the subcommands to:
 
 Different providers offer different models with different pricing:
   - gemini/flash-2.5: $0.039/image via Gemini API
-  - vertex/imagen-4: Gemini 3.1 Flash tiered pricing via Vertex AI
+  - vertex/flash-3.1: Gemini 3.1 Flash tiered pricing via Vertex AI
   - bedrock/nova-canvas: $0.08/image via AWS Bedrock`,
 	Example: `  # List all providers and auth status
   gimage auth list
@@ -28,7 +28,7 @@ Different providers offer different models with different pricing:
   gimage auth setup gemini
 
   # Test if Vertex AI works
-  gimage auth test vertex/imagen-4`,
+  gimage auth test vertex/flash-3.1`,
 }
 
 func init() {

@@ -72,9 +72,9 @@ const (
 	Gemini3ProImage         GenerateRequestModel = "gemini-3-pro-image"
 	GrokImagineImage        GenerateRequestModel = "grok-imagine-image"
 	GrokImagineImageQuality GenerateRequestModel = "grok-imagine-image-quality"
-	Imagen4                 GenerateRequestModel = "imagen-4"
-	Imagen4Fast             GenerateRequestModel = "imagen-4-fast"
-	Imagen4Ultra            GenerateRequestModel = "imagen-4-ultra"
+	VertexFlash             GenerateRequestModel = "vertex-flash"
+	VertexFlashFast         GenerateRequestModel = "vertex-flash-fast"
+	VertexFlashUltra        GenerateRequestModel = "vertex-flash-ultra"
 )
 
 // Defines values for GenerateRequestResponseFormat.

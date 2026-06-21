@@ -185,10 +185,10 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 			name: "custom model",
 			args: map[string]interface{}{
 				"prompt": "test prompt",
-				"model":  "imagen-4",
+				"model":  "vertex-flash",
 			},
 			expectedSize:  "1024x1024",
-			expectedModel: "imagen-4",
+			expectedModel: "vertex-flash",
 		},
 	}
 
@@ -223,14 +223,22 @@ func TestIsVertexModel(t *testing.T) {
 		model    string
 		expected bool
 	}{
-		{"imagen-4", true},
-		{"imagen-4-fast", true},
-		{"imagen-4-ultra", true},
-		{"imagen-4.0-fast-generate-001", true},
+		// vertex-flash aliases and vertex/flash-3.1* provider IDs are Vertex.
+		{"vertex-flash", true},
+		{"vertex-flash-fast", true},
+		{"vertex-flash-ultra", true},
+		{"vertex/flash-3.1", true},
+		{"vertex/flash-3.1-fast", true},
+		{"vertex/flash-3.1-ultra", true},
+		// Retired Imagen names are no longer Vertex models.
+		{"imagen-4", false},
+		{"imagen-4-fast", false},
+		{"imagen-4-ultra", false},
+		{"imagen-4.0-fast-generate-001", false},
+		// Bare Gemini model IDs are not treated as Vertex.
 		{"gemini-3.1-flash-image", false},
 		{"gemini-2.5-flash-image", false},
 		{"gemini-2.0-flash-preview-image-generation", false},
-		{"imagen-4-standard", false},
 		{"unknown-model", false},
 		{"", false},
 	}

@@ -11,3 +11,6 @@ VERTEX_LOCATION
 # Bare-prefix form so each allowance also matches its own line in this file.
 xai-5zM
 xai-your-key
+# Fake xAI Grok keys used as test fixtures in internal/config/config_test.go.
+xai-grok-key
+xai-test-grok-key

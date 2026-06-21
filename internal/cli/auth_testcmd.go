@@ -18,8 +18,8 @@ var authTestCmd = &cobra.Command{
 to connect to the API and optionally generating a test image.
 
 Provider can be specified as:
-- Full ID: gemini/flash-2.5, vertex/imagen-4
-- Alias: gemini, imagen, nova
+- Full ID: gemini/flash-2.5, vertex/flash-3.1
+- Alias: gemini, vertex-flash, nova
 - Pattern: gemini/* (tests all Gemini providers)`,
 	Example: `  # Test Gemini authentication
   gimage auth test gemini/flash-2.5

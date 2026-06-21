@@ -15,7 +15,7 @@ STEP 1: Check available providers
 Call list_models to see all providers with pricing:
 - Affordable option: Gemini 2.5 Flash ($0.039/image)
 - Default: Gemini 3 Pro ($0.134/image, native 4K)
-- Paid options: Imagen 4, Nova Canvas, Grok Imagine
+- Paid options: Gemini 3.1 Flash via Vertex, Nova Canvas, Grok Imagine
 
 STEP 2: Generate a simple image
 Call generate_image with:
@@ -68,7 +68,7 @@ generate_image(
 )
 
 NOTE: Gemini Flash is the lowest-cost Google option for quick iterations.
-Use model="imagen-4" when you need Vertex credentials/billing; it now runs Gemini 3.1 Flash through Vertex with tiered image pricing.`,
+Use model="vertex-flash" when you need Vertex credentials/billing; it runs Gemini 3.1 Flash through Vertex with tiered image pricing.`,
 	})
 
 	// 3. Generate and Crop Workflow - Multi-step workflow
@@ -125,10 +125,10 @@ STEP 1: Check providers with list_models
 This shows all providers with pricing and capabilities:
 - gemini/flash-2.5: $0.039/image, up to 1024x1024
 - gemini/pro-3: $0.134-$0.24/image, native 4K (default)
-- vertex/imagen-4: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+- vertex/flash-3.1: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
 - bedrock/nova-canvas: $0.08/image, up to 1408x1408
 
-STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or Imagen aliases for Vertex billing
+STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or vertex-flash for Vertex billing
 generate_image(
   prompt="{{subject}}, ultra detailed, professional quality, 8k",
   model="gemini-3-pro-image",
@@ -139,14 +139,14 @@ generate_image(
 PROVIDER COMPARISON:
 - Gemini Flash (gemini/flash-2.5): Good quality, $0.039/image, best for iterations
 - Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134-$0.24/image, sharp text
-- Imagen aliases (vertex/imagen-4): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+- vertex-flash (vertex/flash-3.1): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
 - Nova Canvas (bedrock/nova-canvas): High quality, $0.08/image, AWS integration
 
 WHEN TO USE EACH:
 - Gemini Flash: Quick iterations, testing prompts, social media ($0.039/image)
 - Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134-$0.24/image)
-- Imagen-4 aliases: Vertex-authenticated workflows after Imagen retirement
-- Nova: AWS-integrated workflows, comparable quality to Imagen
+- vertex-flash presets: Vertex-authenticated workflows
+- Nova: AWS-integrated workflows, comparable quality to Gemini 3.1 Flash via Vertex
 
 EXAMPLE:
 generate_image(
@@ -156,7 +156,7 @@ generate_image(
   output="~/Desktop/headshot_hq.png"
 )
 
-NOTE: Imagen aliases require Vertex AI setup. Run 'gimage auth vertex' first.
+NOTE: The vertex-flash presets require Vertex AI setup. Run 'gimage auth vertex' first.
 Nova Canvas requires AWS Bedrock setup. Run 'gimage auth bedrock' first.`,
 	})
 
@@ -206,16 +206,16 @@ TIP: You can also use batch_process_images for multiple files at once!`,
 ERROR: "Provider/model not found"
 SOLUTION: Check available providers first
 1. Call list_models to see all available providers
-2. Use common aliases: "gemini", "imagen-4", "nova-canvas"
+2. Use common aliases: "gemini", "vertex-flash", "nova-canvas"
 ✅ CORRECT: model="gemini" or model="gemini-2.5-flash-image"
-✅ CORRECT: model="imagen-4" (resolves to vertex/imagen-4 provider)
+✅ CORRECT: model="vertex-flash" (resolves to vertex/flash-3.1 provider)
 
 ERROR: "Gemini API key not configured"
 SOLUTION: Set up authentication first
 Run: gimage auth gemini
 Then retry your generate_image call
 
-ERROR: "Missing credentials for Imagen 4 (via Vertex AI)"
+ERROR: "Missing credentials for Gemini 3.1 Flash via Vertex"
 SOLUTION: Set up Vertex AI authentication
 Run: gimage auth vertex
 Requires: GCP project ID and service account or API key
@@ -224,7 +224,7 @@ ERROR: "crop region (x=0 + width=1792 = 1792) exceeds image width 1024"
 SOLUTION: Check provider size limits
 1. Call list_models to see max dimensions per provider
 2. Gemini: up to 1024x1024
-3. Imagen 4: up to 2048x2048
+3. Gemini 3.1 Flash via Vertex (vertex-flash): native resolution via image_size (1K/2K/4K)
 4. Use get_image_info to verify actual dimensions before cropping
 
 ERROR: "unknown flag: --width" (when using crop)
@@ -234,7 +234,7 @@ SOLUTION: crop_image uses positional arguments, not flags
 
 PROVIDER SIZE LIMITS:
 - gemini/flash-2.5: up to 1024x1024
-- vertex/imagen-4: up to 2048x2048
+- vertex/flash-3.1: native resolution via image_size (1K/2K/4K)
 - bedrock/nova-canvas: up to 1408x1408
 
 GENERAL TIPS:
