@@ -26,7 +26,7 @@
     "url": "https://github.com/apresai/gimage/issues"
   },
   "bin": {
-    "gimage-mcp": "./bin/gimage-mcp.js"
+    "gimage-mcp": "./gimage-mcp.js"
   },
   "scripts": {
     "postinstall": "node scripts/install.js"
@@ -44,7 +44,7 @@
     "arm64"
   ],
   "files": [
-    "bin/",
+    "gimage-mcp.js",
     "scripts/",
     "README.md"
   ],
