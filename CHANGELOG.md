@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.141] - 2026-06-21
+
+### Fixed
+- Vertex AI image generation now targets Google's global endpoint, resolving request failures on the default regional endpoint.
+
+### Removed
+- Amazon Bedrock Nova Canvas provider and all `nova`/`nova-canvas`/`bedrock` model aliases (AWS end-of-life 2026-09-30). Passing any retired name now returns an error with guidance. Bedrock credentials, auth status, pricing entries, and the `aws-sdk-go-v2` Bedrock dependency have been dropped accordingly.
+
+
 ## [1.2.139] - 2026-06-21
 
 ### Removed
