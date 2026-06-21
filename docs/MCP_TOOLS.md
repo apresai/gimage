@@ -53,7 +53,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - `1024x1024` (default)
 - `1024x1792`
 - `1792x1024`
-- `2048x2048` (Vertex AI only)
+- `2048x2048` (Gemini 3+ / migrated imagen-4* via `image_size`)
 
 **AWS Bedrock (Nova Canvas):**
 

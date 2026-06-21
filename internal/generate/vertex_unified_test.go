@@ -59,6 +59,50 @@ func TestBuildVertexGeminiGenerateContentRequest_Features(t *testing.T) {
 	}
 }
 
+func TestToGenAIThinkingLevel(t *testing.T) {
+	tests := []struct {
+		level string
+		want  genai.ThinkingLevel
+	}{
+		{"minimal", genai.ThinkingLevelMinimal},
+		{"MINIMAL", genai.ThinkingLevelMinimal},
+		{"low", genai.ThinkingLevelLow},
+		{"medium", genai.ThinkingLevelMedium},
+		{"high", genai.ThinkingLevelHigh},
+		{"", genai.ThinkingLevel("")},
+		{"unknown", genai.ThinkingLevel("UNKNOWN")},
+	}
+	for _, tc := range tests {
+		t.Run(tc.level, func(t *testing.T) {
+			if got := toGenAIThinkingLevel(tc.level); got != tc.want {
+				t.Fatalf("toGenAIThinkingLevel(%q) = %q, want %q", tc.level, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSummarizeFinishReasons(t *testing.T) {
+	tests := []struct {
+		name    string
+		reasons []string
+		want    string
+	}{
+		{"all stop", []string{"STOP", "STOP"}, ""},
+		{"empty", []string{"", ""}, ""},
+		{"safety block", []string{"SAFETY"}, "SAFETY"},
+		{"dedupe", []string{"SAFETY", "SAFETY"}, "SAFETY"},
+		{"drop stop keep block", []string{"STOP", "PROHIBITED_CONTENT"}, "PROHIBITED_CONTENT"},
+		{"multiple distinct", []string{"SAFETY", "IMAGE_SAFETY"}, "SAFETY,IMAGE_SAFETY"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := summarizeFinishReasons(tc.reasons); got != tc.want {
+				t.Fatalf("summarizeFinishReasons(%v) = %q, want %q", tc.reasons, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestBuildVertexGeminiGenerateContentRequest_CapViolationErrorsEarly(t *testing.T) {
 	_, _, _, _, err := buildVertexGeminiGenerateContentRequest(
 		"gemini-2.5-flash-image",

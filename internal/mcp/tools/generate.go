@@ -73,7 +73,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"size": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024", "2048x2048"},
-					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, vertex/imagen-4 up to 2048x2048, bedrock/nova-canvas up to 1408x1408. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait), '2048x2048' (ultra HD with imagen-4).",
+					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, bedrock/nova-canvas up to 1408x1408. Gemini 3+ and the migrated imagen-4* aliases (now Gemini 3.1 Flash) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
 					"default":     "1024x1024",
 				},
 				"model": map[string]interface{}{

@@ -169,6 +169,24 @@ func toGenAIThinkingLevel(level string) genai.ThinkingLevel {
 	}
 }
 
+// summarizeFinishReasons dedupes and joins non-empty candidate finish reasons so
+// that a swallowed safety/policy block (e.g. SAFETY, PROHIBITED_CONTENT,
+// IMAGE_SAFETY) surfaces in the returned error instead of a generic "no image"
+// message. Shared by the unified-SDK and REST Gemini response parsers.
+func summarizeFinishReasons(reasons []string) string {
+	seen := make(map[string]bool)
+	out := make([]string, 0, len(reasons))
+	for _, r := range reasons {
+		r = strings.TrimSpace(r)
+		if r == "" || strings.EqualFold(r, "STOP") || seen[r] {
+			continue
+		}
+		seen[r] = true
+		out = append(out, r)
+	}
+	return strings.Join(out, ",")
+}
+
 // GenerateImage generates an image using Vertex AI unified SDK
 func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Validate prompt
@@ -191,7 +209,7 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 			return nil, err
 		}
 
-		c.log.Debug("Sending request to Vertex AI (GenerateContent)...")
+		c.log.Debug("Sending request to Vertex AI GenerateContent (model=%s)...", modelName)
 		result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
 			return c.client.Models.GenerateContent(ctx, modelName, contents, config)
 		})
@@ -208,13 +226,15 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 		resp := result.(*genai.GenerateContentResponse)
 		if len(resp.Candidates) == 0 {
 			c.log.Debug("No candidates in response")
-			return nil, fmt.Errorf("no image generated from prompt")
+			return nil, fmt.Errorf("no image generated from prompt (model=%s)", modelName)
 		}
 
 		c.log.Debug("Got %d candidates", len(resp.Candidates))
 
 		var generatedImages []*models.GeneratedImage
+		var finishReasons []string
 		for i, candidate := range resp.Candidates {
+			finishReasons = append(finishReasons, string(candidate.FinishReason))
 			if candidate.Content == nil || len(candidate.Content.Parts) == 0 {
 				c.log.Debug("Candidate %d has no parts, skipping", i)
 				continue
@@ -264,7 +284,10 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 		}
 
 		if len(generatedImages) == 0 {
-			return nil, fmt.Errorf("no valid images found in response")
+			if reason := summarizeFinishReasons(finishReasons); reason != "" {
+				return nil, fmt.Errorf("no image in response (model=%s, finishReason=%s); the model may have blocked the request for safety or policy reasons", modelName, reason)
+			}
+			return nil, fmt.Errorf("no valid images found in response (model=%s)", modelName)
 		}
 
 		return generatedImages, nil

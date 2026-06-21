@@ -496,7 +496,7 @@ export VERTEX_PROJECT="your-gcp-project"
 **Examples**:
 
 ```
-"Generate an image using Imagen 4 model with 2048x2048 resolution showing a hyper-realistic dragon"
+"Generate an image using imagen-4-ultra (now Gemini 3.1 Flash) with image_size 4K showing a hyper-realistic dragon"
 "Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
 "Generate an image using gemini-2.5-flash-image for affordable generation"
 "Generate a 16:9 landscape using Gemini 3 Pro aspect ratio control"

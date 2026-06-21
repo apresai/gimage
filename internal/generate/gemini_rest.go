@@ -318,9 +318,10 @@ func extractImagesFromGeminiGenerateContentResponse(log *observability.VerboseLo
 	// Validate response structure
 	if len(response.Candidates) == 0 {
 		log.Debug("No candidates in response")
-		return nil, fmt.Errorf("no image generated from prompt")
+		return nil, fmt.Errorf("no image generated from prompt (model=%s)", modelName)
 	}
 	var generatedImages []*models.GeneratedImage
+	var finishReasons []string
 	log.Debug("Successfully generated %d potential image(s)", len(response.Candidates))
 
 	// Parse dimensions from options
@@ -328,6 +329,7 @@ func extractImagesFromGeminiGenerateContentResponse(log *observability.VerboseLo
 
 	// Loop through all candidates and extract images
 	for i, candidate := range response.Candidates {
+		finishReasons = append(finishReasons, candidate.FinishReason)
 		if candidate.Content.Parts == nil || len(candidate.Content.Parts) == 0 {
 			log.Debug("Candidate %d has no parts, skipping", i)
 			continue
@@ -384,7 +386,10 @@ func extractImagesFromGeminiGenerateContentResponse(log *observability.VerboseLo
 	}
 
 	if len(generatedImages) == 0 {
-		return nil, fmt.Errorf("no valid images found in response")
+		if reason := summarizeFinishReasons(finishReasons); reason != "" {
+			return nil, fmt.Errorf("no image in response (model=%s, finishReason=%s); the model may have blocked the request for safety or policy reasons", modelName, reason)
+		}
+		return nil, fmt.Errorf("no valid images found in response (model=%s)", modelName)
 	}
 
 	return generatedImages, nil
