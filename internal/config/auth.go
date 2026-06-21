@@ -248,50 +248,6 @@ func HasVertexCredentials() bool {
 	return false
 }
 
-// HasBedrockCredentials checks if AWS Bedrock credentials are available
-// Returns true if bearer token, AWS access keys, or AWS profile are configured
-func HasBedrockCredentials() bool {
-	// Check for Bedrock API key (bearer token) - REST API mode
-	if os.Getenv("AWS_BEARER_TOKEN_BEDROCK") != "" {
-		return true
-	}
-
-	// Check for AWS access keys (SDK mode)
-	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
-		return true
-	}
-
-	// Check for AWS profile (SDK mode)
-	if os.Getenv("AWS_PROFILE") != "" {
-		return true
-	}
-
-	// Check config file
-	cfg, err := LoadConfig()
-	if err == nil {
-		if cfg.AWSBedrockAPIKey != "" {
-			return true
-		}
-		if cfg.AWSAccessKeyID != "" && cfg.AWSSecretAccessKey != "" {
-			return true
-		}
-		if cfg.AWSProfile != "" {
-			return true
-		}
-	}
-
-	// Check for AWS shared credentials file (SDK mode)
-	home, err := os.UserHomeDir()
-	if err == nil {
-		awsCredsPath := home + "/.aws/credentials"
-		if _, err := os.Stat(awsCredsPath); err == nil {
-			return true
-		}
-	}
-
-	return false
-}
-
 // HasGrokCredentials checks if xAI Grok API credentials are available
 func HasGrokCredentials() bool {
 	// Check environment variable
@@ -336,29 +292,6 @@ func GetGrokAPIKey(flagKey string) (string, error) {
 		"  1. Environment variable: export GROK_API_KEY=YOUR_KEY\n" +
 		"  2. Config file: gimage config set grok_api_key YOUR_KEY\n" +
 		"Get your API key at: https://console.x.ai")
-}
-
-// GetAWSRegion retrieves the AWS region from multiple sources
-// Priority order: flag parameter > AWS_REGION env var > config file > default (us-east-1)
-func GetAWSRegion(flagRegion string) string {
-	// 1. Check command-line flag (highest priority)
-	if flagRegion != "" {
-		return flagRegion
-	}
-
-	// 2. Check environment variable
-	if envRegion := os.Getenv("AWS_REGION"); envRegion != "" {
-		return envRegion
-	}
-
-	// 3. Load from config file
-	cfg, err := LoadConfig()
-	if err == nil && cfg.AWSRegion != "" {
-		return cfg.AWSRegion
-	}
-
-	// 4. Default to us-east-1
-	return "us-east-1"
 }
 
 // SanitizeAPIKey returns a sanitized version of an API key for safe logging

@@ -19,15 +19,6 @@ type APISizeConstraints struct {
 
 // Common provider constraints
 var (
-	// Bedrock Nova Canvas: 512-2048, multiples of 64
-	BedrockConstraints = APISizeConstraints{
-		MinWidth:   512,
-		MaxWidth:   2048,
-		MinHeight:  512,
-		MaxHeight:  2048,
-		MultipleOf: 64,
-	}
-
 	// Gemini 3 Pro / Gemini 3.1 Flash: Flexible but prefers certain ratios
 	GoogleAspectRatios = []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"}
 )

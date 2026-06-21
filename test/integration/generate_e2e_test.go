@@ -225,62 +225,6 @@ func TestVertexAIE2E(t *testing.T) {
 	}
 }
 
-func TestBedrockNovaCanvasE2E(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
-	}
-	if !shouldTestProvider("bedrock") {
-		t.Skip("Skipping: bedrock not in GIMAGE_TEST_PROVIDERS")
-	}
-
-	apiKey := os.Getenv("AWS_BEARER_TOKEN_BEDROCK")
-	region := os.Getenv("AWS_REGION")
-	if region == "" {
-		region = "us-east-1"
-	}
-
-	if apiKey == "" {
-		cfg, err := config.LoadConfig()
-		if err != nil || cfg.AWSBedrockAPIKey == "" {
-			t.Skip("AWS Bedrock credentials not set, skipping Bedrock E2E test")
-		}
-		apiKey = cfg.AWSBedrockAPIKey
-		if cfg.AWSRegion != "" {
-			region = cfg.AWSRegion
-		}
-	}
-
-	client, err := generate.NewBedrockRESTClient(apiKey, region)
-	if err != nil {
-		t.Fatalf("Failed to create Bedrock client: %v", err)
-	}
-	defer client.Close()
-
-	ctx := context.Background()
-	options := models.GenerateOptions{
-		Model: "amazon.nova-canvas-v1:0",
-		Size:  "512x512",
-		Style: "standard",
-	}
-
-	t.Log("Generating test image with AWS Bedrock Nova Canvas...")
-	t.Log("This will cost $0.04 (standard quality)")
-
-	results, err := client.GenerateImage(ctx, e2ePrompt, options)
-	if err != nil {
-		t.Fatalf("Bedrock Nova Canvas image generation failed: %v", err)
-	}
-
-	if len(results) == 0 {
-		t.Fatal("Bedrock returned no images")
-	}
-
-	for i, img := range results {
-		t.Logf("Bedrock E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
-		saveAndLogImage(t, img, fmt.Sprintf("bedrock_%d", i+1))
-	}
-}
-
 func TestGrokImagineE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
@@ -444,7 +388,6 @@ func TestAllAPIsE2E(t *testing.T) {
 	t.Run("Gemini3Pro", TestGemini3ProE2E)
 	t.Run("VertexREST", TestVertexAIE2E)
 	t.Run("VertexUnifiedSDK", TestVertexAIUnifiedSDKE2E)
-	t.Run("Bedrock", TestBedrockNovaCanvasE2E)
 	t.Run("GrokImagine", TestGrokImagineE2E)
 	t.Run("GrokImagineQuality", TestGrokImagineQualityE2E)
 }

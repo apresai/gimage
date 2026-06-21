@@ -219,20 +219,6 @@ func isVertexModel(model string) bool {
 	return false
 }
 
-// isBedrockModel checks if a model is an AWS Bedrock model
-func isBedrockModel(model string) bool {
-	bedrockModels := []string{
-		"nova-canvas",
-		"amazon.nova-canvas-v1:0",
-	}
-	for _, bm := range bedrockModels {
-		if model == bm {
-			return true
-		}
-	}
-	return false
-}
-
 // isGrokModel checks if a model is an xAI Grok model. Delegates to the
 // provider registry so this list never drifts from providerAliases.
 func isGrokModel(model string) bool {

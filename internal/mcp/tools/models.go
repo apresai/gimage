@@ -116,7 +116,6 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 				"recommendations": map[string]interface{}{
 					"budget_users": "gemini/flash-2.5 ($0.039/image via Gemini API, most affordable)",
 					"paid_users":   "vertex-flash (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
-					"aws_users":    "bedrock/nova-canvas ($0.08/image, AWS integration)",
 				},
 			}, nil
 		},

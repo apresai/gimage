@@ -53,7 +53,7 @@ func vertexFlashWarning(provider *generate.Provider, negative string, seed int64
 func RegisterGenerateImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "generate_image",
-		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, AWS Bedrock, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Styles, negative prompts, and seeds depend on provider capabilities. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
+		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Styles, negative prompts, and seeds depend on provider capabilities. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: false, // Creates new files but doesn't modify existing ones
 			IdempotentHint:  false, // Each call generates a different image
@@ -73,7 +73,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"size": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024"},
-					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, bedrock/nova-canvas up to 1408x1408. Gemini 3+ and the vertex-flash* presets (Gemini 3.1 Flash via Vertex) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
+					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024. Gemini 3+ and the vertex-flash* presets (Gemini 3.1 Flash via Vertex) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
 					"default":     "1024x1024",
 				},
 				"model": map[string]interface{}{
@@ -93,8 +93,6 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"gemini",
 						"flash",
 						"gemini-flash",
-						"nova",
-						"nova-canvas",
 						"grok",
 						"grok-imagine-image",
 						"grok-imagine-image-quality",
@@ -132,7 +130,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				},
 				"cfg_scale": map[string]interface{}{
 					"type":        "number",
-					"description": "Guidance scale for Bedrock Nova Canvas (1.0-10.0, default 7.0). Higher values follow the prompt more closely.",
+					"description": "Guidance scale (1.0-10.0). Higher values follow the prompt more closely. Only honored by providers that support it.",
 					"minimum":     1.0,
 					"maximum":     10.0,
 				},
@@ -276,7 +274,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Seed:               seed,
 				ImageSize:          imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
 				AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine
-				CfgScale:           cfgScale,    // For Bedrock Nova Canvas
+				CfgScale:           cfgScale,    // Guidance scale (provider-dependent)
 				NumberOfImages:     count,
 				OutputFormat:       outputFormat,
 				ThinkingLevel:      thinkingLevel,
@@ -359,43 +357,6 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					client, err := generate.NewVertexUnifiedClient(ctx, project, location)
 					if err != nil {
 						return nil, fmt.Errorf("failed to create Vertex AI unified client: %w\nPlease run: gimage auth vertex", err)
-					}
-					defer client.Close()
-
-					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
-					if err != nil {
-						return nil, fmt.Errorf("image generation failed: %w", err)
-					}
-				}
-			} else if selectedAPI == "bedrock" {
-				// Use AWS Bedrock Nova Canvas
-				region := config.GetAWSRegion("")
-
-				// Determine authentication method
-				// Priority: Bearer token (REST) > AWS SDK (keys/profile/IAM)
-				cfg, _ := config.LoadConfig()
-				bearerToken := ""
-				if cfg != nil {
-					bearerToken = cfg.AWSBedrockAPIKey
-				}
-
-				if bearerToken != "" {
-					// Use REST client with bearer token
-					client, err := generate.NewBedrockRESTClient(bearerToken, region)
-					if err != nil {
-						return nil, fmt.Errorf("failed to create Bedrock REST client: %w", err)
-					}
-					defer client.Close()
-
-					generatedImages, err = client.GenerateImage(ctx, prompt, opts)
-					if err != nil {
-						return nil, fmt.Errorf("image generation failed: %w", err)
-					}
-				} else {
-					// Use SDK client with IAM/keys/profile
-					client, err := generate.NewBedrockSDKClient(ctx, region)
-					if err != nil {
-						return nil, fmt.Errorf("failed to create Bedrock SDK client: %w\nPlease run: gimage auth bedrock", err)
 					}
 					defer client.Close()
 

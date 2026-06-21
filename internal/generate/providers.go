@@ -14,8 +14,7 @@ import (
 
 // Model ID constants for backward compatibility
 const (
-	DefaultModel    = "gemini-3-pro-image"
-	ModelNovaCanvas = "amazon.nova-canvas-v1:0"
+	DefaultModel = "gemini-3-pro-image"
 )
 
 // ImageGenerator is the common interface for all image generation clients
@@ -31,7 +30,7 @@ type Provider struct {
 
 	// Display information
 	Name        string // e.g., "Gemini 2.5 Flash (via Gemini API)"
-	API         string // "gemini", "vertex", "bedrock"
+	API         string // "gemini", "vertex", "grok"
 	ModelID     string // Actual model identifier for the API
 	Description string
 
@@ -83,7 +82,7 @@ func float64Ptr(f float64) *float64 { return &f }
 
 // APIInfo contains metadata about an API backend
 type APIInfo struct {
-	ID          string // "gemini", "vertex", "bedrock", "grok"
+	ID          string // "gemini", "vertex", "grok"
 	DisplayName string // "Gemini API (Google AI Studio)"
 	Description string // Brief description
 	PricingNote string // e.g., "Free tier: 500 images/day"
@@ -105,13 +104,6 @@ var apiRegistry = map[string]APIInfo{
 		Description: "Google Cloud's enterprise AI platform",
 		PricingNote: "Paid: $0.045-0.151 per image (Gemini 3.1 Flash tiered)",
 		Order:       2,
-	},
-	"bedrock": {
-		ID:          "bedrock",
-		DisplayName: "AWS Bedrock",
-		Description: "Amazon's managed AI service",
-		PricingNote: "Paid: $0.04-0.08 per image",
-		Order:       3,
 	},
 	"grok": {
 		ID:          "grok",
@@ -532,70 +524,6 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Nova Canvas via Bedrock
-	r.Register(&Provider{
-		ID:          "bedrock/nova-canvas",
-		Name:        "Nova Canvas (via AWS Bedrock)",
-		API:         "bedrock",
-		ModelID:     "amazon.nova-canvas-v1:0",
-		Description: "Amazon's AI image generation model",
-		RequiredEnvVars: []EnvVar{
-			{
-				Name:        "AWS_REGION",
-				ConfigKey:   "aws_region",
-				Description: "AWS region (e.g., us-east-1)",
-				Required:    true,
-				Secret:      false,
-			},
-			{
-				Name:        "AWS_BEDROCK_API_KEY",
-				ConfigKey:   "aws_bedrock_api_key",
-				Description: "Bearer token for Bedrock REST API (optional)",
-				Required:    false,
-				Secret:      true,
-			},
-			{
-				Name:        "AWS_ACCESS_KEY_ID",
-				ConfigKey:   "aws_access_key_id",
-				Description: "AWS Access Key (if not using bearer token)",
-				Required:    false,
-				Secret:      false,
-			},
-			{
-				Name:        "AWS_SECRET_ACCESS_KEY",
-				ConfigKey:   "aws_secret_access_key",
-				Description: "AWS Secret Key (if not using bearer token)",
-				Required:    false,
-				Secret:      true,
-			},
-		},
-		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.04), // $0.04 for ≤1024x1024, $0.08 for >1024x1024
-			FreeTier:     false,
-			Currency:     "USD",
-		},
-		Capabilities: ModelCapabilities{
-			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
-			SupportsSeed:           true,
-			MaxPromptLength:        4096,
-		},
-		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
-			region := creds["AWS_REGION"]
-			if region == "" {
-				return nil, fmt.Errorf("AWS_REGION is required")
-			}
-
-			// Try bearer token first
-			if bearerToken := creds["AWS_BEDROCK_API_KEY"]; bearerToken != "" {
-				return NewBedrockRESTClient(bearerToken, region)
-			}
-
-			// Fall back to SDK
-			ctx := context.Background()
-			return NewBedrockSDKClient(ctx, region)
-		},
-	})
 }
 
 // Register adds a provider to the registry
@@ -697,13 +625,6 @@ func (r *ProviderRegistry) CheckAuth(p *Provider) (bool, []string, error) {
 		}
 	}
 
-	// Special check for Bedrock - needs either bearer token OR AWS keys
-	if p.API == "bedrock" && creds["AWS_BEDROCK_API_KEY"] == "" {
-		if creds["AWS_ACCESS_KEY_ID"] == "" || creds["AWS_SECRET_ACCESS_KEY"] == "" {
-			missing = append(missing, "AWS_BEDROCK_API_KEY or (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY)")
-		}
-	}
-
 	return len(missing) == 0, missing, nil
 }
 
@@ -728,14 +649,6 @@ func (r *ProviderRegistry) gatherCredentials(p *Provider, cfg *config.Config) ma
 			creds[env.Name] = cfg.VertexLocation
 		case "vertex_api_key":
 			creds[env.Name] = cfg.VertexAPIKey
-		case "aws_region":
-			creds[env.Name] = cfg.AWSRegion
-		case "aws_bedrock_api_key":
-			creds[env.Name] = cfg.AWSBedrockAPIKey
-		case "aws_access_key_id":
-			creds[env.Name] = cfg.AWSAccessKeyID
-		case "aws_secret_access_key":
-			creds[env.Name] = cfg.AWSSecretAccessKey
 		case "grok_api_key":
 			creds[env.Name] = cfg.GrokAPIKey
 		}
@@ -844,10 +757,6 @@ var providerAliases = map[string]string{
 	"vertex-flash":       "vertex/flash-3.1",
 	"vertex-flash-fast":  "vertex/flash-3.1-fast",
 	"vertex-flash-ultra": "vertex/flash-3.1-ultra",
-	// Bedrock
-	"nova":                    "bedrock/nova-canvas",
-	"nova-canvas":             "bedrock/nova-canvas",
-	"amazon.nova-canvas-v1:0": "bedrock/nova-canvas",
 	// Grok
 	"grok":                       "grok/grok-imagine",
 	"grok-imagine":               "grok/grok-imagine",
@@ -878,6 +787,11 @@ var retiredAliases = map[string]string{
 	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash"`,
 	"grok-imagine-pro":               `xAI retired the -pro tier; use "grok-quality"`,
 	"grok-imagine-image-pro":         `xAI retired the -pro tier; use "grok-quality"`,
+	// AWS Bedrock Nova Canvas: removed (AWS end-of-life 2026-09-30); no Bedrock image model is offered.
+	"nova":                    `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
+	"nova-canvas":             `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
+	"amazon.nova-canvas-v1:0": `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
+	"bedrock/nova-canvas":     `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
 	// Old internal provider IDs (used by --provider / `auth setup <id>` before the rename).
 	"vertex/imagen-4":       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1" or "vertex-flash"`,
 	"vertex/imagen-4-fast":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-fast" or "vertex-flash-fast"`,
@@ -966,9 +880,8 @@ type CalculatedPricing struct {
 // It consults ModelPricing (the single source of truth in pricing.go) first,
 // falling back to provider.Pricing.CostPerImage for models not yet in the registry.
 // imageSize: "0.5K"/"1K"/"2K"/"4K" for Gemini tiered models.
-// dimensions: "WIDTHxHEIGHT" for Nova Canvas.
-// style: user-supplied style string ("photorealistic", "artistic", etc.),
-// used by Nova Canvas to select standard vs premium quality pricing.
+// dimensions: "WIDTHxHEIGHT" (retained for dimension-tiered pricing).
+// style: user-supplied style string ("photorealistic", "artistic", etc.).
 func GetProviderPricing(provider *Provider, imageSize, dimensions, style string) CalculatedPricing {
 	info := CalculatedPricing{}
 

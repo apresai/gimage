@@ -45,7 +45,7 @@ gimage --version
 
 ## generate
 
-Generate images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok.
+Generate images from text prompts using Google Gemini, Vertex AI, or xAI Grok.
 
 ### Usage
 
@@ -62,13 +62,13 @@ gimage generate --prompt "your prompt" [flags]
 | ------------------ | ------ | --------------------------------------------------------------------------------------- | ---------------------------- |
 | `-p, --prompt`     | string | Text prompt (alternative to positional arg)                                             | -                            |
 | `--provider`       | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/flash-3.1`)                              | Auto-detected                |
-| `--api`            | string | API to use: `gemini`, `vertex`, or `bedrock` (deprecated, use `--provider`)             | Auto-detected from model     |
+| `--api`            | string | API to use: `gemini` or `vertex` (deprecated, use `--provider`)                         | Auto-detected from model     |
 | `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image` |
 | `--size`           | string | Image size (WxH)                                                                        | `1024x1024`                  |
-| `--style`          | string | Style: `photorealistic`, `artistic`, `anime` (Bedrock: `standard`, `premium`)           | -                            |
+| `--style`          | string | Style: `photorealistic`, `artistic`, `anime`                                            | -                            |
 | `--negative`       | string | Negative prompt to avoid features                                                       | -                            |
 | `--seed`           | int    | Random seed for reproducibility                                                         | `0` (random)                 |
-| `--cfg-scale`      | float  | CFG scale for creativity (Bedrock: 1.0-10.0, higher = more creative)                    | Model default                |
+| `--cfg-scale`      | float  | CFG scale for creativity (1.0-10.0, higher = more creative; no longer used)             | Model default                |
 | `-n, --count`      | int    | Number of images to generate (max varies by provider)                                   | `1`                          |
 | `--output-format`  | string | Output format for Vertex AI: `png`, `jpeg`, or `webp`                                   | Provider default             |
 | `-o, --output`     | string | Output file path                                                                        | `generated_<timestamp>.png`  |
@@ -96,10 +96,6 @@ gimage generate --prompt "your prompt" [flags]
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`) - same backend with high thinking default
 - Gemini 3.1 Flash via Vertex does not support negative prompts or seeds; those options are ignored.
 - Retired names (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` or `-pro` variants) now error with guidance to use the `vertex-flash` aliases above.
-
-**AWS Bedrock (Paid):**
-
-- `amazon.nova-canvas-v1:0` - std ≤1024: $0.04, prem ≤1024: $0.06, std >1024: $0.06, prem >1024: $0.08; up to 1408x1408. Premium quality triggered by `--style photorealistic|premium|high|ultra`
 
 **xAI Grok (Paid):**
 
@@ -196,18 +192,6 @@ gimage generate "detailed infographic" --model gemini-3-pro --image-size 4K
 gimage generate "portrait" --api vertex --output-format webp
 ```
 
-**Bedrock with CFG scale:**
-
-```bash
-gimage generate "abstract art" --model nova-canvas --cfg-scale 10.0
-```
-
-**Bedrock with premium quality:**
-
-```bash
-gimage generate "luxury product" --model nova-canvas --style premium
-```
-
 **Using Gemini 3.1 Flash via Vertex - Fast (speed-optimized):**
 
 ```bash
@@ -264,9 +248,8 @@ Common sizes (format: `WIDTHxHEIGHT`):
 - `512x512` - Small, fast generation
 - `1024x1024` - Default, balanced quality/speed
 - `1536x1536` - High quality
-- `1408x1408` - Bedrock Nova Canvas maximum; Gemini 3+ uses `--image-size 1K/2K/4K` for native resolution (not WxH)
 
-Custom sizes are supported by some models.
+Gemini 3+ uses `--image-size 1K/2K/4K` for native resolution instead of WxH. Custom sizes are supported by some models.
 
 ---
 
@@ -585,7 +568,7 @@ gimage convert input.png webp --output optimized.webp
 
 ## auth
 
-Manage authentication for all image generation providers (Gemini, Vertex AI, AWS Bedrock, xAI Grok).
+Manage authentication for all image generation providers (Gemini, Vertex AI, xAI Grok).
 
 ### Usage
 
@@ -616,7 +599,7 @@ gimage auth setup <provider>
 
 | Argument   | Description          | Examples                                                               |
 | ---------- | -------------------- | ---------------------------------------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `bedrock/nova-canvas` |
+| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `grok`              |
 
 #### Examples
 
@@ -630,12 +613,6 @@ gimage auth setup gemini
 
 ```bash
 gimage auth setup vertex/flash-3.1
-```
-
-**Setup AWS Bedrock Nova Canvas:**
-
-```bash
-gimage auth setup bedrock/nova-canvas
 ```
 
 #### What it does
@@ -660,9 +637,9 @@ gimage auth test <provider>
 
 #### Arguments
 
-| Argument   | Description          | Examples                               |
-| ---------- | -------------------- | -------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `vertex/flash-3.1`, `bedrock` |
+| Argument   | Description          | Examples                                      |
+| ---------- | -------------------- | --------------------------------------------- |
+| `provider` | Provider ID or alias | `gemini`, `vertex/flash-3.1`, `grok`          |
 
 #### Flags
 
@@ -801,9 +778,6 @@ Credential Priority: CLI Flags > Environment Variables > Config File > Defaults
   • Config file: vertex_api_key = AIza***xYzW (Express Mode)
   • Config file: vertex_project = my-gcp-project
   • Environment: VERTEX_LOCATION = us-central1
-
-✗ AWS Bedrock (Not Configured)
-  Run: gimage auth setup bedrock
 ```
 
 ---
@@ -964,7 +938,7 @@ gimage --interactive
 Launches an 8-step interactive menu for image generation:
 
 1. **Enter Prompt** - Describe the image you want
-2. **Select Provider** - Choose AI provider and model (Gemini, Vertex AI, Bedrock, or Grok)
+2. **Select Provider** - Choose AI provider and model (Gemini, Vertex AI, or Grok)
 3. **Choose Size** - Select image dimensions
 4. **Select Style** - Pick style (photorealistic, artistic, anime, or none)
 5. **Advanced Options** - Configure optional parameters:
@@ -973,7 +947,6 @@ Launches an 8-step interactive menu for image generation:
    - Aspect ratio (Gemini 3 Pro: Auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
    - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
    - Output format (Vertex AI: Auto, PNG, JPEG, WebP)
-   - CFG scale (Bedrock: 1.0-10.0 for creativity control)
    - Count (batch generation, max varies by provider)
 6. **Set Output Path** - Specify where to save the image
 7. **Review & Confirm** - Review all settings before generation

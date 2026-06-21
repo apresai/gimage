@@ -16,9 +16,8 @@ type PricingEntry struct {
 
 	// Calculate returns the cost for a generation request.
 	// imageSize is "0.5K"/"1K"/"2K"/"4K" for Gemini tiered models (or "" for default).
-	// dimensions is "WIDTHxHEIGHT" for Nova Canvas (or "" for default).
-	// style is the user-supplied style string (e.g. "photorealistic"), used by
-	// Nova Canvas to pick standard vs premium quality pricing.
+	// dimensions is "WIDTHxHEIGHT" for dimension-tiered pricing (or "" for default).
+	// style is the user-supplied style string (e.g. "photorealistic").
 	Calculate func(imageSize, dimensions, style string) float64
 
 	// DisplayContext returns an optional suffix added to the price display,
@@ -100,22 +99,6 @@ var ModelPricing = map[string]PricingEntry{
 	// Imagen pricing entries removed: gimage no longer runs any Imagen model
 	// (the former imagen-* aliases were Gemini 3.1 Flash via Vertex, priced under
 	// the "gemini-3.1-flash-image" tiered entry above).
-	"amazon.nova-canvas-v1:0": {
-		ModelID:        "amazon.nova-canvas-v1:0",
-		Summary:        "std ≤1024: $0.04, prem ≤1024: $0.06, std >1024: $0.06, prem >1024: $0.08",
-		Representative: 0.04,
-		Calculate: novaCanvasMatrixPrice(novaCanvasMatrix{
-			StandardSmall: 0.04,
-			PremiumSmall:  0.06,
-			StandardLarge: 0.06,
-			PremiumLarge:  0.08,
-		}),
-		DisplayContext: novaCanvasSuffix,
-		// AWS Bedrock SPA timed out during WebFetch audit; sourced from Caylent
-		// and DeepLearning.AI secondary references which agree on the matrix.
-		Source:   "https://caylent.com/blog/amazon-bedrock-pricing-explained",
-		Verified: "2026-04-12",
-	},
 	"grok-imagine-image": {
 		ModelID:        "grok-imagine-image",
 		Summary:        "$0.02/image (1K/2K)",
@@ -173,67 +156,12 @@ func imageSizeTieredPrice(tiers map[string]float64) func(string, string, string)
 	}
 }
 
-type novaCanvasMatrix struct {
-	StandardSmall float64 // standard quality, ≤1024x1024
-	PremiumSmall  float64 // premium quality, ≤1024x1024
-	StandardLarge float64 // standard quality, >1024x1024
-	PremiumLarge  float64 // premium quality, >1024x1024
-}
-
-func novaCanvasMatrixPrice(m novaCanvasMatrix) func(string, string, string) float64 {
-	return func(_, dimensions, style string) float64 {
-		w, h := parseDimensionsForCost(dimensions)
-		large := w > 1024 || h > 1024
-		premium := NovaCanvasQualityFromStyle(style) == "premium"
-		switch {
-		case large && premium:
-			return m.PremiumLarge
-		case large:
-			return m.StandardLarge
-		case premium:
-			return m.PremiumSmall
-		default:
-			return m.StandardSmall
-		}
-	}
-}
-
-// NovaCanvasQualityFromStyle maps a user style string to Nova Canvas's quality
-// parameter ("standard" or "premium"). This is the single source of truth
-// consumed both by the Bedrock clients (for the API request) and by pricing.go
-// (for cost calculation).
-func NovaCanvasQualityFromStyle(style string) string {
-	switch strings.ToLower(style) {
-	case "premium", "high", "ultra", "photorealistic":
-		return "premium"
-	default:
-		return "standard"
-	}
-}
-
 // imageSizeSuffix returns the display suffix for image-size-tiered pricing.
 func imageSizeSuffix(imageSize, _, _ string) string {
 	if imageSize == "" {
 		return ""
 	}
 	return "(" + ImageSizeLabel(imageSize) + ")"
-}
-
-// novaCanvasSuffix shows size tier always, and quality only when premium
-// (standard is the default — including it would be noise).
-func novaCanvasSuffix(_, dimensions, style string) string {
-	w, h := parseDimensionsForCost(dimensions)
-	if w <= 0 || h <= 0 {
-		return ""
-	}
-	sizeLabel := "≤1024px"
-	if w > 1024 || h > 1024 {
-		sizeLabel = ">1024px"
-	}
-	if NovaCanvasQualityFromStyle(style) == "premium" {
-		return "(" + sizeLabel + ", premium)"
-	}
-	return "(" + sizeLabel + ")"
 }
 
 // formatPricingDisplay builds the CalculatedPricing.Display string from an

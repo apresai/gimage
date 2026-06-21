@@ -13,7 +13,7 @@ The Gimage MCP server enables AI assistants (like Claude and ChatGPT) to perform
 ### Key Features
 
 - **Direct CLI Integration**: Reuses the core gimage internal packages for identical behavior across CLI and MCP.
-- **Provider Multi-plexing**: Single tool to access Gemini, Vertex AI, AWS Bedrock, and xAI Grok.
+- **Provider Multi-plexing**: Single tool to access Gemini, Vertex AI, and xAI Grok.
 - **Native Go Implementation**: Fast, single-binary deployment with no Node.js dependency.
 - **LLM Optimized**: Clear tool descriptions, comprehensive schemas, and helpful error messages.
 
@@ -30,7 +30,7 @@ graph TD
     C --> D[image_generate]
     C --> E[Image Processing]
     C --> F[Batch Operations]
-    D --> G[Gemini/Vertex/Bedrock/Grok]
+    D --> G[Gemini/Vertex/Grok]
     E --> H[internal/imaging]
     F --> H
 ```

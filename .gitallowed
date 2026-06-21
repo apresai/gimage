@@ -14,3 +14,8 @@ xai-your-key
 # Fake xAI Grok keys used as test fixtures in internal/config/config_test.go.
 xai-grok-key
 xai-test-grok-key
+xai-key-present
+# Fake Google API-key placeholders used as test fixtures in internal/config/auth_test.go (not real keys).
+AIzaSyABCDEFGH
+AIzaSy_ABCDEFGH
+AIzaSyD1

@@ -54,10 +54,6 @@ func printAuthStatus() {
 	printProviderAuthStatus("Vertex AI", checkVertexAuth(cfg))
 	fmt.Println()
 
-	// Check AWS Bedrock
-	printProviderAuthStatus("AWS Bedrock", checkBedrockAuth(cfg))
-	fmt.Println()
-
 	// Show credential priority diagram
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("  Credential Priority Hierarchy")
@@ -145,74 +141,6 @@ func checkVertexAuth(cfg *config.Config) authStatus {
 	if googleCreds != "" {
 		status.configured = true
 		status.sources = append(status.sources, fmt.Sprintf("Environment: GOOGLE_APPLICATION_CREDENTIALS = %s (Full Mode)", googleCreds))
-	}
-
-	return status
-}
-
-func checkBedrockAuth(cfg *config.Config) authStatus {
-	status := authStatus{sources: []string{}, conflicts: []string{}}
-
-	// Check for bearer token (REST API)
-	envBearer := os.Getenv("AWS_BEARER_TOKEN_BEDROCK")
-	if envBearer != "" {
-		status.configured = true
-		status.sources = append(status.sources, fmt.Sprintf("Environment: AWS_BEARER_TOKEN_BEDROCK = %s (REST API)", maskKey(envBearer)))
-	}
-
-	if cfg.AWSBedrockAPIKey != "" {
-		if envBearer != "" {
-			status.conflicts = append(status.conflicts, "Also found in config file (environment takes precedence)")
-		} else {
-			status.configured = true
-			status.sources = append(status.sources, fmt.Sprintf("Config file: aws_bedrock_api_key = %s (REST API)", maskKey(cfg.AWSBedrockAPIKey)))
-		}
-	}
-
-	// Check for AWS access keys (SDK)
-	envAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
-	envSecretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-
-	if envAccessKey != "" && envSecretKey != "" {
-		if !status.configured {
-			status.configured = true
-		} else {
-			status.conflicts = append(status.conflicts, "AWS SDK credentials also configured (bearer token takes precedence)")
-		}
-		status.sources = append(status.sources, fmt.Sprintf("Environment: AWS_ACCESS_KEY_ID = %s (SDK)", maskKey(envAccessKey)))
-		status.sources = append(status.sources, "Environment: AWS_SECRET_ACCESS_KEY = ******* (SDK)")
-	}
-
-	if cfg.AWSAccessKeyID != "" && cfg.AWSSecretAccessKey != "" {
-		if envAccessKey == "" && envSecretKey == "" {
-			if !status.configured {
-				status.configured = true
-			}
-			status.sources = append(status.sources, fmt.Sprintf("Config file: aws_access_key_id = %s (SDK)", maskKey(cfg.AWSAccessKeyID)))
-			status.sources = append(status.sources, "Config file: aws_secret_access_key = ******* (SDK)")
-		}
-	}
-
-	// Check for AWS profile
-	envProfile := os.Getenv("AWS_PROFILE")
-	if envProfile != "" {
-		if !status.configured {
-			status.configured = true
-		}
-		status.sources = append(status.sources, fmt.Sprintf("Environment: AWS_PROFILE = %s (SDK)", envProfile))
-	} else if cfg.AWSProfile != "" {
-		if !status.configured {
-			status.configured = true
-		}
-		status.sources = append(status.sources, fmt.Sprintf("Config file: aws_profile = %s (SDK)", cfg.AWSProfile))
-	}
-
-	// Check for region
-	envRegion := os.Getenv("AWS_REGION")
-	if envRegion != "" {
-		status.sources = append(status.sources, fmt.Sprintf("Environment: AWS_REGION = %s", envRegion))
-	} else if cfg.AWSRegion != "" {
-		status.sources = append(status.sources, fmt.Sprintf("Config file: aws_region = %s", cfg.AWSRegion))
 	}
 
 	return status

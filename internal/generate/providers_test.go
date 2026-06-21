@@ -31,7 +31,6 @@ func TestRegistryGet(t *testing.T) {
 		{"vertex flash 3.1", "vertex/flash-3.1", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 fast", "vertex/flash-3.1-fast", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 ultra", "vertex/flash-3.1-ultra", "gemini-3.1-flash-image", false},
-		{"bedrock nova canvas", "bedrock/nova-canvas", "amazon.nova-canvas-v1:0", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
 		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
 		{"nonexistent", "nonexistent", "", true},
@@ -56,8 +55,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 9 providers (3 gemini + 3 vertex + 1 bedrock + 2 grok)
-	assert.GreaterOrEqual(t, len(providers), 9, "should have at least 9 providers")
+	// Should have at least 8 providers (3 gemini + 3 vertex + 2 grok)
+	assert.GreaterOrEqual(t, len(providers), 8, "should have at least 8 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -77,7 +76,6 @@ func TestRegistryListByAPI(t *testing.T) {
 	}{
 		{"gemini providers", "gemini", 3},
 		{"vertex providers", "vertex", 3},
-		{"bedrock providers", "bedrock", 1},
 		{"grok providers", "grok", 2},
 		{"invalid api empty", "invalid", 0},
 	}
@@ -98,10 +96,10 @@ func TestRegistryListAPIs(t *testing.T) {
 	reg := GetProviderRegistry()
 	apis := reg.ListAPIs()
 
-	assert.Len(t, apis, 4, "should have 4 APIs")
+	assert.Len(t, apis, 3, "should have 3 APIs")
 
 	// Verify sorted by Order field
-	expectedOrder := []string{"gemini", "vertex", "bedrock", "grok"}
+	expectedOrder := []string{"gemini", "vertex", "grok"}
 	for i, api := range apis {
 		assert.Equal(t, expectedOrder[i], api.ID, "API at position %d", i)
 	}
@@ -125,7 +123,6 @@ func TestRegistryGetAPIInfo(t *testing.T) {
 	}{
 		{"gemini info", "gemini", true, "Gemini"},
 		{"vertex info", "vertex", true, "Vertex"},
-		{"bedrock info", "bedrock", true, "Bedrock"},
 		{"grok info", "grok", true, "Grok"},
 		{"nonexistent", "nonexistent", false, ""},
 	}
@@ -163,8 +160,8 @@ func TestResolveProvider(t *testing.T) {
 		{"retired imagen-4-fast errors", "imagen-4-fast", "", true},
 		{"retired imagen-fast errors", "imagen-fast", "", true},
 		{"retired imagen-4-ultra errors", "imagen-4-ultra", "", true},
-		{"nova alias", "nova", "bedrock/nova-canvas", false},
-		{"nova-canvas alias", "nova-canvas", "bedrock/nova-canvas", false},
+		{"retired nova errors", "nova", "", true},
+		{"retired nova-canvas errors", "nova-canvas", "", true},
 		{"grok alias", "grok", "grok/grok-imagine", false},
 		{"grok-imagine alias", "grok-imagine", "grok/grok-imagine", false},
 		{"grok-imagine-quality alias", "grok-imagine-quality", "grok/grok-imagine-quality", false},
@@ -202,6 +199,10 @@ func TestRetiredAliasesError(t *testing.T) {
 		"gemini-3.1-flash-image-preview",
 		"grok-imagine-pro",
 		"grok-imagine-image-pro",
+		"nova",
+		"nova-canvas",
+		"amazon.nova-canvas-v1:0",
+		"bedrock/nova-canvas",
 	}
 
 	for _, name := range retired {
@@ -223,7 +224,7 @@ func TestResolveModelName(t *testing.T) {
 		{"flash alias resolves", "flash", "gemini-2.5-flash-image"},
 		{"vertex-flash alias resolves", "vertex-flash", "gemini-3.1-flash-image"},
 		{"retired imagen returns original", "imagen", "imagen"},
-		{"nova alias resolves", "nova", "amazon.nova-canvas-v1:0"},
+		{"retired nova returns original", "nova", "nova"},
 		{"grok alias resolves", "grok", "grok-imagine-image"},
 		{"unknown returns original", "unknown-model", "unknown-model"},
 		{"exact model ID returns itself", "gemini-2.5-flash-image", "gemini-2.5-flash-image"},
@@ -249,7 +250,7 @@ func TestDetectAPIFromModel(t *testing.T) {
 		{"gemini alias", "gemini", "gemini", false},
 		{"vertex-flash alias", "vertex-flash", "vertex", false},
 		{"retired imagen-4 errors", "imagen-4", "", true},
-		{"nova-canvas alias", "nova-canvas", "bedrock", false},
+		{"retired nova-canvas errors", "nova-canvas", "", true},
 		{"grok alias", "grok", "grok", false},
 		{"unknown model", "totally-unknown-model-xyz", "", true},
 	}
@@ -279,7 +280,7 @@ func TestValidateModelForAPI(t *testing.T) {
 		{"gemini model on vertex api mismatch", "gemini-2.5-flash-image", "vertex", true},
 		{"vertex-flash on vertex api", "vertex-flash", "vertex", false},
 		{"retired imagen-4 errors", "imagen-4", "vertex", true},
-		{"nova on bedrock api", "nova-canvas", "bedrock", false},
+		{"retired nova-canvas errors", "nova-canvas", "bedrock", true},
 		{"grok on grok api", "grok", "grok", false},
 		{"unknown model", "totally-unknown-xyz", "gemini", true},
 	}
@@ -323,7 +324,6 @@ func TestGetProviderPricing(t *testing.T) {
 	flashProvider, _ := reg.Get("gemini/flash-2.5")
 	flash31Provider, _ := reg.Get("gemini/flash-3.1")
 	pro3Provider, _ := reg.Get("gemini/pro-3")
-	novaProvider, _ := reg.Get("bedrock/nova-canvas")
 	grokProvider, _ := reg.Get("grok/grok-imagine")
 	grokQualityProvider, _ := reg.Get("grok/grok-imagine-quality")
 
@@ -387,42 +387,6 @@ func TestGetProviderPricing(t *testing.T) {
 			provider:  pro3Provider,
 			imageSize: "",
 			wantCost:  0.134,
-		},
-		{
-			name:        "nova canvas standard small",
-			provider:    novaProvider,
-			dimensions:  "1024x1024",
-			wantCost:    0.04,
-			wantDisplay: "$0.0400/image (≤1024px)",
-		},
-		{
-			name:        "nova canvas premium small",
-			provider:    novaProvider,
-			dimensions:  "1024x1024",
-			style:       "photorealistic",
-			wantCost:    0.06,
-			wantDisplay: "$0.0600/image (≤1024px, premium)",
-		},
-		{
-			name:        "nova canvas standard large",
-			provider:    novaProvider,
-			dimensions:  "2048x2048",
-			wantCost:    0.06,
-			wantDisplay: "$0.0600/image (>1024px)",
-		},
-		{
-			name:        "nova canvas premium large",
-			provider:    novaProvider,
-			dimensions:  "2048x2048",
-			style:       "premium",
-			wantCost:    0.08,
-			wantDisplay: "$0.0800/image (>1024px, premium)",
-		},
-		{
-			name:       "nova canvas default dimensions",
-			provider:   novaProvider,
-			dimensions: "",
-			wantCost:   0.04,
 		},
 		{
 			name:        "nil provider",
@@ -520,7 +484,6 @@ func TestProviderRequiredEnvVars(t *testing.T) {
 	}{
 		{"gemini needs api key", "gemini/flash-2.5", []string{"GEMINI_API_KEY"}},
 		{"vertex needs project and location", "vertex/flash-3.1", []string{"VERTEX_PROJECT", "VERTEX_LOCATION"}},
-		{"bedrock needs region", "bedrock/nova-canvas", []string{"AWS_REGION"}},
 		{"grok needs api key", "grok/grok-imagine", []string{"GROK_API_KEY"}},
 	}
 
@@ -616,14 +579,6 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "gemini-3.1-flash-image", imageSize: "2K", want: 0.101},
 		{modelID: "gemini-3.1-flash-image", imageSize: "4K", want: 0.151},
 		{modelID: "gemini-3.1-flash-image", want: 0.067},
-		// Nova Canvas 2x2 matrix: (quality × size)
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", want: 0.04},                          // standard small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "photorealistic", want: 0.06}, // premium small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", want: 0.06},                          // standard large
-		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", style: "premium", want: 0.08},        // premium large
-		{modelID: "amazon.nova-canvas-v1:0", dims: "512x512", want: 0.04},                            // standard small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "ultra", want: 0.06},          // "ultra" maps to premium
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "artistic", want: 0.04},       // "artistic" is standard
 		{modelID: "grok-imagine-image", want: 0.02},
 		{modelID: "grok-imagine-image-quality", want: 0.05},
 		{modelID: "grok-imagine-image-quality", imageSize: "2K", want: 0.07},

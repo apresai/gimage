@@ -205,7 +205,7 @@ func TestGeminiSquareImage(t *testing.T) {
 		t.Fatalf("Generation failed: %v", err)
 	}
 
-	validation, err := ValidateImage(result.Data, 1024, 1024, "png")
+	validation, err := ValidateImage(result[0].Data, 1024, 1024, "png")
 	if err != nil {
 		t.Fatalf("Validation failed: %v", err)
 	}
@@ -264,7 +264,7 @@ func TestGemini3ProAspectRatio(t *testing.T) {
 				t.Fatalf("Generation failed: %v", err)
 			}
 
-			validation, err := ValidateAspectRatio(result.Data, tc.aspectRatio)
+			validation, err := ValidateAspectRatio(result[0].Data, tc.aspectRatio)
 			if err != nil {
 				t.Fatalf("Validation failed: %v", err)
 			}
@@ -326,7 +326,7 @@ func TestGemini3ProImageSize(t *testing.T) {
 				t.Fatalf("Generation failed: %v", err)
 			}
 
-			validation, err := ValidateImage(result.Data, 0, 0, "")
+			validation, err := ValidateImage(result[0].Data, 0, 0, "")
 			if err != nil {
 				t.Fatalf("Validation failed: %v", err)
 			}
@@ -389,8 +389,8 @@ func TestSeedReproducibility(t *testing.T) {
 	}
 
 	// Both images should exist and be valid
-	validation1, _ := ValidateImage(result1.Data, 0, 0, "")
-	validation2, _ := ValidateImage(result2.Data, 0, 0, "")
+	validation1, _ := ValidateImage(result1[0].Data, 0, 0, "")
+	validation2, _ := ValidateImage(result2[0].Data, 0, 0, "")
 
 	t.Logf("Image 1: %dx%d, %d bytes", validation1.Width, validation1.Height, validation1.FileSizeBytes)
 	t.Logf("Image 2: %dx%d, %d bytes", validation2.Width, validation2.Height, validation2.FileSizeBytes)
@@ -402,113 +402,6 @@ func TestSeedReproducibility(t *testing.T) {
 	}
 
 	// Note: We don't check exact pixel-by-pixel match as that's not guaranteed by most APIs
-}
-
-// TestBedrockNovaCanvasDimensions tests Bedrock dimension constraints
-func TestBedrockNovaCanvasDimensions(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	// Check for Bedrock credentials
-	if !config.HasBedrockCredentials() {
-		t.Skip("AWS Bedrock credentials not configured")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	client, err := generate.NewBedrockSDKClient(ctx, "")
-	if err != nil {
-		t.Fatalf("Failed to create Bedrock client: %v", err)
-	}
-	defer client.Close()
-
-	testCases := []struct {
-		name           string
-		size           string
-		expectedWidth  int
-		expectedHeight int
-	}{
-		{"512x512", "512x512", 512, 512},
-		{"1024x1024", "1024x1024", 1024, 1024},
-		{"1024x768", "1024x768", 1024, 768},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			opts := models.GenerateOptions{
-				Model:    "amazon.nova-canvas-v1:0",
-				Size:     tc.size,
-				CfgScale: 7.0,
-			}
-
-			result, err := client.GenerateImage(ctx, "simple geometric shapes", opts)
-			if err != nil {
-				t.Fatalf("Generation failed: %v", err)
-			}
-
-			validation, err := ValidateImage(result.Data, tc.expectedWidth, tc.expectedHeight, "png")
-			if err != nil {
-				t.Fatalf("Validation failed: %v", err)
-			}
-
-			t.Logf("Generated image: %dx%d (expected %dx%d)",
-				validation.Width, validation.Height, tc.expectedWidth, tc.expectedHeight)
-
-			if !validation.IsValid {
-				for _, e := range validation.Errors {
-					t.Errorf("Validation error: %s", e)
-				}
-			}
-		})
-	}
-}
-
-// TestBedrockCfgScale tests that CFG scale affects generation
-func TestBedrockCfgScale(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	if !config.HasBedrockCredentials() {
-		t.Skip("AWS Bedrock credentials not configured")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	client, err := generate.NewBedrockSDKClient(ctx, "")
-	if err != nil {
-		t.Fatalf("Failed to create Bedrock client: %v", err)
-	}
-	defer client.Close()
-
-	// Test that different CFG scales don't cause errors
-	cfgScales := []float64{1.0, 5.0, 10.0}
-
-	for _, cfg := range cfgScales {
-		t.Run(fmt.Sprintf("CFG_%.1f", cfg), func(t *testing.T) {
-			opts := models.GenerateOptions{
-				Model:    "amazon.nova-canvas-v1:0",
-				Size:     "512x512",
-				CfgScale: cfg,
-			}
-
-			result, err := client.GenerateImage(ctx, "abstract art", opts)
-			if err != nil {
-				t.Fatalf("Generation with CFG %.1f failed: %v", cfg, err)
-			}
-
-			validation, err := ValidateImage(result.Data, 512, 512, "")
-			if err != nil {
-				t.Fatalf("Validation failed: %v", err)
-			}
-
-			t.Logf("CFG %.1f: Generated %dx%d image, %d bytes",
-				cfg, validation.Width, validation.Height, validation.FileSizeBytes)
-		})
-	}
 }
 
 // TestNegativePrompt tests that negative prompts are processed without error
@@ -543,7 +436,7 @@ func TestNegativePrompt(t *testing.T) {
 		t.Fatalf("Generation with negative prompt failed: %v", err)
 	}
 
-	validation, err := ValidateImage(result.Data, 0, 0, "")
+	validation, err := ValidateImage(result[0].Data, 0, 0, "")
 	if err != nil {
 		t.Fatalf("Validation failed: %v", err)
 	}
@@ -594,7 +487,7 @@ func TestSaveAndLoadImage(t *testing.T) {
 	outputPath := filepath.Join(tmpDir, "test_output.png")
 
 	// Save image
-	err = generate.SaveImage(result, outputPath)
+	err = generate.SaveImage(result[0], outputPath)
 	if err != nil {
 		t.Fatalf("Failed to save image: %v", err)
 	}

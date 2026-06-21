@@ -156,7 +156,6 @@ func (m *MainMenuModel) renderHelp() string {
 			"Gemini 2.5 Flash ($0.039/image)",
 			"Gemini 3 Pro (Native 4K, $0.134/image)",
 			"Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)",
-			"AWS Bedrock Nova Canvas ($0.08/image)",
 			"xAI Grok Imagine ($0.02/image)",
 		}) + "\n" +
 		HelpStyle.Render("Press Esc to close this help")
