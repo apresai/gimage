@@ -10,11 +10,19 @@ function packageBinaryPath() {
   return path.join(__dirname, 'bin', `gimage${ext}`);
 }
 
-// Cheap probe for a system-installed gimage (e.g. via Homebrew) on PATH.
-function hasSystemGimage() {
+// Resolve a system-installed gimage (e.g. via Homebrew) on PATH to its full
+// path, or null if absent. Returning the resolved path (rather than the bare
+// name) lets spawn launch it directly — important on Windows, where
+// spawn('gimage') without a shell does not append .exe / search PATHEXT.
+function systemGimagePath() {
   const probe = process.platform === 'win32' ? 'where' : 'which';
-  const result = spawnSync(probe, ['gimage'], { stdio: 'ignore' });
-  return result.status === 0;
+  const result = spawnSync(probe, ['gimage'], { encoding: 'utf8' });
+  if (result.status !== 0 || !result.stdout) {
+    return null;
+  }
+  // `where` may list several matches; take the first line.
+  const first = result.stdout.split(/\r?\n/)[0].trim();
+  return first || null;
 }
 
 // Resolve the gimage binary, in order of preference:
@@ -28,8 +36,9 @@ async function resolveBinary() {
   if (fs.existsSync(pkgBinary)) {
     return pkgBinary;
   }
-  if (hasSystemGimage()) {
-    return 'gimage';
+  const systemBinary = systemGimagePath();
+  if (systemBinary) {
+    return systemBinary;
   }
   // install.js logs progress to stderr, so this is safe to run right before
   // launching the MCP server (whose stdout is the JSON-RPC channel).

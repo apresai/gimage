@@ -40,6 +40,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
+      # Guard against publishing a tarball that is missing the bin wrapper
+      # (the regression that shipped @apresai/gimage-mcp broken across several
+      # releases). Fails the publish before it happens if the wrapper is absent.
+      - name: Verify npm package contents
+        working-directory: ./npm
+        run: npm test
+
       # npm OIDC Trusted Publishing - NO TOKEN REQUIRED
       # Prerequisites: Configure trusted publisher on npmjs.com:
       #   1. Go to https://www.npmjs.com/package/@apresai/gimage-mcp/access

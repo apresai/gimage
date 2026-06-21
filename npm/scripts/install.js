@@ -30,7 +30,11 @@ function getPlatformInfo() {
   const mappedArch = archMap[arch];
 
   if (!mappedPlatform || !mappedArch) {
-    throw new Error(`Unsupported platform: ${platform}-${arch}`);
+    throw new Error(
+      `Unsupported platform: ${platform}-${arch}. ` +
+      `Install gimage manually from https://github.com/${GITHUB_REPO}/releases ` +
+      `or via Homebrew: brew install apresai/tap/gimage`
+    );
   }
 
   return {
@@ -100,7 +104,7 @@ async function downloadBinary() {
         // Follow redirect (GitHub release assets redirect to a CDN)
         https.get(response.headers.location, (redirectResponse) => {
           if (redirectResponse.statusCode !== 200) {
-            reject(new Error(`Download failed with status ${redirectResponse.statusCode}`));
+            reject(new Error(`Download failed with status ${redirectResponse.statusCode} for ${url}`));
             return;
           }
           extractFrom(redirectResponse, resolve, reject);
@@ -108,7 +112,7 @@ async function downloadBinary() {
       } else if (response.statusCode === 200) {
         extractFrom(response, resolve, reject);
       } else {
-        reject(new Error(`Download failed with status ${response.statusCode}`));
+        reject(new Error(`Download failed with status ${response.statusCode} for ${url}`));
       }
     }).on('error', reject);
   });
@@ -143,7 +147,7 @@ async function main() {
     console.log('  }');
     console.log('}');
     console.log('\nBefore using, configure your API keys:');
-    console.log('  gimage auth gemini');
+    console.log('  gimage auth setup gemini');
     console.log('\nFor more information: https://github.com/apresai/gimage');
   } catch (error) {
     // Non-fatal: the bin wrapper will lazily retry the download (or fall back to

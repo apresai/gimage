@@ -29,7 +29,8 @@
     "gimage-mcp": "./gimage-mcp.js"
   },
   "scripts": {
-    "postinstall": "node scripts/install.js"
+    "postinstall": "node scripts/install.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=22.0.0"
