@@ -43,7 +43,8 @@ func NewVertexUnifiedClient(ctx context.Context, project, location string) (*Ver
 	if location == "" {
 		location = os.Getenv("VERTEX_LOCATION")
 		if location == "" {
-			location = "us-central1"
+			// Gemini 3.1 Flash image is served from the global Vertex endpoint.
+			location = "global"
 		}
 	}
 
@@ -151,7 +152,7 @@ func buildVertexGeminiGenerateContentRequest(modelName, prompt string, options m
 		config.Tools = []*genai.Tool{{GoogleSearch: &genai.GoogleSearch{}}}
 	}
 
-	return []*genai.Content{{Parts: parts}}, config, width, height, nil
+	return []*genai.Content{{Role: "user", Parts: parts}}, config, width, height, nil
 }
 
 func toGenAIThinkingLevel(level string) genai.ThinkingLevel {

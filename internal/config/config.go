@@ -37,7 +37,7 @@ func LoadConfig() (*Config, error) {
 		DefaultAPI:     "gemini",
 		DefaultModel:   "gemini-3-pro-image",
 		DefaultSize:    "1024x1024",
-		VertexLocation: "us-central1",
+		VertexLocation: "global",
 		AWSRegion:      "us-east-1",
 		LogLevel:       "info",
 	}
@@ -101,7 +101,7 @@ func LoadConfig() (*Config, error) {
 		cfg.DefaultSize = "1024x1024"
 	}
 	if cfg.VertexLocation == "" {
-		cfg.VertexLocation = "us-central1"
+		cfg.VertexLocation = "global"
 	}
 	if cfg.AWSRegion == "" {
 		cfg.AWSRegion = "us-east-1"

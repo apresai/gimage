@@ -259,7 +259,7 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "gemini", cfg.DefaultAPI)
 		assert.Equal(t, "1024x1024", cfg.DefaultSize)
 		assert.Equal(t, "us-east-1", cfg.AWSRegion)
-		assert.Equal(t, "us-central1", cfg.VertexLocation)
+		assert.Equal(t, "global", cfg.VertexLocation)
 		assert.Equal(t, "info", cfg.LogLevel)
 		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
 	})

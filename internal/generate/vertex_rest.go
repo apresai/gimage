@@ -41,7 +41,9 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 	}
 
 	if location == "" {
-		location = "us-central1" // Default location
+		// gimage's Vertex models (Gemini 3.1 Flash image) are served from the
+		// global endpoint, not regional ones.
+		location = "global"
 	}
 
 	return &VertexRESTClient{
@@ -135,8 +137,14 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 		c.log.Debug("Gemini request body: %s", string(requestJSON))
 
-		// Build API URL for Vertex AI generateContent endpoint
-		apiURL := fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent", c.location, c.projectID, c.location, modelName)
+		// Build API URL for Vertex AI generateContent endpoint. The "global"
+		// location uses the un-prefixed host (aiplatform.googleapis.com); every
+		// other region is "{location}-aiplatform.googleapis.com".
+		host := fmt.Sprintf("%s-aiplatform.googleapis.com", c.location)
+		if c.location == "global" {
+			host = "aiplatform.googleapis.com"
+		}
+		apiURL := fmt.Sprintf("https://%s/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent", host, c.projectID, c.location, modelName)
 
 		maskedKey := c.apiKey
 		if len(maskedKey) > 8 {

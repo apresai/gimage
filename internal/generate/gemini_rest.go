@@ -235,7 +235,7 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 	}
 
 	return geminiGenerateContentRequest{
-		Contents:         []geminiContent{{Parts: parts}},
+		Contents:         []geminiContent{{Role: "user", Parts: parts}},
 		GenerationConfig: genConfig,
 		Tools:            tools,
 	}, nil

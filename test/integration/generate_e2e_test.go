@@ -189,7 +189,11 @@ func TestVertexAIE2E(t *testing.T) {
 		project = cfg.VertexProject
 	}
 
-	client, err := generate.NewVertexRESTClient(apiKey, project, "us-central1")
+	location := os.Getenv("VERTEX_LOCATION")
+	if location == "" {
+		location = "global" // gemini-3.1-flash-image is served from the global Vertex endpoint
+	}
+	client, err := generate.NewVertexRESTClient(apiKey, project, location)
 	if err != nil {
 		t.Fatalf("Failed to create Vertex client: %v", err)
 	}
@@ -380,7 +384,7 @@ func TestVertexAIUnifiedSDKE2E(t *testing.T) {
 	project := os.Getenv("VERTEX_PROJECT")
 	location := os.Getenv("VERTEX_LOCATION")
 	if location == "" {
-		location = "us-central1"
+		location = "global" // gemini-3.1-flash-image is served from the global Vertex endpoint
 	}
 
 	if os.Getenv("VERTEX_API_KEY") != "" {
