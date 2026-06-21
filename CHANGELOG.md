@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.135] - 2026-06-21
+
+### Changed
+- Vertex AI `imagen-4`, `imagen-4-fast`, and `imagen-4-ultra` aliases now route to `gemini-3.1-flash-image` instead of the legacy Imagen endpoints, with per-alias default thinking levels (medium/minimal/high)
+- Pricing updated to Gemini 3.1 Flash's resolution-tiered model ($0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
+- Documentation (CLAUDE.md, README, COMMANDS, MCP guides) and OpenAPI spec/SDK regenerated to reflect the migrated model mappings
+
+### Added
+- Unit tests covering the migrated Imagen alias resolution across the CLI (`migrated_imagen_test.go`), MCP tools, and Vertex unified client
+
+
 ## [1.2.133] - 2026-06-20
 
 ### Added
