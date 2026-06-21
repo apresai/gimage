@@ -6,7 +6,10 @@ const path = require('path');
 const tar = require('tar');
 
 const GITHUB_REPO = 'apresai/gimage';
-const VERSION = process.env.npm_package_version || '0.1.0';
+// npm sets npm_package_version during the install lifecycle (postinstall). When
+// this module is require()'d at runtime by the bin wrapper that env var is unset,
+// so fall back to the package's own version.
+const VERSION = process.env.npm_package_version || require('../package.json').version;
 
 function getPlatformInfo() {
   const platform = process.platform;
@@ -27,7 +30,11 @@ function getPlatformInfo() {
   const mappedArch = archMap[arch];
 
   if (!mappedPlatform || !mappedArch) {
-    throw new Error(`Unsupported platform: ${platform}-${arch}`);
+    throw new Error(
+      `Unsupported platform: ${platform}-${arch}. ` +
+      `Install gimage manually from https://github.com/${GITHUB_REPO}/releases ` +
+      `or via Homebrew: brew install apresai/tap/gimage`
+    );
   }
 
   return {
@@ -35,6 +42,13 @@ function getPlatformInfo() {
     arch: mappedArch,
     ext: platform === 'win32' ? '.exe' : ''
   };
+}
+
+// binaryPath returns where the platform gimage binary lives (or will live) inside
+// the package: <package>/bin/gimage[.exe].
+function binaryPath() {
+  const { ext } = getPlatformInfo();
+  return path.join(__dirname, '..', 'bin', `gimage${ext}`);
 }
 
 async function downloadBinary() {
@@ -51,100 +65,74 @@ async function downloadBinary() {
   const url = `https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${tarballName}`;
 
   const binDir = path.join(__dirname, '..', 'bin');
-  const binaryPath = path.join(binDir, binaryName);
+  const binaryDest = path.join(binDir, binaryName);
 
   // Create bin directory if it doesn't exist
   if (!fs.existsSync(binDir)) {
     fs.mkdirSync(binDir, { recursive: true });
   }
 
-  console.log(`Downloading gimage binary for ${platform}-${arch}...`);
-  console.log(`URL: ${url}`);
+  // Progress goes to stderr so it never corrupts the MCP server's stdout
+  // JSON-RPC stream when this runs as a lazy download just before `gimage serve`.
+  console.error(`Downloading gimage binary for ${platform}-${arch}...`);
+  console.error(`URL: ${url}`);
+
+  function extractFrom(response, resolve, reject) {
+    const tarPath = path.join(binDir, tarballName);
+    const file = fs.createWriteStream(tarPath);
+    response.pipe(file);
+    file.on('finish', async () => {
+      file.close();
+      try {
+        await tar.x({ file: tarPath, cwd: binDir });
+        fs.unlinkSync(tarPath);
+        if (platform !== 'windows') {
+          fs.chmodSync(binaryDest, 0o755);
+        }
+        console.error('✓ gimage binary installed successfully');
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+    file.on('error', reject);
+  }
 
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       if (response.statusCode === 302 || response.statusCode === 301) {
-        // Follow redirect
+        // Follow redirect (GitHub release assets redirect to a CDN)
         https.get(response.headers.location, (redirectResponse) => {
           if (redirectResponse.statusCode !== 200) {
-            reject(new Error(`Download failed with status ${redirectResponse.statusCode}`));
+            reject(new Error(`Download failed with status ${redirectResponse.statusCode} for ${url}`));
             return;
           }
-
-          const tarPath = path.join(binDir, tarballName);
-          const file = fs.createWriteStream(tarPath);
-
-          redirectResponse.pipe(file);
-
-          file.on('finish', async () => {
-            file.close();
-
-            try {
-              // Extract tarball
-              await tar.x({
-                file: tarPath,
-                cwd: binDir
-              });
-
-              // Remove tarball
-              fs.unlinkSync(tarPath);
-
-              // Make binary executable (Unix-like systems)
-              if (platform !== 'windows') {
-                fs.chmodSync(binaryPath, 0o755);
-              }
-
-              console.log('✓ gimage binary installed successfully');
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          });
-
-          file.on('error', reject);
+          extractFrom(redirectResponse, resolve, reject);
         }).on('error', reject);
       } else if (response.statusCode === 200) {
-        const tarPath = path.join(binDir, tarballName);
-        const file = fs.createWriteStream(tarPath);
-
-        response.pipe(file);
-
-        file.on('finish', async () => {
-          file.close();
-
-          try {
-            // Extract tarball
-            await tar.x({
-              file: tarPath,
-              cwd: binDir
-            });
-
-            // Remove tarball
-            fs.unlinkSync(tarPath);
-
-            // Make binary executable (Unix-like systems)
-            if (platform !== 'windows') {
-              fs.chmodSync(binaryPath, 0o755);
-            }
-
-            console.log('✓ gimage binary installed successfully');
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        });
-
-        file.on('error', reject);
+        extractFrom(response, resolve, reject);
       } else {
-        reject(new Error(`Download failed with status ${response.statusCode}`));
+        reject(new Error(`Download failed with status ${response.statusCode} for ${url}`));
       }
     }).on('error', reject);
   });
 }
 
+// ensureBinary is idempotent: it returns the path to the platform binary,
+// downloading it only if it is not already present. Safe to call from both the
+// postinstall hook and the runtime bin wrapper.
+async function ensureBinary() {
+  const target = binaryPath();
+  if (fs.existsSync(target)) {
+    return target;
+  }
+  await downloadBinary();
+  return target;
+}
+
 async function main() {
   try {
-    await downloadBinary();
+    await ensureBinary();
     console.log('\n✓ Installation complete!');
     console.log('\nTo use with Claude Desktop, add this to your MCP configuration:');
     console.log('\nmacOS: ~/Library/Application Support/Claude/claude_desktop_config.json');
@@ -159,16 +147,20 @@ async function main() {
     console.log('  }');
     console.log('}');
     console.log('\nBefore using, configure your API keys:');
-    console.log('  gimage auth gemini');
+    console.log('  gimage auth setup gemini');
     console.log('\nFor more information: https://github.com/apresai/gimage');
   } catch (error) {
-    console.error('Installation failed:', error.message);
-    console.error('\nFallback options:');
-    console.error('1. Install gimage manually from: https://github.com/' + GITHUB_REPO + '/releases');
-    console.error('2. Install via Homebrew: brew install gimage');
-    console.error('3. Build from source: https://github.com/' + GITHUB_REPO + '#building-from-source');
-    process.exit(1);
+    // Non-fatal: the bin wrapper will lazily retry the download (or fall back to
+    // a system gimage on PATH) on first run, so don't fail the whole install.
+    console.error('Postinstall could not download the gimage binary:', error.message);
+    console.error('It will be fetched automatically on first run, or install manually:');
+    console.error('1. From releases: https://github.com/' + GITHUB_REPO + '/releases');
+    console.error('2. Via Homebrew:  brew install apresai/tap/gimage');
   }
 }
 
-main();
+module.exports = { ensureBinary, downloadBinary, binaryPath, getPlatformInfo };
+
+if (require.main === module) {
+  main();
+}
