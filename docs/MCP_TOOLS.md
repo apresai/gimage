@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine/Pro), various sizes up to 2048x2048 (or native 4K with Gemini 3 Pro), and style controls. Can use negative prompts to exclude unwanted elements, seeds for reproducible generation, and quality presets for optimal results.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Vertex-backed Gemini 3.1 Flash through Imagen aliases, Nova Canvas, Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
 
 ### Parameters
 
@@ -53,7 +53,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - `1024x1024` (default)
 - `1024x1792`
 - `1792x1024`
-- `2048x2048` (Vertex AI only)
+- `2048x2048` (Gemini 3+ / migrated imagen-4* via `image_size`)
 
 **AWS Bedrock (Nova Canvas):**
 
@@ -76,11 +76,11 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **Google Vertex AI:**
 
-- **imagen-4** (migrated to gemini-3.1-flash-image, premium quality, $0.067/image, up to 2048x2048)
-- **imagen-4-fast** (migrated to gemini-3.1-flash-image, speed-optimized, $0.067/image)
-- **imagen-4-ultra** (migrated to gemini-3.1-flash-image, premium quality, $0.067/image)
-- **imagen-3.0-generate-002** (Imagen 3, legacy, $0.04/image)
-- **imagen-3.0-fast-generate-001** (Imagen 3 Fast, legacy, $0.02/image)
+- **imagen-4** (deprecated Imagen alias; uses `gemini-3.1-flash-image` via Vertex generateContent, medium thinking default)
+- **imagen-4-fast** (same backend, minimal thinking default)
+- **imagen-4-ultra** (same backend, high thinking default)
+- Pricing follows Gemini 3.1 Flash tiers: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K
+- Negative prompts and seeds are ignored on migrated Imagen aliases.
 
 **AWS Bedrock:**
 
@@ -89,7 +89,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 **xAI Grok:**
 
 - **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio and resolution)
-- **grok-imagine-image-quality** (quality tier, $0.05/image, replaces deprecated `-pro` retired by xAI 2026-05-15)
+- **grok-imagine-image-quality** (quality tier, $0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro` retired by xAI 2026-05-15)
   - Note: Grok models do not support size, style, negative prompts, or seed parameters
   - Grok Imagine models support `aspect_ratio` and `resolution` parameters
 
@@ -596,23 +596,27 @@ None
 
 ```json
 {
-  "models": [
+  "providers": [
     {
-      "name": "gemini-2.5-flash-image",
-      "provider": "Google Gemini API",
-      "description": "Latest Gemini 2.5 Flash model...",
-      "max_resolution": "1024x1792 or 1792x1024",
-      "requires_api_key": true,
-      "api_key_env": "GEMINI_API_KEY",
+      "provider_id": "gemini/pro-3",
+      "name": "Gemini 3 Pro (via Gemini API)",
+      "api": "gemini",
+      "model_id": "gemini-3-pro-image",
+      "available": true,
+      "pricing_summary": "$0.1340/image",
       "supports_styles": true,
-      "supports_negative": true,
+      "supports_negative_prompt": true,
       "supports_seed": true,
-      "free_tier": true,
-      "free_tier_limit": "500 images/day"
+      "supports_image_size": true,
+      "supports_aspect_ratio": true,
+      "supports_thinking": true,
+      "supports_grounding": true,
+      "supports_input_images": true
     }
-    // ... more models
+    // ... more providers
   ],
-  "total": 4
+  "total": 9,
+  "configured": 1
 }
 ```
 
@@ -663,7 +667,7 @@ Error messages are designed to be clear and actionable:
 - **Medium**: compress (1-3 seconds depending on size and quality)
 - **Slow**: generate (5-30 seconds depending on model and size)
   - Gemini 2.5 Flash: ~5-10 seconds
-  - Imagen 3/4: ~10-20 seconds
+  - Vertex-backed Gemini 3.1 Flash aliases: ~10-20 seconds
   - Nova Canvas Standard: ~8-12 seconds
   - Nova Canvas Premium: ~15-25 seconds
 
@@ -716,12 +720,12 @@ Different providers support different advanced parameters:
 4. For generation:
    - Use **Gemini 2.5 Flash** for affordable generation ($0.039/image)
    - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
-   - Use **Imagen 4** for premium photo-realistic quality ($0.04/image)
-   - Use **Imagen 4 Fast** for quick Vertex AI iterations ($0.02/image)
-   - Use **Imagen 4 Ultra** for highest Vertex AI quality ($0.06/image)
+   - Use **Imagen 4** aliases for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)
+   - Use **Imagen 4 Fast** for the same Vertex backend with minimal thinking default
+   - Use **Imagen 4 Ultra** for the same Vertex backend with high thinking default
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
    - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
-   - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05/image, replaces deprecated `-pro`)
+   - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---

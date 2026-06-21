@@ -67,8 +67,8 @@ generate_image(
   output="~/Desktop/city_photorealistic.png"
 )
 
-NOTE: Gemini is free and works great for most use cases.
-For highest quality, use model="imagen-4" (Imagen 4 via Vertex AI, paid, $0.04 per image).`,
+NOTE: Gemini Flash is the lowest-cost Google option for quick iterations.
+Use model="imagen-4" when you need Vertex credentials/billing; it now runs Gemini 3.1 Flash through Vertex with tiered image pricing.`,
 	})
 
 	// 3. Generate and Crop Workflow - Multi-step workflow
@@ -115,7 +115,7 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 	server.RegisterPrompt(Prompt{
 		Name:        "high_quality_image",
 		Title:       "Generate High-Quality Professional Images",
-		Description: "Learn when and how to use paid providers (Imagen 4 via Vertex AI) for professional-quality images",
+		Description: "Learn when and how to use Gemini 3 Pro or Vertex-backed Gemini 3.1 Flash for professional-quality images",
 		Arguments: []PromptArgument{
 			{Name: "subject", Description: "What to generate", Required: true},
 		},
@@ -124,39 +124,39 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 STEP 1: Check providers with list_models
 This shows all providers with pricing and capabilities:
 - gemini/flash-2.5: $0.039/image, up to 1024x1024
-- gemini/pro-3: $0.134/image, native 4K (default)
-- vertex/imagen-4: $0.04/image, up to 2048x2048 (highest quality)
+- gemini/pro-3: $0.134-$0.24/image, native 4K (default)
+- vertex/imagen-4: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
 - bedrock/nova-canvas: $0.08/image, up to 1408x1408
 
-STEP 2: Use Imagen 4 for highest quality
+STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or Imagen aliases for Vertex billing
 generate_image(
   prompt="{{subject}}, ultra detailed, professional quality, 8k",
-  model="imagen-4",
-  size="2048x2048",
+  model="gemini-3-pro-image",
+  image_size="4K",
   output="~/Desktop/{{subject}}_hq.png"
 )
 
 PROVIDER COMPARISON:
 - Gemini Flash (gemini/flash-2.5): Good quality, $0.039/image, best for iterations
-- Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134/image, sharp text
-- Imagen 4 (vertex/imagen-4): Highest quality, $0.04/image, best for final work
+- Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134-$0.24/image, sharp text
+- Imagen aliases (vertex/imagen-4): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
 - Nova Canvas (bedrock/nova-canvas): High quality, $0.08/image, AWS integration
 
 WHEN TO USE EACH:
 - Gemini Flash: Quick iterations, testing prompts, social media ($0.039/image)
-- Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134/image)
-- Imagen-4: Final production images, professional work, large sizes (2048x2048)
+- Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134-$0.24/image)
+- Imagen-4 aliases: Vertex-authenticated workflows after Imagen retirement
 - Nova: AWS-integrated workflows, comparable quality to Imagen
 
 EXAMPLE:
 generate_image(
   prompt="professional headshot, studio lighting, ultra detailed, 8k",
-  model="imagen-4",
-  size="2048x2048",
+  model="gemini-3-pro-image",
+  image_size="4K",
   output="~/Desktop/headshot_hq.png"
 )
 
-NOTE: Imagen 4 requires Vertex AI setup. Run 'gimage auth vertex' first.
+NOTE: Imagen aliases require Vertex AI setup. Run 'gimage auth vertex' first.
 Nova Canvas requires AWS Bedrock setup. Run 'gimage auth bedrock' first.`,
 	})
 
@@ -171,7 +171,7 @@ Nova Canvas requires AWS Bedrock setup. Run 'gimage auth bedrock' first.`,
 		Template: `I want to generate images and optimize them for web use (smaller file size, WebP format).
 
 WORKFLOW:
-1. Generate images with Gemini (fast and free)
+1. Generate images with Gemini 2.5 Flash for low-cost iteration
 2. Resize to web-friendly dimensions
 3. Convert to WebP (30% smaller than PNG)
 
@@ -240,7 +240,7 @@ PROVIDER SIZE LIMITS:
 GENERAL TIPS:
 1. Call list_models first to check providers, pricing, and auth status
 2. Always specify output path (e.g., ~/Desktop/image.png)
-3. Start with Gemini (free) for testing
+3. Start with Gemini 2.5 Flash for lower-cost testing
 4. Use get_image_info before cropping to verify dimensions
 5. Check provider capabilities with list_models`,
 	})

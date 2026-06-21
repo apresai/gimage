@@ -66,20 +66,15 @@ const (
 
 // Defines values for GenerateRequestModel.
 const (
-	AmazonNovaCanvasV10                 GenerateRequestModel = "amazon.nova-canvas-v1:0"
-	Gemini20FlashPreviewImageGeneration GenerateRequestModel = "gemini-2.0-flash-preview-image-generation"
-	Gemini25FlashImage                  GenerateRequestModel = "gemini-2.5-flash-image"
-	Gemini31FlashImage                  GenerateRequestModel = "gemini-3.1-flash-image"
-	Gemini31FlashImagePreview           GenerateRequestModel = "gemini-3.1-flash-image-preview"
-	Gemini3ProImage                     GenerateRequestModel = "gemini-3-pro-image"
-	Gemini3ProImagePreview              GenerateRequestModel = "gemini-3-pro-image-preview"
-	GrokImagineImage                    GenerateRequestModel = "grok-imagine-image"
-	GrokImagineImageQuality             GenerateRequestModel = "grok-imagine-image-quality"
-	Imagen30Generate002                 GenerateRequestModel = "imagen-3.0-generate-002"
-	Imagen4                             GenerateRequestModel = "imagen-4"
-	Imagen40FastGenerate001             GenerateRequestModel = "imagen-4.0-fast-generate-001"
-	Imagen40Generate001                 GenerateRequestModel = "imagen-4.0-generate-001"
-	Imagen40UltraGenerate001            GenerateRequestModel = "imagen-4.0-ultra-generate-001"
+	AmazonNovaCanvasV10     GenerateRequestModel = "amazon.nova-canvas-v1:0"
+	Gemini25FlashImage      GenerateRequestModel = "gemini-2.5-flash-image"
+	Gemini31FlashImage      GenerateRequestModel = "gemini-3.1-flash-image"
+	Gemini3ProImage         GenerateRequestModel = "gemini-3-pro-image"
+	GrokImagineImage        GenerateRequestModel = "grok-imagine-image"
+	GrokImagineImageQuality GenerateRequestModel = "grok-imagine-image-quality"
+	Imagen4                 GenerateRequestModel = "imagen-4"
+	Imagen4Fast             GenerateRequestModel = "imagen-4-fast"
+	Imagen4Ultra            GenerateRequestModel = "imagen-4-ultra"
 )
 
 // Defines values for GenerateRequestResponseFormat.

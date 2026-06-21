@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/disintegration/imaging"
 	"github.com/apresai/gimage/internal/generate"
 	gimaging "github.com/apresai/gimage/internal/imaging"
+	"github.com/disintegration/imaging"
 )
 
 // generateOutputPath creates an output path based on input and suffix
@@ -198,11 +198,12 @@ func saveImage(img image.Image, path string) error {
 
 // isVertexModel checks if a model is a Vertex AI model
 func isVertexModel(model string) bool {
-	// Match both user-facing aliases and resolved full model IDs
+	// Match user-facing Vertex aliases and legacy Imagen 4 model IDs.
+	// Bare Gemini model IDs are intentionally not treated as Vertex here because
+	// the same ID can be used through Gemini API; callers should prefer provider
+	// resolution when backend identity matters.
 	vertexModels := []string{
-		"imagen-3.0-generate-002",
 		"imagen-4",
-		"imagen-4-standard",
 		"imagen-4-ultra",
 		"imagen-4-fast",
 		"imagen-4.0-generate-001",

@@ -145,10 +145,10 @@ func TestResolveProvider(t *testing.T) {
 	reg := GetProviderRegistry()
 
 	tests := []struct {
-		name       string
-		input      string
-		wantID     string
-		wantErr    bool
+		name    string
+		input   string
+		wantID  string
+		wantErr bool
 	}{
 		{"gemini default to pro-3", "gemini", "gemini/pro-3", false},
 		{"flash alias", "flash", "gemini/flash-2.5", false},
@@ -190,9 +190,9 @@ func TestResolveProvider(t *testing.T) {
 
 func TestResolveModelName(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
-		wantID  string
+		name   string
+		input  string
+		wantID string
 	}{
 		{"flash alias resolves", "flash", "gemini-2.5-flash-image"},
 		{"imagen alias resolves", "imagen", "gemini-3.1-flash-image"},
@@ -267,6 +267,26 @@ func TestValidateModelForAPI(t *testing.T) {
 	}
 }
 
+func TestMigratedVertexProviderCapabilities(t *testing.T) {
+	reg := GetProviderRegistry()
+	for _, providerID := range []string{"vertex/imagen-4", "vertex/imagen-4-fast", "vertex/imagen-4-ultra"} {
+		t.Run(providerID, func(t *testing.T) {
+			p, err := reg.Get(providerID)
+			require.NoError(t, err)
+			assert.Equal(t, "gemini-3.1-flash-image", p.ModelID)
+			assert.False(t, p.Capabilities.SupportsNegativePrompt, "migrated Gemini image backend should not advertise Imagen negative prompts")
+			assert.False(t, p.Capabilities.SupportsSeed, "migrated Gemini image backend should not advertise Imagen seed support")
+			assert.True(t, p.Capabilities.SupportsImageSize)
+			assert.True(t, p.Capabilities.SupportsAspectRatio)
+			assert.True(t, p.Capabilities.SupportsThinking)
+			assert.True(t, p.Capabilities.SupportsGrounding)
+			assert.True(t, p.Capabilities.SupportsInputImages)
+			assert.Contains(t, p.Description, "retired 2026-08-17")
+			assert.Contains(t, p.Description, "generateContent")
+		})
+	}
+}
+
 func TestGetProviderPricing(t *testing.T) {
 	reg := GetProviderRegistry()
 
@@ -275,6 +295,7 @@ func TestGetProviderPricing(t *testing.T) {
 	pro3Provider, _ := reg.Get("gemini/pro-3")
 	novaProvider, _ := reg.Get("bedrock/nova-canvas")
 	grokProvider, _ := reg.Get("grok/grok-imagine")
+	grokQualityProvider, _ := reg.Get("grok/grok-imagine-quality")
 
 	tests := []struct {
 		name        string
@@ -382,6 +403,18 @@ func TestGetProviderPricing(t *testing.T) {
 			name:     "grok standard pricing",
 			provider: grokProvider,
 			wantCost: 0.02,
+		},
+		{
+			name:      "grok quality 1K pricing",
+			provider:  grokQualityProvider,
+			imageSize: "1K",
+			wantCost:  0.05,
+		},
+		{
+			name:      "grok quality 2K pricing",
+			provider:  grokQualityProvider,
+			imageSize: "2K",
+			wantCost:  0.07,
 		},
 	}
 
@@ -560,15 +593,18 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "imagen-3.0-generate-001", want: 0.04},
 		{modelID: "imagen-3.0-fast-generate-001", want: 0.02},
 		// Nova Canvas 2x2 matrix: (quality × size)
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", want: 0.04},                              // standard small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "photorealistic", want: 0.06},     // premium small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", want: 0.06},                              // standard large
-		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", style: "premium", want: 0.08},            // premium large
-		{modelID: "amazon.nova-canvas-v1:0", dims: "512x512", want: 0.04},                                // standard small
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "ultra", want: 0.06},              // "ultra" maps to premium
-		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "artistic", want: 0.04},           // "artistic" is standard
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", want: 0.04},                          // standard small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "photorealistic", want: 0.06}, // premium small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", want: 0.06},                          // standard large
+		{modelID: "amazon.nova-canvas-v1:0", dims: "2048x2048", style: "premium", want: 0.08},        // premium large
+		{modelID: "amazon.nova-canvas-v1:0", dims: "512x512", want: 0.04},                            // standard small
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "ultra", want: 0.06},          // "ultra" maps to premium
+		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "artistic", want: 0.04},       // "artistic" is standard
 		{modelID: "grok-imagine-image", want: 0.02},
 		{modelID: "grok-imagine-image-quality", want: 0.05},
+		{modelID: "grok-imagine-image-quality", imageSize: "2K", want: 0.07},
+		{modelID: "gemini-3-pro-image-preview", imageSize: "4K", want: 0.24},
+		{modelID: "gemini-3.1-flash-image-preview", imageSize: "4K", want: 0.151},
 	}
 	for _, c := range checkpoints {
 		name := "checkpoint_" + c.modelID + "_" + c.imageSize + "_" + c.dims + "_" + c.style

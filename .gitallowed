@@ -6,3 +6,8 @@ GEMINI_API_KEY
 VERTEX_API_KEY
 VERTEX_PROJECT
 VERTEX_LOCATION
+
+# Masked xAI Grok key placeholders used in documentation examples (not real keys).
+# Bare-prefix form so each allowance also matches its own line in this file.
+xai-5zM
+xai-your-key

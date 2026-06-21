@@ -148,7 +148,7 @@ func TestGemini3ProE2E(t *testing.T) {
 
 	ctx := context.Background()
 	options := models.GenerateOptions{
-		Model: "gemini-3-pro-image-preview",
+		Model: "gemini-3-pro-image",
 	}
 
 	t.Log("Generating test image with Gemini 3 Pro...")
@@ -197,12 +197,14 @@ func TestVertexAIE2E(t *testing.T) {
 
 	ctx := context.Background()
 	options := models.GenerateOptions{
-		Model: "imagen-4.0-fast-generate-001",
-		Size:  "512x512",
+		Model:         "gemini-3.1-flash-image",
+		ImageSize:     "1K",
+		AspectRatio:   "1:1",
+		ThinkingLevel: "minimal",
 	}
 
-	t.Log("Generating test image with Vertex AI (Imagen 4 Fast)...")
-	t.Log("This will cost approximately $0.02")
+	t.Log("Generating test image with Vertex AI (Gemini 3.1 Flash via generateContent)...")
+	t.Log("This will cost approximately $0.07")
 
 	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {
@@ -404,12 +406,14 @@ func TestVertexAIUnifiedSDKE2E(t *testing.T) {
 	defer client.Close()
 
 	options := models.GenerateOptions{
-		Model: "imagen-4.0-fast-generate-001",
-		Size:  "512x512",
+		Model:         "gemini-3.1-flash-image",
+		ImageSize:     "1K",
+		AspectRatio:   "1:1",
+		ThinkingLevel: "minimal",
 	}
 
 	t.Log("Generating test image with Vertex AI Unified SDK (ADC)...")
-	t.Log("This will cost approximately $0.02")
+	t.Log("This will cost approximately $0.07")
 
 	results, err := client.GenerateImage(ctx, e2ePrompt, options)
 	if err != nil {

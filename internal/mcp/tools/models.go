@@ -11,7 +11,7 @@ import (
 func RegisterListModelsTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "list_models",
-		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, pricing for each provider (FREE vs paid), size limits (1024x1024 vs 2048x2048), and which credentials are missing. Returns provider IDs (e.g., 'gemini/flash-2.5', 'vertex/imagen-4'), pricing (FREE 500/day, $0.04/image, etc.), and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
+		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, current per-image pricing, native image-size support, and which credentials are missing. Returns provider IDs (e.g., 'gemini/pro-3', 'vertex/imagen-4'), pricing, capability flags, and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
 		InputSchema: map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
@@ -28,8 +28,8 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 
 				// Convert pricing info to map
 				pricingMap := map[string]interface{}{
-					"currency":   p.Pricing.Currency,
-					"free_tier":  p.Pricing.FreeTier,
+					"currency":  p.Pricing.Currency,
+					"free_tier": p.Pricing.FreeTier,
 				}
 
 				if p.Pricing.CostPerImage != nil {
@@ -48,12 +48,12 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 				}
 
 				providerData := map[string]interface{}{
-					"provider_id":     p.ID,
-					"name":            p.Name,
-					"api":             p.API,
-					"model_id":        p.ModelID,
-					"description":     p.Description,
-					"available":       status.Configured,
+					"provider_id":         p.ID,
+					"name":                p.Name,
+					"api":                 p.API,
+					"model_id":            p.ModelID,
+					"description":         p.Description,
+					"available":           status.Configured,
 					"missing_credentials": status.Missing,
 
 					// Pricing information
@@ -64,6 +64,11 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 					"supports_styles":          p.Capabilities.SupportsStyles,
 					"supports_negative_prompt": p.Capabilities.SupportsNegativePrompt,
 					"supports_seed":            p.Capabilities.SupportsSeed,
+					"supports_image_size":      p.Capabilities.SupportsImageSize,
+					"supports_aspect_ratio":    p.Capabilities.SupportsAspectRatio,
+					"supports_thinking":        p.Capabilities.SupportsThinking,
+					"supports_grounding":       p.Capabilities.SupportsGrounding,
+					"supports_input_images":    p.Capabilities.SupportsInputImages,
 					"max_prompt_length":        p.Capabilities.MaxPromptLength,
 				}
 
@@ -99,18 +104,18 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 			}
 
 			return map[string]interface{}{
-				"providers": providers,
-				"total":     len(providers),
+				"providers":  providers,
+				"total":      len(providers),
 				"configured": configuredCount,
 				"default_provider": map[string]interface{}{
 					"provider_id":     defaultProviderID,
 					"name":            defaultProviderName,
 					"pricing_summary": defaultProviderPricing,
 				},
-				"pricing_note": "Costs shown are in USD. Each provider offers specific models optimized for different use cases (gemini/flash-2.5 for affordable iteration, vertex/imagen-4 for highest quality, bedrock/nova-canvas for AWS integration).",
+				"pricing_note": "Costs shown are in USD. Vertex Imagen 4 provider aliases now use Gemini 3.1 Flash tiered pricing via generateContent.",
 				"recommendations": map[string]interface{}{
 					"budget_users": "gemini/flash-2.5 ($0.039/image via Gemini API, most affordable)",
-					"paid_users":   "vertex/imagen-4 ($0.04/image, highest quality)",
+					"paid_users":   "vertex/imagen-4 (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
 					"aws_users":    "bedrock/nova-canvas ($0.08/image, AWS integration)",
 				},
 			}, nil

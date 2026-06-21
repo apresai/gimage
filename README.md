@@ -21,10 +21,10 @@ Production-ready serverless REST API for web applications and remote processing.
 ### 🎨 AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 2.5 Flash ($0.039/image), Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine ($0.02-0.07/image)
-- Control size, style, quality, aspect ratio, and use negative prompts
-- Reproducible results with seed values
-- Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3 Pro)
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Vertex Imagen aliases, Nova Canvas, Grok Imagine ($0.02-$0.07/image)
+- Control size, style, quality, aspect ratio, and provider-supported negative prompts
+- Reproducible results with seed values on providers that support seeds
+- Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3+)
 - Batch generation: create multiple images at once
 
 ### 🛠️ Image Processing
@@ -117,7 +117,7 @@ gimage auth test gemini
 - **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Flash $0.039/image, Gemini 3 Pro $0.134/image)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
 - **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
-- **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Quality $0.05/image)
+- **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Quality $0.05-$0.07/image)
 
 ### 3. Generate Your First Image
 
@@ -373,16 +373,20 @@ gimage auth status  # Shows which credentials are active and their sources
 - **`imagen-4`** (migrated to gemini-3.1-flash-image)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Best for: Professional work, final production images
+  - Uses Vertex generateContent with medium thinking by default
+  - Negative prompts and seeds are ignored after the migration
+  - Best for: Vertex-authenticated Gemini image workflows
 
 - **`imagen-4-fast`** (migrated to gemini-3.1-flash-image)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
+  - Uses minimal thinking by default
   - Best for: Quick iterations, batch processing
 
 - **`imagen-4-ultra`** (migrated to gemini-3.1-flash-image)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
+  - Uses high thinking by default
   - Best for: Print-ready, marketing materials
 
 
@@ -403,7 +407,7 @@ gimage auth status  # Shows which credentials are active and their sources
 
 - **`grok-imagine-image-quality`** (quality tier, replaces deprecated `-pro` retired by xAI 2026-05-15)
 
-  - Pricing: $0.05/image
+  - Pricing: $0.05/image at 1K, $0.07/image at 2K
   - Supports aspect ratio and resolution (`1k`, `2k`)
   - Best for: Higher quality creative images
   - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here

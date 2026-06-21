@@ -38,7 +38,7 @@ Size: 1024x1024
 Model: gemini-3-pro-image
 ```
 
-**Want FREE generation?** Specify `model="gemini-2.5-flash-image"` for the free tier (500/day).
+**Want lower-cost generation?** Specify `model="gemini-2.5-flash-image"` for the lowest-cost Google model.
 
 ### Example 2: Resize an Existing Photo
 
@@ -165,11 +165,11 @@ I need a professional 2K image for print. Generate a hyper-realistic mountain la
 
 **Claude's Actions:**
 ```
-For professional print quality, I'll use Imagen 4 with 2048x2048 resolution.
+For professional print quality, I'll use Gemini 3 Pro with native 4K output.
 
-[Calls generate_image with model="imagen-4", size="2048x2048"]
+[Calls generate_image with model="gemini-3-pro-image", image_size="4K"]
 
-Note: This requires Vertex AI authentication. The result will be higher quality and larger file size than the free Gemini models.
+Note: This uses Gemini API authentication and the 4K Gemini 3 Pro pricing tier.
 ```
 
 ---

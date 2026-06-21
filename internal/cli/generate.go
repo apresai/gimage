@@ -135,6 +135,46 @@ func printGenerationTiming(elapsed time.Duration) {
 	printInfo("Generation completed in %.2fs", elapsed.Seconds())
 }
 
+func isMigratedImagenProvider(provider *generate.Provider) bool {
+	return provider != nil && strings.HasPrefix(provider.ID, "vertex/imagen-4")
+}
+
+func defaultThinkingLevelForProvider(provider *generate.Provider) string {
+	if provider == nil {
+		return ""
+	}
+	switch provider.ID {
+	case "vertex/imagen-4-fast":
+		return "minimal"
+	case "vertex/imagen-4":
+		return "medium"
+	case "vertex/imagen-4-ultra":
+		return "high"
+	default:
+		return ""
+	}
+}
+
+func warnIgnoredMigratedImagenOptions(provider *generate.Provider, negative string, seed int64) {
+	if !isMigratedImagenProvider(provider) {
+		return
+	}
+	if negative != "" {
+		printWarning("%s uses Gemini 3.1 Flash after the Imagen 4 migration; --negative is ignored", provider.ID)
+	}
+	if seed != 0 {
+		printWarning("%s uses Gemini 3.1 Flash after the Imagen 4 migration; --seed is ignored", provider.ID)
+	}
+}
+
+func stripUnsupportedMigratedImagenOptions(provider *generate.Provider, options *models.GenerateOptions) {
+	if !isMigratedImagenProvider(provider) || options == nil {
+		return
+	}
+	options.NegativePrompt = ""
+	options.Seed = 0
+}
+
 // printSuccessDetails prints the standard success block for a single image
 func printSuccessDetails(provider *generate.Provider, output string, imageData []byte, width, height int, imageSize, dimensions, style string) {
 	printInfo("  File: %s", output)
@@ -234,13 +274,15 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	// location, _ := cmd.Flags().GetString("location") // TODO: Enable when Vertex is implemented
 	model, _ := cmd.Flags().GetString("model")
 
-	// Resolve model aliases to exact names (e.g., "gemini" -> "gemini-2.5-flash-image")
-	originalModel := model
+	registry := generate.GetProviderRegistry()
+	var modelProvider *generate.Provider
 	if model != "" {
-		model = generate.ResolveModelName(model)
-		if originalModel != model {
-			printVerbose("Resolved model '%s' to '%s'", originalModel, model)
+		var providerErr error
+		modelProvider, providerErr = registry.ResolveProvider(model)
+		if providerErr != nil {
+			return fmt.Errorf("invalid model: %w\nUse --list-models to see available models", providerErr)
 		}
+		printVerbose("Resolved model '%s' to provider '%s' (%s)", model, modelProvider.ID, modelProvider.ModelID)
 	}
 
 	size, _ := cmd.Flags().GetString("size")
@@ -255,8 +297,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	listModels, _ := cmd.Flags().GetBool("list-models")
 	listProviders, _ := cmd.Flags().GetBool("list-providers")
 	resizeMode, _ := cmd.Flags().GetString("resize-mode")
-	thinkingLevel, _ := cmd.Flags().GetString("thinking")     // Gemini 3+ only
-	grounding, _ := cmd.Flags().GetBool("grounding")          // Gemini 3+ only
+	thinkingLevel, _ := cmd.Flags().GetString("thinking")       // Gemini 3+ only
+	grounding, _ := cmd.Flags().GetBool("grounding")            // Gemini 3+ only
 	inputImages, _ := cmd.Flags().GetStringArray("input-image") // Reference images for compositional editing
 	inputImages = sanitizeInputImagePaths(inputImages)
 
@@ -296,12 +338,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	selectedAPI := api
 	if selectedAPI == "" {
 		// Auto-detect API from model
-		if model != "" {
-			detectedAPI, err := generate.DetectAPIFromModel(model)
-			if err != nil {
-				return fmt.Errorf("invalid model: %w\nUse --list-models to see available models", err)
-			}
-			selectedAPI = detectedAPI
+		if modelProvider != nil {
+			selectedAPI = modelProvider.API
 		} else {
 			// Auto-detect from available credentials
 			hasGemini := config.HasGeminiCredentials()
@@ -361,10 +399,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Validate model is compatible with selected API
-	if model != "" {
-		if err := generate.ValidateModelForAPI(model, selectedAPI); err != nil {
-			return err
-		}
+	if modelProvider != nil && modelProvider.API != selectedAPI {
+		return fmt.Errorf("model %s is not available on %s API (only on %s)", model, selectedAPI, modelProvider.API)
+	}
+	if modelProvider != nil {
+		model = modelProvider.ModelID
 	}
 
 	// Create context with timeout
@@ -412,8 +451,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		}
 
 		// Get provider info and announce selection
-		registry := generate.GetProviderRegistry()
-		resolvedProvider, _ = registry.ResolveProvider(modelName)
+		if modelProvider != nil {
+			resolvedProvider = modelProvider
+		} else {
+			resolvedProvider, _ = registry.ResolveProvider(modelName)
+		}
 		if resolvedProvider != nil {
 			printProviderHeader(resolvedProvider)
 			printPricingInfo(resolvedProvider, imageSize, size, style)
@@ -458,16 +500,30 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		modelName := model
 		if modelName == "" {
-			modelName = "gemini-3.1-flash-image" // Default Imagen model
+			resolvedProvider, _ = registry.Get("vertex/imagen-4")
+			if resolvedProvider != nil {
+				modelName = resolvedProvider.ModelID
+			} else {
+				modelName = "gemini-3.1-flash-image"
+			}
 		}
 
 		// Get provider info and announce selection
-		registry := generate.GetProviderRegistry()
-		resolvedProvider, _ = registry.ResolveProvider(modelName)
+		if modelProvider != nil {
+			resolvedProvider = modelProvider
+		} else if resolvedProvider == nil {
+			resolvedProvider, _ = registry.ResolveProvider(modelName)
+		}
 		if resolvedProvider != nil {
 			printProviderHeader(resolvedProvider)
 			printPricingInfo(resolvedProvider, imageSize, size, style)
 		}
+		if thinkingLevel == "" {
+			thinkingLevel = defaultThinkingLevelForProvider(resolvedProvider)
+			options.ThinkingLevel = thinkingLevel
+		}
+		warnIgnoredMigratedImagenOptions(resolvedProvider, negative, seed)
+		stripUnsupportedMigratedImagenOptions(resolvedProvider, &options)
 
 		printInfo("Generating image...")
 
@@ -722,6 +778,9 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	grounding, _ := cmd.Flags().GetBool("grounding")
 	inputImages, _ := cmd.Flags().GetStringArray("input-image")
 	inputImages = sanitizeInputImagePaths(inputImages)
+	if thinkingLevel == "" {
+		thinkingLevel = defaultThinkingLevelForProvider(provider)
+	}
 	options := models.GenerateOptions{
 		Model:              provider.ModelID,
 		Size:               size,
@@ -737,6 +796,8 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
 	}
+	warnIgnoredMigratedImagenOptions(provider, negative, seed)
+	stripUnsupportedMigratedImagenOptions(provider, &options)
 
 	// Generate image
 	printInfo("Generating image...")

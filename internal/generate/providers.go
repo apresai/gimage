@@ -70,6 +70,11 @@ type ModelCapabilities struct {
 	SupportsStyles         bool
 	SupportsNegativePrompt bool
 	SupportsSeed           bool
+	SupportsImageSize      bool
+	SupportsAspectRatio    bool
+	SupportsThinking       bool
+	SupportsGrounding      bool
+	SupportsInputImages    bool
 	MaxPromptLength        int
 }
 
@@ -98,7 +103,7 @@ var apiRegistry = map[string]APIInfo{
 		ID:          "vertex",
 		DisplayName: "Vertex AI (Google Cloud)",
 		Description: "Google Cloud's enterprise AI platform",
-		PricingNote: "Paid: $0.02-0.06 per image",
+		PricingNote: "Paid: $0.045-0.151 per image (Gemini 3.1 Flash tiered)",
 		Order:       2,
 	},
 	"bedrock": {
@@ -165,6 +170,8 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsStyles:         true,
 			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
+			SupportsAspectRatio:    true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        480,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -204,6 +211,11 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsStyles:         true,
 			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -241,6 +253,11 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsStyles:         true,
 			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        2000, // 65k context window
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -258,7 +275,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Imagen 4 (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Google's premium image generation model (migrated to Gemini 3.1 Flash)",
+		Description: "Imagen 4 retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -289,8 +306,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
-			SupportsSeed:           true,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -316,7 +338,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Imagen 4 Fast (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Google's Imagen 4 optimized for speed (migrated to Gemini 3.1 Flash)",
+		Description: "Imagen 4 Fast retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -347,8 +369,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
-			SupportsSeed:           true,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -374,7 +401,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Imagen 4 Ultra (via Vertex AI)",
 		API:         "vertex",
 		ModelID:     "gemini-3.1-flash-image",
-		Description: "Google's Imagen 4 highest quality model (migrated to Gemini 3.1 Flash)",
+		Description: "Imagen 4 Ultra retired 2026-08-17; uses Gemini 3.1 Flash via generateContent",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "VERTEX_PROJECT",
@@ -405,8 +432,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
-			SupportsSeed:           true,
+			SupportsNegativePrompt: false,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -426,7 +458,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen 3 retired 2026-05-17 — use Imagen 4 family instead (vertex/imagen-4{,-fast,-ultra}).
+	// Imagen 3 retired 2026-05-17. Use the Vertex Imagen aliases above, now backed by Gemini 3.1 Flash.
 
 	// Grok Imagine via xAI (new default)
 	r.Register(&Provider{

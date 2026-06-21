@@ -159,9 +159,9 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 	// but we can verify the parameter parsing logic
 
 	tests := []struct {
-		name         string
-		args         map[string]interface{}
-		expectedSize string
+		name          string
+		args          map[string]interface{}
+		expectedSize  string
 		expectedModel string
 	}{
 		{
@@ -169,25 +169,25 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 			args: map[string]interface{}{
 				"prompt": "test prompt",
 			},
-			expectedSize: "1024x1024",
-			expectedModel: "gemini-2.5-flash-image",
+			expectedSize:  "1024x1024",
+			expectedModel: "gemini-3-pro-image",
 		},
 		{
 			name: "custom size",
 			args: map[string]interface{}{
 				"prompt": "test prompt",
-				"size": "512x512",
+				"size":   "512x512",
 			},
-			expectedSize: "512x512",
-			expectedModel: "gemini-2.5-flash-image",
+			expectedSize:  "512x512",
+			expectedModel: "gemini-3-pro-image",
 		},
 		{
 			name: "custom model",
 			args: map[string]interface{}{
 				"prompt": "test prompt",
-				"model": "imagen-4",
+				"model":  "imagen-4",
 			},
-			expectedSize: "1024x1024",
+			expectedSize:  "1024x1024",
 			expectedModel: "imagen-4",
 		},
 	}
@@ -204,7 +204,7 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 
 			model, _ := tt.args["model"].(string)
 			if model == "" {
-				model = "gemini-2.5-flash-image"
+				model = "gemini-3-pro-image"
 			}
 
 			if size != tt.expectedSize {
@@ -223,10 +223,14 @@ func TestIsVertexModel(t *testing.T) {
 		model    string
 		expected bool
 	}{
-		{"imagen-3.0-generate-002", true},
 		{"imagen-4", true},
+		{"imagen-4-fast", true},
+		{"imagen-4-ultra", true},
+		{"imagen-4.0-fast-generate-001", true},
+		{"gemini-3.1-flash-image", false},
 		{"gemini-2.5-flash-image", false},
 		{"gemini-2.0-flash-preview-image-generation", false},
+		{"imagen-4-standard", false},
 		{"unknown-model", false},
 		{"", false},
 	}

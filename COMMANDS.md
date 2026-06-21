@@ -91,9 +91,10 @@ gimage generate --prompt "your prompt" [flags]
 
 **Vertex AI (Paid):**
 
-- `imagen-4` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
-- `imagen-4-fast` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
-- `imagen-4-ultra` - migrated to gemini-3.1-flash-image (resolution-tiered pricing, $0.045-$0.151/image)
+- `imagen-4` - deprecated Imagen alias using gemini-3.1-flash-image on Vertex (tiered $0.045-$0.151/image, medium thinking default)
+- `imagen-4-fast` - same backend with minimal thinking default
+- `imagen-4-ultra` - same backend with high thinking default
+- Negative prompts and seeds are ignored on migrated Imagen aliases.
 
 **AWS Bedrock (Paid):**
 
@@ -102,7 +103,7 @@ gimage generate --prompt "your prompt" [flags]
 **xAI Grok (Paid):**
 
 - `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model)
-- `grok-imagine-image-quality` - $0.05/image, quality tier (replaces deprecated `-pro` retired by xAI 2026-05-15)
+- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (replaces deprecated `-pro` retired by xAI 2026-05-15)
 
 ### Examples
 

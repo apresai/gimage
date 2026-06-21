@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -253,7 +254,7 @@ func TestGemini3ProAspectRatio(t *testing.T) {
 			defer cancel()
 
 			opts := models.GenerateOptions{
-				Model:       "gemini-3-pro-image-preview",
+				Model:       "gemini-3-pro-image",
 				AspectRatio: tc.aspectRatio,
 				ImageSize:   tc.imageSize,
 			}
@@ -299,13 +300,13 @@ func TestGemini3ProImageSize(t *testing.T) {
 
 	// Test that 1K produces smaller images than 2K
 	testCases := []struct {
-		name         string
-		imageSize    string
-		minPixels    int // Minimum total pixels expected
-		maxPixels    int // Maximum total pixels expected
+		name      string
+		imageSize string
+		minPixels int // Minimum total pixels expected
+		maxPixels int // Maximum total pixels expected
 	}{
-		{"1K resolution", "1K", 500000, 1500000},      // ~1MP
-		{"2K resolution", "2K", 2000000, 5000000},     // ~4MP
+		{"1K resolution", "1K", 500000, 1500000},  // ~1MP
+		{"2K resolution", "2K", 2000000, 5000000}, // ~4MP
 		// Skip 4K in tests as it's expensive ($0.24/image)
 	}
 
@@ -315,7 +316,7 @@ func TestGemini3ProImageSize(t *testing.T) {
 			defer cancel()
 
 			opts := models.GenerateOptions{
-				Model:       "gemini-3-pro-image-preview",
+				Model:       "gemini-3-pro-image",
 				ImageSize:   tc.imageSize,
 				AspectRatio: "1:1", // Use square for easier pixel counting
 			}
