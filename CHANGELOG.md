@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.139] - 2026-06-21
+
+### Removed
+- Retired the fake "Imagen" model aliases (`imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, and the `imagen-4.0-*-generate-001` IDs); the catalog now advertises only models actually backed by a live provider.
+
+### Changed
+- Passing a retired Imagen name to `--model`/`--provider` now returns an actionable error pointing to the correct current alias (e.g. `vertex-flash`) instead of silently routing or failing.
+- Trimmed the Vertex REST/unified clients and pricing tables to drop dead Imagen request-building and pricing paths.
+- Updated CLI, TUI, MCP tools, OpenAPI spec, generated SDK, and docs (README, COMMANDS, TESTING, MCP guides) to reflect the Imagen removal.
+
+### Added
+- Regression coverage for the retired-name error guidance (`vertex_flash_test.go`, replacing the old `migrated_imagen_test.go`).
+
+
 ## [1.2.137] - 2026-06-21
 
 ### Added
