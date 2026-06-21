@@ -15,11 +15,45 @@ import (
 	"github.com/apresai/gimage/pkg/models"
 )
 
+func isMigratedImagenProvider(provider *generate.Provider) bool {
+	return provider != nil && strings.HasPrefix(provider.ID, "vertex/imagen-4")
+}
+
+func defaultThinkingLevelForProvider(provider *generate.Provider) string {
+	if provider == nil {
+		return ""
+	}
+	switch provider.ID {
+	case "vertex/imagen-4-fast":
+		return "minimal"
+	case "vertex/imagen-4":
+		return "medium"
+	case "vertex/imagen-4-ultra":
+		return "high"
+	default:
+		return ""
+	}
+}
+
+func migratedImagenWarning(provider *generate.Provider, negative string, seed int64) string {
+	if !isMigratedImagenProvider(provider) {
+		return ""
+	}
+	var warnings []string
+	if negative != "" {
+		warnings = append(warnings, provider.ID+" uses Gemini 3.1 Flash after the Imagen 4 migration; negative prompts are ignored")
+	}
+	if seed != 0 {
+		warnings = append(warnings, provider.ID+" uses Gemini 3.1 Flash after the Imagen 4 migration; seed is ignored")
+	}
+	return strings.Join(warnings, "; ")
+}
+
 // RegisterGenerateImageTool registers the generate_image tool
 func RegisterGenerateImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "generate_image",
-		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, AWS Bedrock). Call list_models first to see available providers with pricing. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Supports styles (photorealistic, artistic, anime), negative prompts, and seeds for reproducibility. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
+		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, AWS Bedrock, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Styles, negative prompts, and seeds depend on provider capabilities. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: false, // Creates new files but doesn't modify existing ones
 			IdempotentHint:  false, // Each call generates a different image
@@ -47,15 +81,12 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"enum": []string{
 						"gemini-2.5-flash-image",
 						"gemini-3-pro-image",
-						"gemini-3-pro-image-preview",
 						"gemini-3",
 						"gemini-3-pro",
 						"gemini-3.1-flash-image",
-						"gemini-3.1-flash-image-preview",
 						"gemini-3.1-flash",
 						"gemini-3.1",
 						"3.1-flash",
-						"imagen-3.0-generate-002",
 						"imagen-4",
 						"imagen-4-fast",
 						"imagen-4-ultra",
@@ -74,7 +105,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.05/image, 4K with improved text rendering), 'gemini-3' or 'gemini-3-pro-image' ($0.134/image, native 4K with sharp text), 'imagen-4' (migrated to gemini-3.1-flash-image, $0.067/image), 'imagen-4-fast' (migrated to gemini-3.1-flash-image), 'imagen-4-ultra' (migrated to gemini-3.1-flash-image), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05/image, replaces -pro retired 2026-05-15). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'imagen-4' (deprecated Imagen alias using gemini-3.1-flash-image on Vertex), 'imagen-4-fast' (same backend with minimal thinking default), 'imagen-4-ultra' (same backend with high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 1K, $0.07 2K, replaces -pro retired 2026-05-15). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
 					"default":     "gemini-3-pro-image",
 				},
 				"image_size": map[string]interface{}{
@@ -116,7 +147,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"output_format": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"png", "jpeg", "webp"},
-					"description": "Output format. Only supported by Vertex AI Imagen. Default: png.",
+					"description": "Output format for Vertex AI requests. Default: png.",
 				},
 				"thinking": map[string]interface{}{
 					"type":        "string",
@@ -174,24 +205,20 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 
 			modelName, _ := args["model"].(string)
 			if modelName == "" {
-				modelName = "gemini-3-pro-image-preview"
+				modelName = generate.DefaultModel
 			}
 
-			// Resolve model aliases to exact names (e.g., "gemini" -> "gemini-2.5-flash-image")
-			resolvedModel := generate.ResolveModelName(modelName)
-			if resolvedModel != modelName {
-				log.Debug("Model resolved: %s -> %s", modelName, resolvedModel)
-			}
-			modelName = resolvedModel
-
-			// Validate provider/model exists, fallback to default if not
 			registry := generate.GetProviderRegistry()
-			_, providerErr := registry.ResolveProvider(modelName)
+			selectedProvider, providerErr := registry.ResolveProvider(modelName)
 			if providerErr != nil {
 				// Provider not found, fallback to default model
 				log.Debug("Provider not found for model %s, falling back to default", modelName)
-				modelName = "gemini-3-pro-image-preview"
+				selectedProvider, providerErr = registry.ResolveProvider(generate.DefaultModel)
+				if providerErr != nil {
+					return nil, fmt.Errorf("default provider not found: %w", providerErr)
+				}
 			}
+			modelName = selectedProvider.ModelID
 
 			style, _ := args["style"].(string)
 			negative, _ := args["negative"].(string)
@@ -201,6 +228,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			thinkingLevel, _ := args["thinking"].(string)
 			grounding, _ := args["grounding"].(bool)
 			inputImages := coerceStringArray(args["input_images"])
+			if thinkingLevel == "" {
+				thinkingLevel = defaultThinkingLevelForProvider(selectedProvider)
+			}
 
 			// Parse optional numeric parameters with type coercion (accepts string or number)
 			var seed int64
@@ -208,6 +238,11 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				if seedVal, sErr := coerceToInt(args["seed"], "seed"); sErr == nil {
 					seed = int64(seedVal)
 				}
+			}
+			featureWarning := migratedImagenWarning(selectedProvider, negative, seed)
+			if isMigratedImagenProvider(selectedProvider) {
+				negative = ""
+				seed = 0
 			}
 
 			var cfgScale float64
@@ -254,15 +289,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"input_images_count": len(inputImages),
 			})
 
-			// Determine which backend to use based on model
-			selectedAPI := "gemini" // default
-			if isVertexModel(modelName) {
-				selectedAPI = "vertex"
-			} else if isBedrockModel(modelName) {
-				selectedAPI = "bedrock"
-			} else if isGrokModel(modelName) {
-				selectedAPI = "grok"
-			}
+			// Determine backend from the resolved provider. This preserves aliases
+			// like imagen-4 that now target a Gemini model through Vertex.
+			selectedAPI := selectedProvider.API
 			log.Debug("Selected API: %s", selectedAPI)
 
 			// Create context for API calls
@@ -426,14 +455,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			}
 
 			// Get provider info for pricing display using shared helper
-			provider, _ := registry.ResolveProvider(modelName)
 			var modelDisplayName string
 			var pricingInfo string
 
-			if provider != nil {
-				modelDisplayName = provider.Name
+			if selectedProvider != nil {
+				modelDisplayName = selectedProvider.Name
 				// Use shared pricing helper for consistent pricing display
-				pricing := generate.GetProviderPricing(provider, imageSize, size, style)
+				pricing := generate.GetProviderPricing(selectedProvider, imageSize, size, style)
 				pricingInfo = pricing.Display
 			} else {
 				modelDisplayName = modelName
@@ -461,6 +489,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			// Add warning if we had to fall back to a different location
 			if pathWarning != "" {
 				result["warning"] = pathWarning
+			}
+			if featureWarning != "" {
+				if existing, ok := result["warning"].(string); ok && existing != "" {
+					result["warning"] = existing + "; " + featureWarning
+				} else {
+					result["warning"] = featureWarning
+				}
 			}
 
 			log.Debug("Generation complete in %s: %d images saved", time.Since(startTime), len(generatedImages))

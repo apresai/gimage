@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Default model set to `gemini-3-pro-image`.
-- Vertex AI Imagen 4 models (`imagen-4.0-generate-001`, `imagen-4.0-ultra-generate-001`, `imagen-4.0-fast-generate-001`) migrated to target the new `gemini-3.1-flash-image` model.
+- Vertex AI Imagen aliases (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`) migrated to target the new `gemini-3.1-flash-image` model through generateContent.
 - Kept `-preview` model aliases registered for backwards compatibility.
 - Updated MCP tool defaults, CLI options, openapi.yaml, Go SDK types, and documentation.
 

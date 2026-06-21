@@ -226,9 +226,9 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		text := contentList[0]["text"].(string)
 
-		// Verify response contains model info
-		if !strings.Contains(text, "models") {
-			t.Error("Expected models in response text")
+		// Verify response contains provider info
+		if !strings.Contains(text, "providers") {
+			t.Error("Expected providers in response text")
 		}
 	})
 }

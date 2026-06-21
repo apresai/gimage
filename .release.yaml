@@ -1,0 +1,24 @@
+version: 1
+# Note: `make release` does not run tests; the oss-release cycle runs `make test` as a separate gate first.
+front_door: make release
+version_source:
+  kind: json
+  path: package.json
+  selector: .version
+products:
+  - name: gimage
+    channels:
+      - kind: homebrew-formula
+        install: brew install apresai/tap/gimage
+        verify: gimage --version
+        expect_version: stdout
+  - name: "@apresai/gimage-mcp"
+    channels:
+      - kind: npm
+        install: npm install -g @apresai/gimage-mcp
+        verify: gimage-mcp --version
+        expect_version: stdout
+docs:
+  - when: [internal/**, openapi.yaml, sdk/**]
+    check: [README.md, COMMANDS.md, docs/**, CHANGELOG.md]
+artifact_check: gh release view v{version} --json assets

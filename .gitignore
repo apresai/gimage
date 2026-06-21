@@ -113,3 +113,7 @@ release/
 coverage-report.html
 coverage.html
 coverage.out
+
+# npm workspace byproducts (root package.json is a private workspace wrapper)
+node_modules/
+/package-lock.json

@@ -56,7 +56,7 @@ Gemini API pricing:
 
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
 - **AWS Bedrock**: 4 authentication modes (Bearer Token/Access Keys/Profile/IAM Role)
-- **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine $0.02/image, Pro $0.07/image)
+- **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine $0.02/image, Quality $0.05-$0.07/image)
 
 See [Authentication Guide](../README.md#configuration) for complete details.
 
@@ -126,7 +126,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 **Capabilities:**
 
-- **Multiple AI models**: Gemini 3 Pro (default), Gemini 2.5 Flash ($0.039/image), Imagen 4/Fast/Ultra, Nova Canvas, Grok Imagine/Pro
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Vertex Imagen aliases, Nova Canvas, Grok Imagine/Quality
 - **Size options**: From 512x512 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
@@ -476,12 +476,13 @@ export VERTEX_PROJECT="your-gcp-project"
 - `gemini-3.1-flash-image` (native 4K at flash speed, tiered pricing: $0.045-$0.151/image)
 - `gemini-2.5-flash-image` ($0.039/image, up to 1024x1024)
 
-**Vertex AI Models** (Premium Quality):
+**Vertex AI Models** (Imagen aliases migrated to Gemini 3.1 Flash):
 
-- `imagen-4` (migrated to gemini-3.1-flash-image, premium quality, $0.067/image, up to 2048x2048)
-- `imagen-4-fast` (migrated to gemini-3.1-flash-image, speed-optimized, $0.067/image)
-- `imagen-4-ultra` (migrated to gemini-3.1-flash-image, premium quality, $0.067/image)
-- `imagen-3.0-generate-002` (legacy, $0.04/image)
+- `imagen-4` (deprecated Imagen alias; uses `gemini-3.1-flash-image` via Vertex generateContent, medium thinking default)
+- `imagen-4-fast` (same backend, minimal thinking default)
+- `imagen-4-ultra` (same backend, high thinking default)
+- Pricing follows Gemini 3.1 Flash tiers: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
+- Negative prompts and seeds are ignored on migrated Imagen aliases.
 
 **AWS Bedrock Models**:
 
@@ -490,7 +491,7 @@ export VERTEX_PROJECT="your-gcp-project"
 **xAI Grok Models**:
 
 - `grok-imagine-image` (fast, $0.02/image, supports aspect ratio and resolution)
-- `grok-imagine-image-quality` (quality tier, $0.05/image, replaces deprecated `-pro` retired by xAI 2026-05-15)
+- `grok-imagine-image-quality` (quality tier, $0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro` retired by xAI 2026-05-15)
 
 **Examples**:
 
@@ -548,12 +549,12 @@ Claude can chain multiple operations:
 
    - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
    - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
-   - Imagen 4: Highest quality photo-realistic images, output format control
-   - Imagen 4 Fast: Speed-optimized Vertex AI at $0.02/image
-   - Imagen 4 Ultra: Premium Vertex AI quality at $0.06/image
+   - Imagen aliases: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+   - Imagen 4 Fast: same Vertex-backed Gemini model with minimal thinking default
+   - Imagen 4 Ultra: same Vertex-backed Gemini model with high thinking default
    - Nova Canvas: AWS integration, CFG scale for creativity control
    - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
-   - Grok Imagine Quality: Higher quality xAI generation ($0.05/image, replaces deprecated `-pro`)
+   - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 
 5. **Use provider-specific features**:
 

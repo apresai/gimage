@@ -81,6 +81,94 @@ func NewVertexUnifiedClient(ctx context.Context, project, location string) (*Ver
 	}, nil
 }
 
+func buildVertexGeminiGenerateContentRequest(modelName, prompt string, options models.GenerateOptions) ([]*genai.Content, *genai.GenerateContentConfig, int, int, error) {
+	width, height := ParseSizeString(options.Size)
+
+	parts := []*genai.Part{{Text: prompt}}
+	if len(options.InputImages) > 0 {
+		maxImages := maxInputImagesForModel(modelName)
+		if len(options.InputImages) > maxImages {
+			return nil, nil, 0, 0, fmt.Errorf("model %s supports at most %d input images, got %d", modelName, maxImages, len(options.InputImages))
+		}
+		for _, imgPath := range options.InputImages {
+			data, mimeType, err := readInputImageData(imgPath)
+			if err != nil {
+				return nil, nil, 0, 0, fmt.Errorf("read input image %s: %w", imgPath, err)
+			}
+			parts = append(parts, &genai.Part{
+				InlineData: &genai.Blob{
+					Data:     data,
+					MIMEType: mimeType,
+				},
+			})
+		}
+	}
+
+	config := &genai.GenerateContentConfig{
+		ResponseModalities: []string{"TEXT", "IMAGE"},
+	}
+
+	if options.NumberOfImages > 1 {
+		count := options.NumberOfImages
+		if count > 4 {
+			count = 4
+		}
+		config.CandidateCount = int32(count)
+	}
+
+	imageConfig := &genai.ImageConfig{}
+	if options.AspectRatio != "" {
+		imageConfig.AspectRatio = options.AspectRatio
+	} else if options.Size != "" && width > 0 && height > 0 {
+		imageConfig.AspectRatio = InferAspectRatio(width, height, nil)
+	} else if options.ImageSize != "" {
+		imageConfig.AspectRatio = "1:1"
+	}
+	if options.ImageSize != "" {
+		imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
+	}
+	if options.OutputFormat != "" {
+		switch strings.ToLower(options.OutputFormat) {
+		case "png":
+			imageConfig.OutputMIMEType = "image/png"
+		case "jpeg", "jpg":
+			imageConfig.OutputMIMEType = "image/jpeg"
+		case "webp":
+			imageConfig.OutputMIMEType = "image/webp"
+		}
+	}
+	if imageConfig.AspectRatio != "" || imageConfig.ImageSize != "" || imageConfig.OutputMIMEType != "" {
+		config.ImageConfig = imageConfig
+	}
+
+	if options.Seed != 0 {
+		config.Seed = genai.Ptr[int32](int32(options.Seed))
+	}
+	if level := strings.ToLower(options.ThinkingLevel); level != "" && level != "off" {
+		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingLevel: toGenAIThinkingLevel(level)}
+	}
+	if options.WebSearchGrounding && isGeminiAdvanced(modelName) {
+		config.Tools = []*genai.Tool{{GoogleSearch: &genai.GoogleSearch{}}}
+	}
+
+	return []*genai.Content{{Parts: parts}}, config, width, height, nil
+}
+
+func toGenAIThinkingLevel(level string) genai.ThinkingLevel {
+	switch strings.ToLower(level) {
+	case "minimal":
+		return genai.ThinkingLevelMinimal
+	case "low":
+		return genai.ThinkingLevelLow
+	case "medium":
+		return genai.ThinkingLevelMedium
+	case "high":
+		return genai.ThinkingLevelHigh
+	default:
+		return genai.ThinkingLevel(strings.ToUpper(level))
+	}
+}
+
 // GenerateImage generates an image using Vertex AI unified SDK
 func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	// Validate prompt
@@ -98,70 +186,9 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 	}
 
 	if strings.Contains(modelName, "gemini") {
-		// Prepare parts
-		parts := []*genai.Part{
-			{Text: enhancedPrompt},
-		}
-
-		// Handle options.InputImages
-		if len(options.InputImages) > 0 {
-			for _, imgPath := range options.InputImages {
-				// Read file bytes
-				data, err := os.ReadFile(imgPath)
-				if err != nil {
-					return nil, fmt.Errorf("failed to read input image %s: %w", imgPath, err)
-				}
-				mimeType := "image/png"
-				if strings.HasSuffix(strings.ToLower(imgPath), ".jpg") || strings.HasSuffix(strings.ToLower(imgPath), ".jpeg") {
-					mimeType = "image/jpeg"
-				} else if strings.HasSuffix(strings.ToLower(imgPath), ".webp") {
-					mimeType = "image/webp"
-				}
-				parts = append(parts, &genai.Part{
-					InlineData: &genai.Blob{
-						Data:     data,
-						MIMEType: mimeType,
-					},
-				})
-			}
-		}
-
-		contents := []*genai.Content{
-			{Parts: parts},
-		}
-
-		// Config
-		numberOfImages := 1
-		if options.NumberOfImages > 0 && options.NumberOfImages <= 4 {
-			numberOfImages = options.NumberOfImages
-		}
-
-		config := &genai.GenerateContentConfig{
-			ResponseModalities: []string{"TEXT", "IMAGE"},
-			CandidateCount:     int32(numberOfImages),
-		}
-
-		// Aspect Ratio and Image Size
-		imageConfig := &genai.ImageConfig{}
-		w, h := ParseSizeString(options.Size)
-		if options.AspectRatio != "" {
-			imageConfig.AspectRatio = options.AspectRatio
-		} else if options.Size != "" && w > 0 && h > 0 {
-			imageConfig.AspectRatio = InferAspectRatio(w, h, nil)
-		} else if options.ImageSize != "" {
-			imageConfig.AspectRatio = "1:1"
-		}
-
-		if options.ImageSize != "" {
-			imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
-		}
-
-		if imageConfig.AspectRatio != "" || imageConfig.ImageSize != "" {
-			config.ImageConfig = imageConfig
-		}
-
-		if options.Seed != 0 {
-			config.Seed = genai.Ptr[int32](int32(options.Seed))
+		contents, config, width, height, err := buildVertexGeminiGenerateContentRequest(modelName, enhancedPrompt, options)
+		if err != nil {
+			return nil, err
 		}
 
 		c.log.Debug("Sending request to Vertex AI (GenerateContent)...")
@@ -211,16 +238,22 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 				continue
 			}
 
+			finalWidth, finalHeight := width, height
+			if isGeminiAdvanced(modelName) && options.ImageSize != "" {
+				finalWidth, finalHeight = 0, 0
+			}
+
 			generatedImages = append(generatedImages, &models.GeneratedImage{
 				Data:   candidateData,
 				Format: format,
-				Width:  w,
-				Height: h,
+				Width:  finalWidth,
+				Height: finalHeight,
 				Metadata: map[string]string{
 					"model":       modelName,
 					"prompt":      prompt,
 					"style":       options.Style,
 					"api":         "vertex-unified-content",
+					"imageSize":   options.ImageSize,
 					"project":     c.project,
 					"location":    c.location,
 					"generated":   time.Now().UTC().Format(time.RFC3339),

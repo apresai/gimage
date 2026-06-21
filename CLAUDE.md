@@ -131,7 +131,7 @@ Model name implies backend (auto-detect):
 - `imagen-4-ultra` → vertex (migrated to gemini-3.1-flash-image)
 - `amazon.nova-canvas-v1:0` → bedrock
 - `grok-imagine-image` → grok ($0.02/image)
-- `grok-imagine-image-quality` → grok ($0.05/image, replaces -pro retired 2026-05-15)
+- `grok-imagine-image-quality` → grok ($0.05/image at 1K, $0.07/image at 2K; replaces -pro retired 2026-05-15)
 
 Optional `--api` flag overrides auto-detection.
 
@@ -144,12 +144,12 @@ Map informal names to exact model IDs:
 | "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image` | gemini | Native 4K, sharp text, $0.134/image (default) |
 | "gemini-3.1-flash", "gemini-3.1", "3.1-flash" | `gemini-3.1-flash-image` | gemini | Tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K) |
 | "gemini-flash", "flash", "gemini-2.5" | `gemini-2.5-flash-image` | gemini | $0.039/image, 1024x1024 max |
-| "imagen", "imagen-4" | `gemini-3.1-flash-image` | vertex | Migrated to Gemini 3.1 Flash, resolution-tiered |
-| "imagen-4-fast", "imagen-fast" | `gemini-3.1-flash-image` | vertex | Migrated to Gemini 3.1 Flash, resolution-tiered |
-| "imagen-4-ultra", "imagen-ultra" | `gemini-3.1-flash-image` | vertex | Migrated to Gemini 3.1 Flash, resolution-tiered |
+| "imagen", "imagen-4" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, medium thinking default |
+| "imagen-4-fast", "imagen-fast" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, minimal thinking default |
+| "imagen-4-ultra", "imagen-ultra" | `gemini-3.1-flash-image` | vertex | Deprecated Imagen alias; Gemini 3.1 Flash via Vertex, high thinking default |
 | "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration; std/prem × ≤1024/>1024 = $0.04/$0.06/$0.06/$0.08 |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
-| "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
+| "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image at 1K, $0.07/image at 2K. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
 
 **Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`. **Grok Imagine** and **Grok Imagine Quality** also accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
 

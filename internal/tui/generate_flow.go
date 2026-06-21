@@ -1293,7 +1293,7 @@ func (m *GenerateFlowModel) renderHelp() string {
 		FormatKeyValue("Ctrl+C", "Quit") + "\n\n" +
 		SubtitleStyle.Render("Generation Workflow") + "\n\n" +
 		"1. Enter a detailed prompt\n" +
-		"2. Choose an AI provider (Gemini is free!)\n" +
+		"2. Choose an AI provider\n" +
 		"3. Select image size\n" +
 		"4. Pick a style (optional)\n" +
 		"5. Advanced options (negative prompt, seed, etc.)\n" +
@@ -1807,6 +1807,9 @@ func (m *GenerateFlowModel) supportsNegativePrompt() bool {
 		return true
 	}
 	provider := m.providers[m.selectedProvider]
+	if strings.HasPrefix(provider.id, "vertex/imagen-4") {
+		return false
+	}
 	// Grok doesn't support negative prompts
 	if provider.api == "grok" {
 		return false
@@ -1824,6 +1827,9 @@ func (m *GenerateFlowModel) supportsSeed() bool {
 		return true
 	}
 	provider := m.providers[m.selectedProvider]
+	if strings.HasPrefix(provider.id, "vertex/imagen-4") {
+		return false
+	}
 	// Grok doesn't support seed
 	if provider.api == "grok" {
 		return false

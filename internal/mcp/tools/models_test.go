@@ -135,6 +135,8 @@ func TestListModelsTool_ProviderStructure(t *testing.T) {
 		"available", "missing_credentials",
 		"pricing", "pricing_summary",
 		"supports_styles", "supports_negative_prompt", "supports_seed",
+		"supports_image_size", "supports_aspect_ratio", "supports_thinking",
+		"supports_grounding", "supports_input_images",
 		"max_prompt_length",
 	}
 

@@ -58,7 +58,7 @@ EXAMPLES:
      $ gimage generate "a sunset over mountains"
 
   2. Generate with specific model:
-     $ gimage generate "futuristic city" --model gemini-2.0-flash-preview-image-generation
+     $ gimage generate "futuristic city" --model gemini-3-pro-image
 
   3. Generate photorealistic image:
      $ gimage generate "portrait of a wise old wizard" --style photorealistic --size 1024x1024

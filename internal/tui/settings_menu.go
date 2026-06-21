@@ -33,10 +33,10 @@ type SettingsMenuModel struct {
 	currentPage SettingsPage
 
 	// Editing state
-	editingKey   string // Which key is being edited ("gemini", "vertex", "aws", etc.)
-	editInput    textinput.Model
-	saveMessage  string
-	saveError    error
+	editingKey  string // Which key is being edited ("gemini", "vertex", "aws", etc.)
+	editInput   textinput.Model
+	saveMessage string
+	saveError   error
 }
 
 // NewSettingsMenuModel creates a new settings menu model
@@ -448,7 +448,7 @@ func (m *SettingsMenuModel) saveAPIKey() tea.Cmd {
 			// If no config exists, create a new one
 			cfg = &config.Config{
 				DefaultAPI:   "gemini",
-				DefaultModel: "gemini-3-pro-image-preview",
+				DefaultModel: "gemini-3-pro-image",
 				DefaultSize:  "1024x1024",
 			}
 		}
