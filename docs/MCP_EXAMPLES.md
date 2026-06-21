@@ -156,7 +156,7 @@ I'll generate a garden scene and use negative prompts to exclude unwanted elemen
 **Result:**
 Pure nature scene without any human elements or modern objects.
 
-### Example 7: High-Resolution Generation with Imagen 4
+### Example 7: High-Resolution Generation with Gemini 3 Pro
 
 **User Prompt:**
 ```

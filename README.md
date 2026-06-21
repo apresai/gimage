@@ -21,7 +21,7 @@ Production-ready serverless REST API for web applications and remote processing.
 ### 🎨 AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Vertex Imagen aliases, Nova Canvas, Grok Imagine ($0.02-$0.07/image)
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Nova Canvas, Grok Imagine ($0.02-$0.07/image)
 - Control size, style, quality, aspect ratio, and provider-supported negative prompts
 - Reproducible results with seed values on providers that support seeds
 - Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3+)
@@ -138,8 +138,8 @@ gimage generate "futuristic city at night"
 # Specify size and style
 gimage generate "abstract art" --size 1024x1024 --style photorealistic
 
-# Use Vertex AI Imagen 4 (auto-detects vertex API)
-gimage generate "beautiful landscape" --model imagen-4
+# Use Gemini 3.1 Flash via Vertex (auto-detects vertex API)
+gimage generate "beautiful landscape" --model vertex-flash
 
 # Use AWS Bedrock Nova Canvas with premium quality (via style flag)
 gimage generate "futuristic robot" --model nova-canvas --style premium
@@ -370,23 +370,24 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ### Vertex AI (Google Cloud) - Paid
 
-- **`imagen-4`** (migrated to gemini-3.1-flash-image)
+All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateContent endpoint. Gemini 3.1 Flash via Vertex does not support negative prompts or seeds; those options are ignored.
+
+- **`vertex-flash`** (provider alias: `vertex/flash-3.1`)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Uses Vertex generateContent with medium thinking by default
-  - Negative prompts and seeds are ignored after the migration
+  - Medium thinking by default
   - Best for: Vertex-authenticated Gemini image workflows
 
-- **`imagen-4-fast`** (migrated to gemini-3.1-flash-image)
+- **`vertex-flash-fast`** (provider alias: `vertex/flash-3.1-fast`)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Uses minimal thinking by default
+  - Minimal thinking by default for faster generation
   - Best for: Quick iterations, batch processing
 
-- **`imagen-4-ultra`** (migrated to gemini-3.1-flash-image)
+- **`vertex-flash-ultra`** (provider alias: `vertex/flash-3.1-ultra`)
 
   - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Uses high thinking by default
+  - High thinking by default for best quality
   - Best for: Print-ready, marketing materials
 
 
@@ -623,7 +624,7 @@ After installation and authentication, restart Claude Desktop. You can then use 
 "Generate an image of a sunset over mountains"
 "Resize photo.jpg to 800x600"
 "Compress all images in the photos directory to 85% quality"
-"Create a 2048x2048 photorealistic image of a wise old wizard"
+"Create a high-resolution photorealistic image of a wise old wizard"
 ```
 
 ### Available MCP Tools

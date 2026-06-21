@@ -135,8 +135,8 @@ func printGenerationTiming(elapsed time.Duration) {
 	printInfo("Generation completed in %.2fs", elapsed.Seconds())
 }
 
-func isMigratedImagenProvider(provider *generate.Provider) bool {
-	return provider != nil && strings.HasPrefix(provider.ID, "vertex/imagen-4")
+func isVertexFlashProvider(provider *generate.Provider) bool {
+	return provider != nil && strings.HasPrefix(provider.ID, "vertex/flash-3.1")
 }
 
 func defaultThinkingLevelForProvider(provider *generate.Provider) string {
@@ -144,31 +144,31 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/imagen-4-fast":
+	case "vertex/flash-3.1-fast":
 		return "minimal"
-	case "vertex/imagen-4":
+	case "vertex/flash-3.1":
 		return "medium"
-	case "vertex/imagen-4-ultra":
+	case "vertex/flash-3.1-ultra":
 		return "high"
 	default:
 		return ""
 	}
 }
 
-func warnIgnoredMigratedImagenOptions(provider *generate.Provider, negative string, seed int64) {
-	if !isMigratedImagenProvider(provider) {
+func warnIgnoredVertexFlashOptions(provider *generate.Provider, negative string, seed int64) {
+	if !isVertexFlashProvider(provider) {
 		return
 	}
 	if negative != "" {
-		printWarning("%s uses Gemini 3.1 Flash after the Imagen 4 migration; --negative is ignored", provider.ID)
+		printWarning("%s: Gemini 3.1 Flash via Vertex does not support negative prompts; --negative is ignored", provider.ID)
 	}
 	if seed != 0 {
-		printWarning("%s uses Gemini 3.1 Flash after the Imagen 4 migration; --seed is ignored", provider.ID)
+		printWarning("%s: Gemini 3.1 Flash via Vertex does not support seed; --seed is ignored", provider.ID)
 	}
 }
 
-func stripUnsupportedMigratedImagenOptions(provider *generate.Provider, options *models.GenerateOptions) {
-	if !isMigratedImagenProvider(provider) || options == nil {
+func stripUnsupportedVertexFlashOptions(provider *generate.Provider, options *models.GenerateOptions) {
+	if !isVertexFlashProvider(provider) || options == nil {
 		return
 	}
 	options.NegativePrompt = ""
@@ -212,7 +212,7 @@ Examples:
   gimage generate --prompt "a sunset over mountains"
 
   # Generate with specific model (auto-detects API)
-  gimage generate "futuristic city" --model imagen-4
+  gimage generate "futuristic city" --model vertex-flash
 
   # Generate with AWS Bedrock Nova Canvas
   gimage generate "futuristic city" --model nova-canvas
@@ -221,7 +221,7 @@ Examples:
   gimage generate "abstract art" --size 1024x1024 --style photorealistic
 
   # Override API selection (rarely needed)
-  gimage generate "abstract art" --api vertex --model imagen-4
+  gimage generate "abstract art" --api vertex --model vertex-flash
 
   # Use negative prompts and seed for reproducibility
   gimage generate "forest scene" --negative "people, buildings" --seed 12345`,
@@ -500,7 +500,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		modelName := model
 		if modelName == "" {
-			resolvedProvider, _ = registry.Get("vertex/imagen-4")
+			resolvedProvider, _ = registry.Get("vertex/flash-3.1")
 			if resolvedProvider != nil {
 				modelName = resolvedProvider.ModelID
 			} else {
@@ -522,8 +522,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			thinkingLevel = defaultThinkingLevelForProvider(resolvedProvider)
 			options.ThinkingLevel = thinkingLevel
 		}
-		warnIgnoredMigratedImagenOptions(resolvedProvider, negative, seed)
-		stripUnsupportedMigratedImagenOptions(resolvedProvider, &options)
+		warnIgnoredVertexFlashOptions(resolvedProvider, negative, seed)
+		stripUnsupportedVertexFlashOptions(resolvedProvider, &options)
 
 		printInfo("Generating image...")
 
@@ -796,8 +796,8 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
 	}
-	warnIgnoredMigratedImagenOptions(provider, negative, seed)
-	stripUnsupportedMigratedImagenOptions(provider, &options)
+	warnIgnoredVertexFlashOptions(provider, negative, seed)
+	stripUnsupportedVertexFlashOptions(provider, &options)
 
 	// Generate image
 	printInfo("Generating image...")
@@ -1273,7 +1273,7 @@ Source: https://ai.google.dev/gemini-api/docs/image-generation`)
 func init() {
 	generateCmd.Flags().StringP("prompt", "p", "", "Text description of the image to generate (required)")
 	generateCmd.Flags().StringP("output", "o", "", "Output file path (default: generated_<timestamp>.png)")
-	generateCmd.Flags().String("provider", "", "Provider to use (e.g., gemini/flash-2.5, vertex/imagen-4)")
+	generateCmd.Flags().String("provider", "", "Provider to use (e.g., gemini/flash-2.5, vertex/flash-3.1)")
 	generateCmd.Flags().String("api", "", "API to use: gemini or vertex (deprecated, use --provider)")
 	generateCmd.Flags().String("api-key", "", "Gemini API key (or use GEMINI_API_KEY env var)")
 	generateCmd.Flags().String("project", "", "Vertex AI project ID (or use GIMAGE_VERTEX_PROJECT env var)")

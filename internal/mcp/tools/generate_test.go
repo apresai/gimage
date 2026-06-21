@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/apresai/gimage/internal/mcp"
@@ -153,6 +154,51 @@ func TestGenerateImageTool_ValidationErrors(t *testing.T) {
 	}
 }
 
+// TestGenerateImageTool_ExplicitInvalidModelErrors covers the behavior change
+// where an explicitly-supplied model that fails to resolve (a retired alias or an
+// unknown name) returns a hard error instead of silently falling back to the
+// default model. Resolution happens before any generation, so these never touch
+// the network or filesystem.
+func TestGenerateImageTool_ExplicitInvalidModelErrors(t *testing.T) {
+	server := mcp.NewMCPServer("test", "1.0.0", nil, false)
+	RegisterGenerateImageTool(server)
+
+	tool := server.GetTool("generate_image")
+	if tool == nil {
+		t.Fatal("generate_image tool not registered")
+	}
+
+	tests := []struct {
+		name     string
+		model    string
+		errorMsg string
+	}{
+		{"retired imagen alias", "imagen-4", "retired"},
+		{"retired grok -pro alias", "grok-imagine-pro", "retired"},
+		{"retired preview alias", "gemini-3-pro-image-preview", "retired"},
+		{"unknown model", "totally-bogus-model-xyz", "no provider found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tool.Handler(map[string]interface{}{
+				"prompt": "a test prompt",
+				"model":  tt.model,
+				"output": "/tmp/gimage-should-not-be-created.png",
+			})
+			if err == nil {
+				t.Fatalf("expected error for explicit invalid model %q, got nil (result=%v)", tt.model, result)
+			}
+			if result != nil {
+				t.Errorf("expected nil result on resolve error, got %v", result)
+			}
+			if !strings.Contains(err.Error(), tt.errorMsg) {
+				t.Errorf("error = %q, want it to contain %q", err.Error(), tt.errorMsg)
+			}
+		})
+	}
+}
+
 func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 	// This test verifies parameter extraction and defaults
 	// We can't test actual image generation without real API keys,
@@ -185,10 +231,10 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 			name: "custom model",
 			args: map[string]interface{}{
 				"prompt": "test prompt",
-				"model":  "imagen-4",
+				"model":  "vertex-flash",
 			},
 			expectedSize:  "1024x1024",
-			expectedModel: "imagen-4",
+			expectedModel: "vertex-flash",
 		},
 	}
 
@@ -223,14 +269,22 @@ func TestIsVertexModel(t *testing.T) {
 		model    string
 		expected bool
 	}{
-		{"imagen-4", true},
-		{"imagen-4-fast", true},
-		{"imagen-4-ultra", true},
-		{"imagen-4.0-fast-generate-001", true},
+		// vertex-flash aliases and vertex/flash-3.1* provider IDs are Vertex.
+		{"vertex-flash", true},
+		{"vertex-flash-fast", true},
+		{"vertex-flash-ultra", true},
+		{"vertex/flash-3.1", true},
+		{"vertex/flash-3.1-fast", true},
+		{"vertex/flash-3.1-ultra", true},
+		// Retired Imagen names are no longer Vertex models.
+		{"imagen-4", false},
+		{"imagen-4-fast", false},
+		{"imagen-4-ultra", false},
+		{"imagen-4.0-fast-generate-001", false},
+		// Bare Gemini model IDs are not treated as Vertex.
 		{"gemini-3.1-flash-image", false},
 		{"gemini-2.5-flash-image", false},
 		{"gemini-2.0-flash-preview-image-generation", false},
-		{"imagen-4-standard", false},
 		{"unknown-model", false},
 		{"", false},
 	}

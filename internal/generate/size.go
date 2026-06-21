@@ -28,7 +28,7 @@ var (
 		MultipleOf: 64,
 	}
 
-	// Gemini 3 Pro/Imagen 4: Flexible but prefers certain ratios
+	// Gemini 3 Pro / Gemini 3.1 Flash: Flexible but prefers certain ratios
 	GoogleAspectRatios = []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"}
 )
 

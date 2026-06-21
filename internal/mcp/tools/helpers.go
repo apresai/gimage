@@ -198,17 +198,18 @@ func saveImage(img image.Image, path string) error {
 
 // isVertexModel checks if a model is a Vertex AI model
 func isVertexModel(model string) bool {
-	// Match user-facing Vertex aliases and legacy Imagen 4 model IDs.
-	// Bare Gemini model IDs are intentionally not treated as Vertex here because
-	// the same ID can be used through Gemini API; callers should prefer provider
-	// resolution when backend identity matters.
+	// Match the user-facing vertex-flash aliases and the vertex/flash-3.1*
+	// provider IDs (Gemini 3.1 Flash via Vertex). Bare Gemini model IDs are
+	// intentionally not treated as Vertex here because the same ID can be used
+	// through the Gemini API; callers should prefer provider resolution when
+	// backend identity matters.
 	vertexModels := []string{
-		"imagen-4",
-		"imagen-4-ultra",
-		"imagen-4-fast",
-		"imagen-4.0-generate-001",
-		"imagen-4.0-fast-generate-001",
-		"imagen-4.0-ultra-generate-001",
+		"vertex-flash",
+		"vertex-flash-fast",
+		"vertex-flash-ultra",
+		"vertex/flash-3.1",
+		"vertex/flash-3.1-fast",
+		"vertex/flash-3.1-ultra",
 	}
 	for _, vm := range vertexModels {
 		if model == vm {

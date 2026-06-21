@@ -3,7 +3,6 @@ package generate
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,10 +15,6 @@ import (
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/sony/gobreaker"
 )
-
-// Vertex AI Platform API endpoint (supports API key authentication)
-// Format: https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:predict
-const vertexAIPlatformEndpoint = "https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:predict"
 
 // VertexRESTClient uses Vertex AI REST API for image generation
 type VertexRESTClient struct {
@@ -200,191 +195,7 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 		return extractImagesFromGeminiGenerateContentResponse(c.log, response, modelName, prompt, options, "vertex-rest")
 	}
 
-	// Build the prompt with options
-	fullPrompt := buildPromptWithOptions(prompt, options)
-
-	c.log.Debug("Building request for model: %s", modelName)
-	c.log.Debug("Project: %s, Location: %s", c.projectID, c.location)
-	c.log.Debug("Full prompt: %s", fullPrompt)
-
-	// Determine aspect ratio: explicit flag > inferred from Size > default
-	aspectRatio := "1:1" // Default
-	if options.AspectRatio != "" {
-		aspectRatio = options.AspectRatio
-		c.log.Debug("Using explicit aspect ratio: %s", aspectRatio)
-	} else if options.Size != "" {
-		width, height := ParseSizeString(options.Size)
-		c.log.Debug("Requested dimensions: %dx%d", width, height)
-		aspectRatio = InferAspectRatio(width, height, nil)
-		c.log.Debug("Inferred aspect ratio from size: %s", aspectRatio)
-	} else {
-		c.log.Debug("Using default aspect ratio: %s", aspectRatio)
-	}
-
-	// Determine number of images (Vertex AI Imagen supports 1-8)
-	sampleCount := 1
-	if options.NumberOfImages > 0 && options.NumberOfImages <= 8 {
-		sampleCount = options.NumberOfImages
-	}
-
-	// Build request payload for Vertex AI Imagen
-	// Format according to Vertex AI Imagen API:
-	// https://cloud.google.com/vertex-ai/docs/generative-ai/image/generate-images
-	requestBody := map[string]interface{}{
-		"instances": []map[string]interface{}{
-			{
-				"prompt": fullPrompt,
-			},
-		},
-		"parameters": map[string]interface{}{
-			"sampleCount": sampleCount,
-			"aspectRatio": aspectRatio,
-		},
-	}
-
-	// Add negative prompt if provided
-	if options.NegativePrompt != "" {
-		requestBody["parameters"].(map[string]interface{})["negativePrompt"] = options.NegativePrompt
-	}
-
-	// Add seed if provided
-	if options.Seed != 0 {
-		requestBody["parameters"].(map[string]interface{})["seed"] = options.Seed
-	}
-
-	// Add output format if provided (jpeg, png, webp)
-	if options.OutputFormat != "" {
-		mimeType := "image/png" // default
-		switch strings.ToLower(options.OutputFormat) {
-		case "jpeg", "jpg":
-			mimeType = "image/jpeg"
-		case "webp":
-			mimeType = "image/webp"
-		case "png":
-			mimeType = "image/png"
-		}
-		requestBody["parameters"].(map[string]interface{})["outputOptions"] = map[string]string{
-			"mimeType": mimeType,
-		}
-		c.log.Debug("Using output format: %s", mimeType)
-	}
-
-	// Marshal request to JSON
-	requestJSON, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	c.log.Debug("Request body: %s", string(requestJSON))
-
-	// Build API URL using Vertex AI Platform endpoint
-	// Format: https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:predict
-	apiURL := fmt.Sprintf(vertexAIPlatformEndpoint, c.location, c.projectID, c.location, modelName)
-
-	// Mask the API key in logs
-	maskedKey := c.apiKey
-	if len(maskedKey) > 8 {
-		maskedKey = maskedKey[:8] + "***"
-	}
-	c.log.Debug("API URL: %s", apiURL)
-	c.log.Debug("Using API key: %s", maskedKey)
-
-	// Create HTTP request with API key header
-	// Vertex AI Platform uses x-goog-api-key header
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(requestJSON))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-goog-api-key", c.apiKey)
-
-	c.log.Debug("Sending request to Vertex AI Platform API...")
-
-	// Execute request
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		c.log.Debug("Request failed: %v", err)
-		return nil, enhanceError(err)
-	}
-	defer resp.Body.Close()
-
-	c.log.Debug("Response status: %d %s", resp.StatusCode, resp.Status)
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Log response (truncated)
-	if len(body) > 500 {
-		c.log.Debug("Response body (first 500 chars): %s...", string(body[:500]))
-	} else {
-		c.log.Debug("Response body: %s", string(body))
-	}
-
-	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.handleHTTPError(resp.StatusCode, body)
-	}
-
-	// Parse response
-	var response vertexPredictResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		c.log.Debug("Failed to parse response: %v", err)
-		return nil, fmt.Errorf("failed to parse response: %w (body: %s)", err, string(body))
-	}
-
-	// Validate response structure
-	if len(response.Predictions) == 0 {
-		c.log.Debug("No predictions in response")
-		return nil, fmt.Errorf("no image generated from prompt")
-	}
-
-	var generatedImages []*models.GeneratedImage
-	// Loop through predictions
-	for i, prediction := range response.Predictions {
-		if prediction.BytesBase64Encoded == "" {
-			continue
-		}
-
-		// Decode base64 image data
-		imageData, err := base64.StdEncoding.DecodeString(prediction.BytesBase64Encoded)
-		if err != nil {
-			c.log.Debug("Failed to decode image %d: %v", i, err)
-			continue
-		}
-
-		format := "png"
-		if prediction.MimeType != "" {
-			format = extractFormatFromMimeType(prediction.MimeType)
-		}
-
-		// Parse dimensions from options
-		width, height := ParseSizeString(options.Size)
-
-		generatedImages = append(generatedImages, &models.GeneratedImage{
-			Data:   imageData,
-			Format: format,
-			Width:  width,
-			Height: height,
-			Metadata: map[string]string{
-				"model":       modelName,
-				"prompt":      prompt,
-				"size":        options.Size,
-				"candidate":   fmt.Sprintf("%d", i),
-				"resize_mode": options.ResizeMode,
-			},
-		})
-	}
-
-	if len(generatedImages) == 0 {
-		return nil, fmt.Errorf("no valid images found in response")
-	}
-
-	return generatedImages, nil
+	return nil, fmt.Errorf("unsupported model %q for Vertex AI: only Gemini models are supported", modelName)
 }
 
 // handleHTTPError handles HTTP error responses from the API
@@ -423,15 +234,4 @@ func (c *VertexRESTClient) handleHTTPError(statusCode int, body []byte) error {
 func (c *VertexRESTClient) Close() error {
 	// HTTP client doesn't need explicit closing
 	return nil
-}
-
-// Request/Response structs for Vertex AI REST API
-type vertexPredictResponse struct {
-	Predictions []vertexPrediction     `json:"predictions"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-}
-
-type vertexPrediction struct {
-	BytesBase64Encoded string `json:"bytesBase64Encoded"`
-	MimeType           string `json:"mimeType"`
 }

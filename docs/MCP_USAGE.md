@@ -126,8 +126,8 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 **Capabilities:**
 
-- **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Vertex Imagen aliases, Nova Canvas, Grok Imagine/Quality
-- **Size options**: From 512x512 up to 2048x2048 pixels (or native 4K with Gemini 3 Pro)
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (vertex-flash), Nova Canvas, Grok Imagine/Quality
+- **Size options**: Standard sizes from 512x512 to 1792x1024; native 1K/2K/4K with Gemini 3+ models via `image_size`; up to 1408x1408 with Nova Canvas
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
@@ -476,13 +476,13 @@ export VERTEX_PROJECT="your-gcp-project"
 - `gemini-3.1-flash-image` (native 4K at flash speed, tiered pricing: $0.045-$0.151/image)
 - `gemini-2.5-flash-image` ($0.039/image, up to 1024x1024)
 
-**Vertex AI Models** (Imagen aliases migrated to Gemini 3.1 Flash):
+**Vertex AI Models** (Gemini 3.1 Flash via Vertex):
 
-- `imagen-4` (deprecated Imagen alias; uses `gemini-3.1-flash-image` via Vertex generateContent, medium thinking default)
-- `imagen-4-fast` (same backend, minimal thinking default)
-- `imagen-4-ultra` (same backend, high thinking default)
+- `vertex-flash` (`vertex/flash-3.1`, medium thinking default)
+- `vertex-flash-fast` (`vertex/flash-3.1-fast`, minimal thinking default)
+- `vertex-flash-ultra` (`vertex/flash-3.1-ultra`, high thinking default)
 - Pricing follows Gemini 3.1 Flash tiers: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
-- Negative prompts and seeds are ignored on migrated Imagen aliases.
+- Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
 
 **AWS Bedrock Models**:
 
@@ -496,7 +496,7 @@ export VERTEX_PROJECT="your-gcp-project"
 **Examples**:
 
 ```
-"Generate an image using imagen-4-ultra (now Gemini 3.1 Flash) with image_size 4K showing a hyper-realistic dragon"
+"Generate an image using vertex-flash-ultra with image_size 4K showing a hyper-realistic dragon"
 "Generate a 4K infographic using Gemini 3 Pro with image_size 4K"
 "Generate an image using gemini-2.5-flash-image for affordable generation"
 "Generate a 16:9 landscape using Gemini 3 Pro aspect ratio control"
@@ -520,7 +520,7 @@ Claude can chain multiple operations:
 ```
 "Please help me with this workflow:
 1. Generate an AI image of a fantasy castle (1024x1024)
-2. Create 3 different sizes: 2048x2048, 1024x1024, 512x512
+2. Create 3 different sizes: 1536x1536, 1024x1024, 512x512
 3. Compress all of them to 90% quality
 4. Convert to WebP format
 5. Save in a folder called 'castle-variants'"
@@ -549,9 +549,9 @@ Claude can chain multiple operations:
 
    - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
    - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
-   - Imagen aliases: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
-   - Imagen 4 Fast: same Vertex-backed Gemini model with minimal thinking default
-   - Imagen 4 Ultra: same Vertex-backed Gemini model with high thinking default
+   - vertex-flash: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+   - vertex-flash-fast: same Vertex-backed Gemini model with minimal thinking default
+   - vertex-flash-ultra: same Vertex-backed Gemini model with high thinking default
    - Nova Canvas: AWS integration, CFG scale for creativity control
    - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
    - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)

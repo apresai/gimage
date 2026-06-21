@@ -17,11 +17,11 @@ type MenuItem struct {
 
 // MainMenuModel is the model for the main menu screen
 type MainMenuModel struct {
-	items        []MenuItem
-	selected     int
-	width        int
-	height       int
-	showingHelp  bool
+	items       []MenuItem
+	selected    int
+	width       int
+	height      int
+	showingHelp bool
 }
 
 // NewMainMenuModel creates a new main menu model
@@ -155,7 +155,7 @@ func (m *MainMenuModel) renderHelp() string {
 		FormatList([]string{
 			"Gemini 2.5 Flash ($0.039/image)",
 			"Gemini 3 Pro (Native 4K, $0.134/image)",
-			"Imagen 4 (Best quality, $0.04/image)",
+			"Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)",
 			"AWS Bedrock Nova Canvas ($0.08/image)",
 			"xAI Grok Imagine ($0.02/image)",
 		}) + "\n" +

@@ -345,7 +345,7 @@ func TestParseMarkdownConfig(t *testing.T) {
 **aws_region**: eu-west-1
 **grok_api_key**: xai-grok-key
 **default_api**: vertex
-**default_model**: imagen-4
+**default_model**: gemini-3-pro-image
 **default_size**: 512x512
 **log_level**: debug
 `
@@ -363,7 +363,7 @@ func TestParseMarkdownConfig(t *testing.T) {
 		assert.Equal(t, "eu-west-1", cfg.AWSRegion)
 		assert.Equal(t, "xai-grok-key", cfg.GrokAPIKey)
 		assert.Equal(t, "vertex", cfg.DefaultAPI)
-		assert.Equal(t, "imagen-4", cfg.DefaultModel)
+		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
 		assert.Equal(t, "512x512", cfg.DefaultSize)
 		assert.Equal(t, "debug", cfg.LogLevel)
 	})

@@ -230,7 +230,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		{"1024x1024", "Square (1024x1024)", "1:1"},
 		{"1792x1024", "Landscape (1792x1024)", "16:9"},
 		{"1024x1792", "Portrait (1024x1792)", "9:16"},
-		{"2048x2048", "Ultra HD (2048x2048)", "1:1"},
+		{"1408x1408", "Ultra HD (1408x1408)", "1:1"},
 		{"custom", "Custom Size", ""},
 	}
 
@@ -299,7 +299,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 
 	// Initialize provider retry input
 	providerRetryInput := textinput.New()
-	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/imagen-4"
+	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/flash-3.1"
 	providerRetryInput.CharLimit = 100
 	providerRetryInput.Width = 70
 
@@ -688,9 +688,9 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 				desc = MutedStyle.Render("  Aspect ratio: " + size.aspect)
 			}
 			// Add note for Ultra HD size
-			if size.size == "2048x2048" {
+			if size.size == "1408x1408" {
 				if provider.api == "bedrock" {
-					desc += "\n" + MutedStyle.Render("  Actual 2048x2048 output (Bedrock)")
+					desc += "\n" + MutedStyle.Render("  Nova Canvas max output: 1408x1408 (Bedrock)")
 				} else {
 					desc += "\n" + MutedStyle.Render("  Used for aspect ratio inference only (Gemini/Vertex)")
 				}
@@ -724,7 +724,7 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 		SubtitleStyle.Render("Enter Custom Size") + "\n\n" +
 		FormatKeyValue("Width", m.customWidth.View()) + "\n\n" +
 		FormatKeyValue("Height", m.customHeight.View()) + "\n\n" +
-		WarningStyle.Render("Note: Max size is 2048x2048 for most models") + "\n\n" +
+		WarningStyle.Render("Note: Nova Canvas caps at 1408x1408. For Gemini, native resolution is set via --image-size (1K/2K/4K)") + "\n\n" +
 		HelpStyle.Render("Tab: Switch field • Enter: Continue • Esc: Back")
 
 	box := FocusedBoxStyle.Width(76).Render(content)
@@ -1807,7 +1807,7 @@ func (m *GenerateFlowModel) supportsNegativePrompt() bool {
 		return true
 	}
 	provider := m.providers[m.selectedProvider]
-	if strings.HasPrefix(provider.id, "vertex/imagen-4") {
+	if strings.HasPrefix(provider.id, "vertex/flash-3.1") {
 		return false
 	}
 	// Grok doesn't support negative prompts
@@ -1827,7 +1827,7 @@ func (m *GenerateFlowModel) supportsSeed() bool {
 		return true
 	}
 	provider := m.providers[m.selectedProvider]
-	if strings.HasPrefix(provider.id, "vertex/imagen-4") {
+	if strings.HasPrefix(provider.id, "vertex/flash-3.1") {
 		return false
 	}
 	// Grok doesn't support seed

@@ -11,7 +11,7 @@ import (
 func RegisterListModelsTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "list_models",
-		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, current per-image pricing, native image-size support, and which credentials are missing. Returns provider IDs (e.g., 'gemini/pro-3', 'vertex/imagen-4'), pricing, capability flags, and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
+		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, current per-image pricing, native image-size support, and which credentials are missing. Returns provider IDs (e.g., 'gemini/pro-3', 'vertex/flash-3.1'), pricing, capability flags, and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
 		InputSchema: map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
@@ -75,21 +75,20 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 				providers = append(providers, providerData)
 			}
 
-			// Get default provider (first configured one, preferring free tier)
+			// Resolve the actual default provider (generate.DefaultModel), not the
+			// first/last configured one. Report its real identity, registry pricing,
+			// and whether the caller currently has credentials for it.
 			var defaultProviderID string
 			var defaultProviderName string
 			var defaultProviderPricing string
-			for _, status := range statuses {
-				if status.Configured {
-					defaultProviderID = status.Provider.ID
-					defaultProviderName = status.Provider.Name
-					if status.Provider.Pricing.FreeTier {
-						defaultProviderPricing = fmt.Sprintf("FREE (%s)", status.Provider.Pricing.FreeTierLimit)
-					} else if status.Provider.Pricing.CostPerImage != nil {
-						defaultProviderPricing = fmt.Sprintf("$%.4f/image", *status.Provider.Pricing.CostPerImage)
-					}
-					// Prefer free tier, so break on first free provider
-					if status.Provider.Pricing.FreeTier {
+			var defaultProviderConfigured bool
+			if defP, defErr := registry.ResolveProvider(generate.DefaultModel); defErr == nil && defP != nil {
+				defaultProviderID = defP.ID
+				defaultProviderName = defP.Name
+				defaultProviderPricing = generate.GetProviderPricing(defP, "", "", "").Display
+				for _, status := range statuses {
+					if status.Provider != nil && status.Provider.ID == defP.ID {
+						defaultProviderConfigured = status.Configured
 						break
 					}
 				}
@@ -111,11 +110,12 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 					"provider_id":     defaultProviderID,
 					"name":            defaultProviderName,
 					"pricing_summary": defaultProviderPricing,
+					"configured":      defaultProviderConfigured,
 				},
-				"pricing_note": "Costs shown are in USD. Vertex Imagen 4 provider aliases now use Gemini 3.1 Flash tiered pricing via generateContent.",
+				"pricing_note": "Costs shown are in USD. The vertex-flash* providers (Gemini 3.1 Flash via Vertex) use tiered pricing by resolution via generateContent.",
 				"recommendations": map[string]interface{}{
 					"budget_users": "gemini/flash-2.5 ($0.039/image via Gemini API, most affordable)",
-					"paid_users":   "vertex/imagen-4 (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
+					"paid_users":   "vertex-flash (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
 					"aws_users":    "bedrock/nova-canvas ($0.08/image, AWS integration)",
 				},
 			}, nil

@@ -28,9 +28,9 @@ func TestRegistryGet(t *testing.T) {
 		{"gemini flash", "gemini/flash-2.5", "gemini-2.5-flash-image", false},
 		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image", false},
 		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image", false},
-		{"vertex imagen 4", "vertex/imagen-4", "gemini-3.1-flash-image", false},
-		{"vertex imagen 4 fast", "vertex/imagen-4-fast", "gemini-3.1-flash-image", false},
-		{"vertex imagen 4 ultra", "vertex/imagen-4-ultra", "gemini-3.1-flash-image", false},
+		{"vertex flash 3.1", "vertex/flash-3.1", "gemini-3.1-flash-image", false},
+		{"vertex flash 3.1 fast", "vertex/flash-3.1-fast", "gemini-3.1-flash-image", false},
+		{"vertex flash 3.1 ultra", "vertex/flash-3.1-ultra", "gemini-3.1-flash-image", false},
 		{"bedrock nova canvas", "bedrock/nova-canvas", "amazon.nova-canvas-v1:0", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
 		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
@@ -155,19 +155,22 @@ func TestResolveProvider(t *testing.T) {
 		{"gemini-flash alias", "gemini-flash", "gemini/flash-2.5", false},
 		{"gemini-2.5-flash-image exact model", "gemini-2.5-flash-image", "gemini/flash-2.5", false},
 		{"gemini-3 alias", "gemini-3", "gemini/pro-3", false},
-		{"imagen alias", "imagen", "vertex/imagen-4", false},
-		{"imagen-4 alias", "imagen-4", "vertex/imagen-4", false},
-		{"imagen-4-fast alias", "imagen-4-fast", "vertex/imagen-4-fast", false},
-		{"imagen-fast alias", "imagen-fast", "vertex/imagen-4-fast", false},
-		{"imagen-4-ultra alias", "imagen-4-ultra", "vertex/imagen-4-ultra", false},
+		{"vertex-flash alias", "vertex-flash", "vertex/flash-3.1", false},
+		{"vertex-flash-fast alias", "vertex-flash-fast", "vertex/flash-3.1-fast", false},
+		{"vertex-flash-ultra alias", "vertex-flash-ultra", "vertex/flash-3.1-ultra", false},
+		{"retired imagen errors", "imagen", "", true},
+		{"retired imagen-4 errors", "imagen-4", "", true},
+		{"retired imagen-4-fast errors", "imagen-4-fast", "", true},
+		{"retired imagen-fast errors", "imagen-fast", "", true},
+		{"retired imagen-4-ultra errors", "imagen-4-ultra", "", true},
 		{"nova alias", "nova", "bedrock/nova-canvas", false},
 		{"nova-canvas alias", "nova-canvas", "bedrock/nova-canvas", false},
 		{"grok alias", "grok", "grok/grok-imagine", false},
 		{"grok-imagine alias", "grok-imagine", "grok/grok-imagine", false},
 		{"grok-imagine-quality alias", "grok-imagine-quality", "grok/grok-imagine-quality", false},
 		{"grok-quality alias", "grok-quality", "grok/grok-imagine-quality", false},
-		{"grok-imagine-pro deprecated alias resolves to quality", "grok-imagine-pro", "grok/grok-imagine-quality", false},
-		{"grok-imagine-image-pro deprecated alias resolves to quality", "grok-imagine-image-pro", "grok/grok-imagine-quality", false},
+		{"retired grok-imagine-pro errors", "grok-imagine-pro", "", true},
+		{"retired grok-imagine-image-pro errors", "grok-imagine-image-pro", "", true},
 		{"xai alias", "xai", "grok/grok-imagine", false},
 		{"aurora alias", "aurora", "grok/grok-imagine", false},
 		{"exact provider ID", "gemini/flash-2.5", "gemini/flash-2.5", false},
@@ -188,6 +191,29 @@ func TestResolveProvider(t *testing.T) {
 	}
 }
 
+func TestRetiredAliasesError(t *testing.T) {
+	reg := GetProviderRegistry()
+
+	retired := []string{
+		"imagen",
+		"imagen-4",
+		"imagen-4-ultra",
+		"gemini-3-pro-image-preview",
+		"gemini-3.1-flash-image-preview",
+		"grok-imagine-pro",
+		"grok-imagine-image-pro",
+	}
+
+	for _, name := range retired {
+		t.Run(name, func(t *testing.T) {
+			p, err := reg.ResolveProvider(name)
+			require.Error(t, err, "retired alias %q must not resolve", name)
+			assert.Nil(t, p)
+			assert.Contains(t, err.Error(), "retired", "error for %q should mention it was retired", name)
+		})
+	}
+}
+
 func TestResolveModelName(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -195,7 +221,8 @@ func TestResolveModelName(t *testing.T) {
 		wantID string
 	}{
 		{"flash alias resolves", "flash", "gemini-2.5-flash-image"},
-		{"imagen alias resolves", "imagen", "gemini-3.1-flash-image"},
+		{"vertex-flash alias resolves", "vertex-flash", "gemini-3.1-flash-image"},
+		{"retired imagen returns original", "imagen", "imagen"},
 		{"nova alias resolves", "nova", "amazon.nova-canvas-v1:0"},
 		{"grok alias resolves", "grok", "grok-imagine-image"},
 		{"unknown returns original", "unknown-model", "unknown-model"},
@@ -220,7 +247,8 @@ func TestDetectAPIFromModel(t *testing.T) {
 		{"empty defaults to gemini", "", "gemini", false},
 		{"gemini flash model", "gemini-2.5-flash-image", "gemini", false},
 		{"gemini alias", "gemini", "gemini", false},
-		{"imagen alias", "imagen-4", "vertex", false},
+		{"vertex-flash alias", "vertex-flash", "vertex", false},
+		{"retired imagen-4 errors", "imagen-4", "", true},
 		{"nova-canvas alias", "nova-canvas", "bedrock", false},
 		{"grok alias", "grok", "grok", false},
 		{"unknown model", "totally-unknown-model-xyz", "", true},
@@ -249,7 +277,8 @@ func TestValidateModelForAPI(t *testing.T) {
 		{"empty model no validation", "", "gemini", false},
 		{"gemini model on gemini api", "gemini-2.5-flash-image", "gemini", false},
 		{"gemini model on vertex api mismatch", "gemini-2.5-flash-image", "vertex", true},
-		{"imagen on vertex api", "imagen-4", "vertex", false},
+		{"vertex-flash on vertex api", "vertex-flash", "vertex", false},
+		{"retired imagen-4 errors", "imagen-4", "vertex", true},
 		{"nova on bedrock api", "nova-canvas", "bedrock", false},
 		{"grok on grok api", "grok", "grok", false},
 		{"unknown model", "totally-unknown-xyz", "gemini", true},
@@ -269,19 +298,20 @@ func TestValidateModelForAPI(t *testing.T) {
 
 func TestMigratedVertexProviderCapabilities(t *testing.T) {
 	reg := GetProviderRegistry()
-	for _, providerID := range []string{"vertex/imagen-4", "vertex/imagen-4-fast", "vertex/imagen-4-ultra"} {
+	for _, providerID := range []string{"vertex/flash-3.1", "vertex/flash-3.1-fast", "vertex/flash-3.1-ultra"} {
 		t.Run(providerID, func(t *testing.T) {
 			p, err := reg.Get(providerID)
 			require.NoError(t, err)
 			assert.Equal(t, "gemini-3.1-flash-image", p.ModelID)
-			assert.False(t, p.Capabilities.SupportsNegativePrompt, "migrated Gemini image backend should not advertise Imagen negative prompts")
-			assert.False(t, p.Capabilities.SupportsSeed, "migrated Gemini image backend should not advertise Imagen seed support")
+			assert.False(t, p.Capabilities.SupportsNegativePrompt, "Gemini 3.1 Flash via Vertex does not support negative prompts")
+			assert.False(t, p.Capabilities.SupportsSeed, "Gemini 3.1 Flash via Vertex does not support seed")
 			assert.True(t, p.Capabilities.SupportsImageSize)
 			assert.True(t, p.Capabilities.SupportsAspectRatio)
 			assert.True(t, p.Capabilities.SupportsThinking)
 			assert.True(t, p.Capabilities.SupportsGrounding)
 			assert.True(t, p.Capabilities.SupportsInputImages)
-			assert.Contains(t, p.Description, "retired 2026-08-17")
+			assert.Contains(t, p.Name, "Gemini 3.1 Flash via Vertex")
+			assert.Contains(t, p.Description, "Gemini 3.1 Flash via Vertex")
 			assert.Contains(t, p.Description, "generateContent")
 		})
 	}
@@ -489,7 +519,7 @@ func TestProviderRequiredEnvVars(t *testing.T) {
 		wantEnvVars []string
 	}{
 		{"gemini needs api key", "gemini/flash-2.5", []string{"GEMINI_API_KEY"}},
-		{"vertex needs project and location", "vertex/imagen-4", []string{"VERTEX_PROJECT", "VERTEX_LOCATION"}},
+		{"vertex needs project and location", "vertex/flash-3.1", []string{"VERTEX_PROJECT", "VERTEX_LOCATION"}},
 		{"bedrock needs region", "bedrock/nova-canvas", []string{"AWS_REGION"}},
 		{"grok needs api key", "grok/grok-imagine", []string{"GROK_API_KEY"}},
 	}
@@ -586,12 +616,6 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "gemini-3.1-flash-image", imageSize: "2K", want: 0.101},
 		{modelID: "gemini-3.1-flash-image", imageSize: "4K", want: 0.151},
 		{modelID: "gemini-3.1-flash-image", want: 0.067},
-		{modelID: "imagen-4.0-generate-001", want: 0.04},
-		{modelID: "imagen-4.0-fast-generate-001", want: 0.02},
-		{modelID: "imagen-4.0-ultra-generate-001", want: 0.06},
-		{modelID: "imagen-3.0-generate-002", want: 0.04},
-		{modelID: "imagen-3.0-generate-001", want: 0.04},
-		{modelID: "imagen-3.0-fast-generate-001", want: 0.02},
 		// Nova Canvas 2x2 matrix: (quality × size)
 		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", want: 0.04},                          // standard small
 		{modelID: "amazon.nova-canvas-v1:0", dims: "1024x1024", style: "photorealistic", want: 0.06}, // premium small

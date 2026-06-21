@@ -256,6 +256,37 @@ func TestListModelsTool_DefaultProviderStructure(t *testing.T) {
 	}
 }
 
+func TestListModelsDefaultProvider(t *testing.T) {
+	server := mcp.NewMCPServer("test", "1.0.0", nil, false)
+	RegisterListModelsTool(server)
+
+	tool := server.GetTool("list_models")
+	if tool == nil {
+		t.Fatal("list_models tool not registered")
+	}
+
+	result, err := tool.Handler(map[string]interface{}{})
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+
+	defaultProvider, ok := result["default_provider"].(map[string]interface{})
+	if !ok {
+		t.Fatal("default_provider field is not a map")
+	}
+
+	// The default provider must be the resolve of generate.DefaultModel
+	// (gemini-3-pro-image -> provider id "gemini/pro-3"), independent of which
+	// providers currently have credentials configured.
+	providerID, ok := defaultProvider["provider_id"].(string)
+	if !ok {
+		t.Fatal("default_provider.provider_id is not a string")
+	}
+	if providerID != "gemini/pro-3" {
+		t.Errorf("default_provider.provider_id = %q, want %q", providerID, "gemini/pro-3")
+	}
+}
+
 func TestListModelsTool_RecommendationsStructure(t *testing.T) {
 	server := mcp.NewMCPServer("test", "1.0.0", nil, false)
 	RegisterListModelsTool(server)

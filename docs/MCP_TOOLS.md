@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Vertex-backed Gemini 3.1 Flash through Imagen aliases, Nova Canvas, Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Nova Canvas, Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
 
 ### Parameters
 
@@ -53,7 +53,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - `1024x1024` (default)
 - `1024x1792`
 - `1792x1024`
-- `2048x2048` (Gemini 3+ / migrated imagen-4* via `image_size`)
+- native 1K/2K/4K (Gemini 3+ via `image_size` parameter)
 
 **AWS Bedrock (Nova Canvas):**
 
@@ -76,11 +76,12 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **Google Vertex AI:**
 
-- **imagen-4** (deprecated Imagen alias; uses `gemini-3.1-flash-image` via Vertex generateContent, medium thinking default)
-- **imagen-4-fast** (same backend, minimal thinking default)
-- **imagen-4-ultra** (same backend, high thinking default)
+- **vertex-flash** (`vertex/flash-3.1`, medium thinking default)
+- **vertex-flash-fast** (`vertex/flash-3.1-fast`, minimal thinking default)
+- **vertex-flash-ultra** (`vertex/flash-3.1-ultra`, high thinking default)
+- All use `gemini-3.1-flash-image` via Vertex generateContent
 - Pricing follows Gemini 3.1 Flash tiers: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K
-- Negative prompts and seeds are ignored on migrated Imagen aliases.
+- Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
 
 **AWS Bedrock:**
 
@@ -172,16 +173,16 @@ Generate an image with seed 42 of abstract patterns
 Generate an image of a cat using gemini-2.5-flash-image model for affordable generation
 ```
 
-**Imagen 4 Fast (speed-optimized):**
+**Gemini 3.1 Flash via Vertex (minimal thinking):**
 
 ```
-Generate a quick product mockup using imagen-4-fast model
+Generate a quick product mockup using vertex-flash-fast model
 ```
 
-**Imagen 4 Ultra (premium quality):**
+**Gemini 3.1 Flash via Vertex (high thinking):**
 
 ```
-Generate a premium architectural visualization using imagen-4-ultra model
+Generate a premium architectural visualization using vertex-flash-ultra model
 ```
 
 **AWS Bedrock Nova Canvas:**
@@ -667,7 +668,7 @@ Error messages are designed to be clear and actionable:
 - **Medium**: compress (1-3 seconds depending on size and quality)
 - **Slow**: generate (5-30 seconds depending on model and size)
   - Gemini 2.5 Flash: ~5-10 seconds
-  - Vertex-backed Gemini 3.1 Flash aliases: ~10-20 seconds
+  - Gemini 3.1 Flash via Vertex (vertex-flash): ~10-20 seconds
   - Nova Canvas Standard: ~8-12 seconds
   - Nova Canvas Premium: ~15-25 seconds
 
@@ -720,9 +721,9 @@ Different providers support different advanced parameters:
 4. For generation:
    - Use **Gemini 2.5 Flash** for affordable generation ($0.039/image)
    - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
-   - Use **Imagen 4** aliases for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)
-   - Use **Imagen 4 Fast** for the same Vertex backend with minimal thinking default
-   - Use **Imagen 4 Ultra** for the same Vertex backend with high thinking default
+   - Use **vertex-flash** for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image, medium thinking default)
+   - Use **vertex-flash-fast** for the same Vertex backend with minimal thinking default
+   - Use **vertex-flash-ultra** for the same Vertex backend with high thinking default
    - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
    - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
    - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)

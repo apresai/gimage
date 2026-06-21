@@ -15,8 +15,8 @@ import (
 	"github.com/apresai/gimage/pkg/models"
 )
 
-func isMigratedImagenProvider(provider *generate.Provider) bool {
-	return provider != nil && strings.HasPrefix(provider.ID, "vertex/imagen-4")
+func isVertexFlashProvider(provider *generate.Provider) bool {
+	return provider != nil && strings.HasPrefix(provider.ID, "vertex/flash-3.1")
 }
 
 func defaultThinkingLevelForProvider(provider *generate.Provider) string {
@@ -24,27 +24,27 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/imagen-4-fast":
+	case "vertex/flash-3.1-fast":
 		return "minimal"
-	case "vertex/imagen-4":
+	case "vertex/flash-3.1":
 		return "medium"
-	case "vertex/imagen-4-ultra":
+	case "vertex/flash-3.1-ultra":
 		return "high"
 	default:
 		return ""
 	}
 }
 
-func migratedImagenWarning(provider *generate.Provider, negative string, seed int64) string {
-	if !isMigratedImagenProvider(provider) {
+func vertexFlashWarning(provider *generate.Provider, negative string, seed int64) string {
+	if !isVertexFlashProvider(provider) {
 		return ""
 	}
 	var warnings []string
 	if negative != "" {
-		warnings = append(warnings, provider.ID+" uses Gemini 3.1 Flash after the Imagen 4 migration; negative prompts are ignored")
+		warnings = append(warnings, provider.ID+": Gemini 3.1 Flash via Vertex does not support negative prompts; ignored")
 	}
 	if seed != 0 {
-		warnings = append(warnings, provider.ID+" uses Gemini 3.1 Flash after the Imagen 4 migration; seed is ignored")
+		warnings = append(warnings, provider.ID+": Gemini 3.1 Flash via Vertex does not support seed; ignored")
 	}
 	return strings.Join(warnings, "; ")
 }
@@ -72,8 +72,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				},
 				"size": map[string]interface{}{
 					"type":        "string",
-					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024", "2048x2048"},
-					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, bedrock/nova-canvas up to 1408x1408. Gemini 3+ and the migrated imagen-4* aliases (now Gemini 3.1 Flash) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
+					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024"},
+					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024, bedrock/nova-canvas up to 1408x1408. Gemini 3+ and the vertex-flash* presets (Gemini 3.1 Flash via Vertex) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
 					"default":     "1024x1024",
 				},
 				"model": map[string]interface{}{
@@ -87,13 +87,12 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"gemini-3.1-flash",
 						"gemini-3.1",
 						"3.1-flash",
-						"imagen-4",
-						"imagen-4-fast",
-						"imagen-4-ultra",
+						"vertex-flash",
+						"vertex-flash-fast",
+						"vertex-flash-ultra",
 						"gemini",
 						"flash",
 						"gemini-flash",
-						"imagen",
 						"nova",
 						"nova-canvas",
 						"grok",
@@ -105,7 +104,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'imagen-4' (deprecated Imagen alias using gemini-3.1-flash-image on Vertex), 'imagen-4-fast' (same backend with minimal thinking default), 'imagen-4-ultra' (same backend with high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 1K, $0.07 2K, replaces -pro retired 2026-05-15). Aliases automatically resolve to correct provider. Falls back to gemini if invalid.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'vertex-flash' (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution, medium thinking default), 'vertex-flash-fast' (same backend, minimal thinking default), 'vertex-flash-ultra' (same backend, high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 1K, $0.07 2K, replaces -pro retired 2026-05-15). Aliases automatically resolve to correct provider. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
 					"default":     "gemini-3-pro-image",
 				},
 				"image_size": map[string]interface{}{
@@ -204,15 +203,24 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			}
 
 			modelName, _ := args["model"].(string)
-			if modelName == "" {
+			userSpecifiedModel := strings.TrimSpace(modelName) != ""
+			if !userSpecifiedModel {
 				modelName = generate.DefaultModel
 			}
 
 			registry := generate.GetProviderRegistry()
 			selectedProvider, providerErr := registry.ResolveProvider(modelName)
 			if providerErr != nil {
-				// Provider not found, fallback to default model
-				log.Debug("Provider not found for model %s, falling back to default", modelName)
+				if userSpecifiedModel {
+					// The caller explicitly named a model that failed to resolve.
+					// Surface the resolve error (which carries guidance for retired
+					// aliases) instead of silently substituting the default, so an
+					// invalid model is a hard error rather than a surprise
+					// generation with a different model.
+					return nil, providerErr
+				}
+				// No model supplied: fall back to the default model.
+				log.Debug("No model supplied, falling back to default %s", generate.DefaultModel)
 				selectedProvider, providerErr = registry.ResolveProvider(generate.DefaultModel)
 				if providerErr != nil {
 					return nil, fmt.Errorf("default provider not found: %w", providerErr)
@@ -239,8 +247,8 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					seed = int64(seedVal)
 				}
 			}
-			featureWarning := migratedImagenWarning(selectedProvider, negative, seed)
-			if isMigratedImagenProvider(selectedProvider) {
+			featureWarning := vertexFlashWarning(selectedProvider, negative, seed)
+			if isVertexFlashProvider(selectedProvider) {
 				negative = ""
 				seed = 0
 			}
@@ -290,7 +298,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			})
 
 			// Determine backend from the resolved provider. This preserves aliases
-			// like imagen-4 that now target a Gemini model through Vertex.
+			// like vertex-flash that target a Gemini model through Vertex.
 			selectedAPI := selectedProvider.API
 			log.Debug("Selected API: %s", selectedAPI)
 
