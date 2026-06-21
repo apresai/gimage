@@ -878,6 +878,10 @@ var retiredAliases = map[string]string{
 	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash"`,
 	"grok-imagine-pro":               `xAI retired the -pro tier; use "grok-quality"`,
 	"grok-imagine-image-pro":         `xAI retired the -pro tier; use "grok-quality"`,
+	// Old internal provider IDs (used by --provider / `auth setup <id>` before the rename).
+	"vertex/imagen-4":       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1" or "vertex-flash"`,
+	"vertex/imagen-4-fast":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-fast" or "vertex-flash-fast"`,
+	"vertex/imagen-4-ultra": `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-ultra" or "vertex-flash-ultra"`,
 }
 
 // ResolveProvider finds a provider by various identifiers

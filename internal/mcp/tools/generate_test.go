@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/apresai/gimage/internal/mcp"
@@ -148,6 +149,51 @@ func TestGenerateImageTool_ValidationErrors(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
+			}
+		})
+	}
+}
+
+// TestGenerateImageTool_ExplicitInvalidModelErrors covers the behavior change
+// where an explicitly-supplied model that fails to resolve (a retired alias or an
+// unknown name) returns a hard error instead of silently falling back to the
+// default model. Resolution happens before any generation, so these never touch
+// the network or filesystem.
+func TestGenerateImageTool_ExplicitInvalidModelErrors(t *testing.T) {
+	server := mcp.NewMCPServer("test", "1.0.0", nil, false)
+	RegisterGenerateImageTool(server)
+
+	tool := server.GetTool("generate_image")
+	if tool == nil {
+		t.Fatal("generate_image tool not registered")
+	}
+
+	tests := []struct {
+		name     string
+		model    string
+		errorMsg string
+	}{
+		{"retired imagen alias", "imagen-4", "retired"},
+		{"retired grok -pro alias", "grok-imagine-pro", "retired"},
+		{"retired preview alias", "gemini-3-pro-image-preview", "retired"},
+		{"unknown model", "totally-bogus-model-xyz", "no provider found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tool.Handler(map[string]interface{}{
+				"prompt": "a test prompt",
+				"model":  tt.model,
+				"output": "/tmp/gimage-should-not-be-created.png",
+			})
+			if err == nil {
+				t.Fatalf("expected error for explicit invalid model %q, got nil (result=%v)", tt.model, result)
+			}
+			if result != nil {
+				t.Errorf("expected nil result on resolve error, got %v", result)
+			}
+			if !strings.Contains(err.Error(), tt.errorMsg) {
+				t.Errorf("error = %q, want it to contain %q", err.Error(), tt.errorMsg)
 			}
 		})
 	}
