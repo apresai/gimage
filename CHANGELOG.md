@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.137] - 2026-06-21
+
+### Added
+- npm `bin/gimage-mcp` wrapper entrypoint so `npm install -g @apresai/gimage-mcp` links the CLI correctly
+- npm package README and package smoke tests
+
+### Fixed
+- npm package now ships the `gimage-mcp` bin wrapper (previously gitignored and omitted), so the npm-published CLI is no longer broken
+- Hardened the postinstall binary-download script for more reliable installs
+- Release workflow now includes the npm bin wrapper when publishing
+
+
 ## [1.2.135] - 2026-06-21
 
 ### Changed
