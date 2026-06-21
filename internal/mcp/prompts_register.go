@@ -15,7 +15,7 @@ STEP 1: Check available providers
 Call list_models to see all providers with pricing:
 - Affordable option: Gemini 2.5 Flash ($0.039/image)
 - Default: Gemini 3 Pro ($0.134/image, native 4K)
-- Paid options: Gemini 3.1 Flash via Vertex, Nova Canvas, Grok Imagine
+- Paid options: Gemini 3.1 Flash via Vertex, Grok Imagine
 
 STEP 2: Generate a simple image
 Call generate_image with:
@@ -126,7 +126,6 @@ This shows all providers with pricing and capabilities:
 - gemini/flash-2.5: $0.039/image, up to 1024x1024
 - gemini/pro-3: $0.134-$0.24/image, native 4K (default)
 - vertex/flash-3.1: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
-- bedrock/nova-canvas: $0.08/image, up to 1408x1408
 
 STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or vertex-flash for Vertex billing
 generate_image(
@@ -140,13 +139,11 @@ PROVIDER COMPARISON:
 - Gemini Flash (gemini/flash-2.5): Good quality, $0.039/image, best for iterations
 - Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134-$0.24/image, sharp text
 - vertex-flash (vertex/flash-3.1): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
-- Nova Canvas (bedrock/nova-canvas): High quality, $0.08/image, AWS integration
 
 WHEN TO USE EACH:
 - Gemini Flash: Quick iterations, testing prompts, social media ($0.039/image)
 - Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134-$0.24/image)
 - vertex-flash presets: Vertex-authenticated workflows
-- Nova: AWS-integrated workflows, comparable quality to Gemini 3.1 Flash via Vertex
 
 EXAMPLE:
 generate_image(
@@ -156,8 +153,7 @@ generate_image(
   output="~/Desktop/headshot_hq.png"
 )
 
-NOTE: The vertex-flash presets require Vertex AI setup. Run 'gimage auth vertex' first.
-Nova Canvas requires AWS Bedrock setup. Run 'gimage auth bedrock' first.`,
+NOTE: The vertex-flash presets require Vertex AI setup. Run 'gimage auth vertex' first.`,
 	})
 
 	// 5. Web Optimization Workflow - Multi-tool advanced workflow
@@ -206,7 +202,7 @@ TIP: You can also use batch_process_images for multiple files at once!`,
 ERROR: "Provider/model not found"
 SOLUTION: Check available providers first
 1. Call list_models to see all available providers
-2. Use common aliases: "gemini", "vertex-flash", "nova-canvas"
+2. Use common aliases: "gemini", "vertex-flash", "grok"
 ✅ CORRECT: model="gemini" or model="gemini-2.5-flash-image"
 ✅ CORRECT: model="vertex-flash" (resolves to vertex/flash-3.1 provider)
 
@@ -235,7 +231,6 @@ SOLUTION: crop_image uses positional arguments, not flags
 PROVIDER SIZE LIMITS:
 - gemini/flash-2.5: up to 1024x1024
 - vertex/flash-3.1: native resolution via image_size (1K/2K/4K)
-- bedrock/nova-canvas: up to 1408x1408
 
 GENERAL TIPS:
 1. Call list_models first to check providers, pricing, and auth status

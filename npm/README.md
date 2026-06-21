@@ -2,7 +2,7 @@
 
 MCP (Model Context Protocol) server for AI-powered image generation and processing,
 backed by the [`gimage`](https://github.com/apresai/gimage) CLI. Exposes image
-generation (Gemini, Vertex AI, AWS Bedrock, xAI Grok) plus resize/scale/crop/compress/
+generation (Gemini, Vertex AI, xAI Grok) plus resize/scale/crop/compress/
 convert and batch operations as MCP tools for Claude Desktop and other MCP clients.
 
 ## Install

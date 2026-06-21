@@ -66,7 +66,6 @@ const (
 
 // Defines values for GenerateRequestModel.
 const (
-	AmazonNovaCanvasV10     GenerateRequestModel = "amazon.nova-canvas-v1:0"
 	Gemini25FlashImage      GenerateRequestModel = "gemini-2.5-flash-image"
 	Gemini31FlashImage      GenerateRequestModel = "gemini-3.1-flash-image"
 	Gemini3ProImage         GenerateRequestModel = "gemini-3-pro-image"

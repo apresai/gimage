@@ -38,7 +38,7 @@ func main() {
 
 	unit := parseTestLog(unitLog, "Unit Tests")
 	cli := parseTestLog(cliLog, "CLI E2E Tests (resize, scale, crop)")
-	generate := parseTestLog(generateLog, "Generate Image E2E Tests (Gemini, Vertex, Bedrock, Grok)")
+	generate := parseTestLog(generateLog, "Generate Image E2E Tests (Gemini, Vertex, Grok)")
 
 	// Print test results
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

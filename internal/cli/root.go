@@ -231,13 +231,6 @@ func logAuthStatus(logger *logging.Logger) {
 		logger.LogAuthStatus("Vertex AI", false, "No credentials configured")
 	}
 
-	// Check Bedrock auth
-	if cfg.AWSAccessKeyID != "" && cfg.AWSSecretAccessKey != "" {
-		logger.LogAuthStatus("AWS Bedrock", true, fmt.Sprintf("Region: %s", cfg.AWSRegion))
-	} else {
-		logger.LogAuthStatus("AWS Bedrock", false, "No credentials configured")
-	}
-
 	// Log available providers
 	logger.LogInfo("Available providers:")
 	registry := generate.GetProviderRegistry()

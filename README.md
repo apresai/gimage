@@ -20,11 +20,11 @@ Production-ready serverless REST API for web applications and remote processing.
 
 ### 🎨 AI Image Generation
 
-- Generate stunning images from text prompts using Google Gemini, Vertex AI, AWS Bedrock, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Nova Canvas, Grok Imagine ($0.02-$0.07/image)
+- Generate stunning images from text prompts using Google Gemini, Vertex AI, or xAI Grok
+- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Grok Imagine ($0.02-$0.07/image)
 - Control size, style, quality, aspect ratio, and provider-supported negative prompts
 - Reproducible results with seed values on providers that support seeds
-- Provider-specific features: CFG scale (Bedrock), output format (Vertex AI), native resolution (Gemini 3+)
+- Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+), aspect ratio (Grok)
 - Batch generation: create multiple images at once
 
 ### 🛠️ Image Processing
@@ -116,7 +116,6 @@ gimage auth test gemini
 
 - **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Flash $0.039/image, Gemini 3 Pro $0.134/image)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
-- **AWS Bedrock**: https://console.aws.amazon.com/bedrock (4 auth modes: Bearer Token/Access Keys/Profile/IAM Role)
 - **xAI Grok**: https://console.x.ai (Grok Imagine $0.02/image, Grok Imagine Quality $0.05-$0.07/image)
 
 ### 3. Generate Your First Image
@@ -141,17 +140,11 @@ gimage generate "abstract art" --size 1024x1024 --style photorealistic
 # Use Gemini 3.1 Flash via Vertex (auto-detects vertex API)
 gimage generate "beautiful landscape" --model vertex-flash
 
-# Use AWS Bedrock Nova Canvas with premium quality (via style flag)
-gimage generate "futuristic robot" --model nova-canvas --style premium
-
 # Use negative prompts to avoid unwanted elements
 gimage generate "forest scene" --negative "people, buildings"
 
 # Reproducible results with seed
 gimage generate "random pattern" --seed 12345
-
-# Control creativity with CFG scale (Bedrock Nova Canvas, 1.0-10.0)
-gimage generate "abstract art" --model nova-canvas --cfg-scale 10
 
 # Generate multiple images at once
 gimage generate "fantasy landscape" --count 3
@@ -273,13 +266,8 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **gemini_api_key**: your-gemini-key
 **vertex_api_key**: your-vertex-key
 **vertex_project**: your-gcp-project
-**vertex_location**: us-central1
+**vertex_location**: global
 **vertex_credentials_path**: /path/to/service-account.json
-**aws_access_key_id**: AKIA...
-**aws_secret_access_key**: wJalr...
-**aws_region**: us-east-1
-**aws_profile**: default
-**aws_bedrock_api_key**: bearer-token
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
 **default_model**: gemini-3-pro-image
@@ -301,7 +289,7 @@ export GEMINI_API_KEY="your-key"
 # Option 1: Express Mode (REST) - Simplest
 export VERTEX_API_KEY="your-key"
 export VERTEX_PROJECT="your-project-id"
-export VERTEX_LOCATION="us-central1"
+export VERTEX_LOCATION="global"
 
 # Option 2: Service Account - Production
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
@@ -309,28 +297,6 @@ export VERTEX_PROJECT="your-project-id"
 
 # Option 3: Application Default Credentials - gcloud SDK
 # No env vars needed - uses gcloud auth
-```
-
-**AWS Bedrock** (4 authentication modes):
-
-```bash
-# Option 1: REST API with Bearer Token
-export AWS_BEARER_TOKEN_BEDROCK="your-bearer-token"
-export AWS_REGION="us-east-1"
-
-# Option 2: SDK with Access Keys (supports both long-term and short-term credentials)
-export AWS_ACCESS_KEY_ID="AKIA..."           # Long-term access key ID
-export AWS_SECRET_ACCESS_KEY="wJalr..."     # Long-term secret access key
-export AWS_SESSION_TOKEN="FwoGZXIvYXd..."   # Optional: for short-term credentials
-export AWS_REGION="us-east-1"
-
-# Option 3: SDK with Named Profile
-export AWS_PROFILE="your-profile-name"
-export AWS_REGION="us-east-1"
-
-# Option 4: SDK with IAM Role (Lambda/EC2/ECS - no credentials needed)
-# Instance/task role automatically provides credentials
-export AWS_REGION="us-east-1"  # Optional, defaults to instance region
 ```
 
 **xAI Grok**:
@@ -390,13 +356,6 @@ All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateC
   - High thinking by default for best quality
   - Best for: Print-ready, marketing materials
 
-
-### AWS Bedrock - Paid
-
-- **`amazon.nova-canvas-v1:0`** (Nova Canvas)
-  - Resolution: up to 1408x1408
-  - Pricing: $0.04/image (up to 1024x1024), $0.08/image (larger)
-  - Best for: AWS-integrated applications
 
 ### xAI Grok - Paid
 
@@ -611,7 +570,7 @@ gimage auth test gemini
 
 The MCP server automatically uses credentials from:
 
-1. **Environment variables** - `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, `GROK_API_KEY`, etc. (RECOMMENDED for security)
+1. **Environment variables** - `GEMINI_API_KEY`, `VERTEX_API_KEY`, `GROK_API_KEY`, etc. (RECOMMENDED for security)
 2. **Config file** - `~/.gimage/config.md` (created by `gimage auth setup` commands)
 
 **Best Practice**: Use environment variables for production - they're more secure than storing credentials in config files.
@@ -688,7 +647,7 @@ If the MCP server isn't working in Claude Desktop:
 
 ### Environment Variables
 
-The MCP server respects the same environment variables as the CLI. See [Configuration](#configuration) for complete list of supported variables for all authentication modes (Gemini, Vertex AI, AWS Bedrock).
+The MCP server respects the same environment variables as the CLI. See [Configuration](#configuration) for complete list of supported variables for all authentication modes (Gemini, Vertex AI, xAI Grok).
 
 ### MCP Documentation
 
@@ -741,7 +700,7 @@ gimage tui
 **Workflow Steps:**
 
 1. Enter your prompt
-2. Select provider (Gemini, Vertex AI, Bedrock, Grok)
+2. Select provider (Gemini, Vertex AI, Grok)
 3. Choose image size
 4. Select style (optional)
 5. Configure advanced options
@@ -925,7 +884,7 @@ result, err := client.GenerateImage(gimage.GenerateRequest{
 ### Architecture
 
 ```
-Client Request → API Gateway → Lambda (Go/ARM64) → {S3, Gemini, Vertex AI}
+Client Request → API Gateway → Lambda (Go/ARM64) → {S3, Gemini, Vertex AI, Grok}
                                 ↓
                          Small: base64 response
                          Large: S3 presigned URL
@@ -1005,7 +964,6 @@ Built with:
 - [Imaging](https://github.com/disintegration/imaging) - Image processing
 - [Google Gen AI SDK](https://github.com/googleapis/go-genai) - Gemini API
 - [Vertex AI SDK](https://cloud.google.com/go/vertexai) - Vertex AI
-- [AWS SDK for Go](https://github.com/aws/aws-sdk-go-v2) - AWS Bedrock
 
 ---
 

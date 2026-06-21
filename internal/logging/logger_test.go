@@ -186,10 +186,10 @@ func TestLogger_LogAPICall_WithError(t *testing.T) {
 	logger, logPath := newTestLogger(t)
 	defer logger.Close()
 
-	logger.LogAPICall("bedrock", "nova", "https://api.example.com", 500, "internal error")
+	logger.LogAPICall("grok", "grok-imagine-image", "https://api.example.com", 500, "internal error")
 
 	content := readLog(t, logPath)
-	assert.Contains(t, content, "API CALL: bedrock")
+	assert.Contains(t, content, "API CALL: grok")
 	assert.Contains(t, content, "internal error")
 }
 

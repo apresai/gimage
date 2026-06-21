@@ -307,7 +307,7 @@ func TestListModelsTool_RecommendationsStructure(t *testing.T) {
 	}
 
 	// Check for recommendation categories (updated for Provider system)
-	requiredRecommendations := []string{"budget_users", "paid_users", "aws_users"}
+	requiredRecommendations := []string{"budget_users", "paid_users"}
 	for _, field := range requiredRecommendations {
 		if _, exists := recommendations[field]; !exists {
 			t.Errorf("Required recommendation '%s' missing", field)
@@ -433,7 +433,7 @@ func TestListModelsTool_APITypes(t *testing.T) {
 	}
 
 	// Valid API types
-	validAPIs := map[string]bool{"gemini": true, "vertex": true, "bedrock": true, "grok": true}
+	validAPIs := map[string]bool{"gemini": true, "vertex": true, "grok": true}
 	for api := range apiTypes {
 		if !validAPIs[api] {
 			t.Errorf("Invalid API type: %s", api)

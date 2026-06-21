@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Gemini 3.1 Flash via Vertex (standard/fast/ultra), AWS Bedrock Nova Canvas, or xAI Grok
+- Generate images using Google Gemini 2.5 Flash, Gemini 3 Pro (native 4K), Gemini 3.1 Flash via Vertex (standard/fast/ultra), or xAI Grok
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -17,7 +17,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - Pure Go 1.22+ (zero C dependencies for portability)
 - Image processing: `github.com/disintegration/imaging`
 - CLI: Cobra + Viper
-- APIs: Gemini API, Vertex AI, AWS Bedrock, xAI Grok
+- APIs: Gemini API, Vertex AI, xAI Grok
 
 ## Build Commands
 
@@ -45,7 +45,7 @@ gimage/
 ├── cmd/lambda/              # Lambda entrypoint
 ├── internal/
 │   ├── imaging/             # Image processing operations
-│   ├── generate/            # AI image generation (Gemini, Vertex, Bedrock, Grok)
+│   ├── generate/            # AI image generation (Gemini, Vertex, Grok)
 │   ├── config/              # Configuration & authentication
 │   ├── cli/                 # CLI commands
 │   ├── mcp/                 # MCP server implementation
@@ -75,12 +75,12 @@ This project uses **pure Go with zero C dependencies**:
 
 ### Configuration Hierarchy (Priority Order)
 1. Command-line flags (highest)
-2. Environment variables (`GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, etc.)
+2. Environment variables (`GEMINI_API_KEY`, `VERTEX_API_KEY`, `GROK_API_KEY`, etc.)
 3. Config file (`~/.gimage/config.md`)
 4. Default values (lowest)
 
 ### API Client Pattern
-All backends (Gemini, Vertex, Bedrock, Grok) implement common interface:
+All backends (Gemini, Vertex, Grok) implement common interface:
 ```go
 type ImageGenerator interface {
     GenerateImage(ctx context.Context, prompt string, options GenerateOptions) (*GeneratedImage, error)
@@ -117,7 +117,6 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 **Supported Backends**:
 - **Gemini API** (REST) - Paid, fastest setup
 - **Vertex AI** - Express Mode (REST) or Full Mode (SDK)
-- **AWS Bedrock** - REST or SDK modes
 - **xAI Grok** (REST) - Aurora-powered image generation
 
 ### Backend Selection Logic
@@ -129,7 +128,6 @@ Model name implies backend (auto-detect):
 - `vertex-flash` → vertex (`vertex/flash-3.1`, Gemini 3.1 Flash via Vertex, medium thinking default)
 - `vertex-flash-fast` → vertex (`vertex/flash-3.1-fast`, Gemini 3.1 Flash via Vertex, minimal thinking default)
 - `vertex-flash-ultra` → vertex (`vertex/flash-3.1-ultra`, Gemini 3.1 Flash via Vertex, high thinking default)
-- `amazon.nova-canvas-v1:0` → bedrock
 - `grok-imagine-image` → grok ($0.02/image)
 - `grok-imagine-image-quality` → grok ($0.05/image at 1K, $0.07/image at 2K; replaces -pro retired 2026-05-15)
 
@@ -147,7 +145,6 @@ Map informal names to exact model IDs:
 | "vertex-flash" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, medium thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-fast" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, minimal thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-ultra" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, high thinking default; tiered $0.045-$0.151/image |
-| "nova", "nova-canvas" | `amazon.nova-canvas-v1:0` | bedrock | AWS integration; std/prem × ≤1024/>1024 = $0.04/$0.06/$0.06/$0.08 |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
 | "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image at 1K, $0.07/image at 2K. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
 
@@ -164,7 +161,7 @@ Map informal names to exact model IDs:
 
 **Always use exact model IDs from the mapping table.**
 
-**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `grok-imagine-pro`, `grok-imagine-image-pro`. Passing any of these to `--model` or `--provider` returns an error with the correct current alias to use.
+**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `grok-imagine-pro`, `grok-imagine-image-pro`, `nova`, `nova-canvas`, `amazon.nova-canvas-v1:0`, `bedrock/nova-canvas` (Bedrock Nova Canvas retired, AWS end-of-life 2026-09-30). Passing any of these to `--model` or `--provider` returns an error with guidance.
 
 ### Post-Generation: WebP Conversion
 
@@ -198,7 +195,7 @@ cwebp -q 85 -mt -sharp_yuv -preset photo generated.png -o generated.webp
 
 ### Adding a New Provider/Backend
 
-When adding a new AI provider (like Grok, Bedrock, etc.), update these locations:
+When adding a new AI provider (like Grok, Vertex, etc.), update these locations:
 
 **Core Implementation** (required):
 1. `internal/generate/<provider>.go` - Client implementation (implement `ImageGenerator` interface)
@@ -324,7 +321,7 @@ If `--output` is omitted, commands auto-generate descriptive output paths:
 - Test CLI flag parsing
 
 **Integration Tests (manual, costs money)**:
-- Real API calls to Gemini/Vertex/Bedrock/Grok
+- Real API calls to Gemini/Vertex/Grok
 - Run manually: `go test -tags=integration`
 - **DO NOT MOCK cloud provider APIs** - mocks provide zero value
 
@@ -373,20 +370,10 @@ gimage auth setup     # Interactive setup wizard for providers
 2. **Service Account**: `GOOGLE_APPLICATION_CREDENTIALS` → JSON key file path
 3. **Application Default Credentials (ADC)**: Automatic → gcloud SDK, workload identity
 
-**AWS Bedrock** (4 authentication modes):
-1. **REST with Bearer Token**: `AWS_BEARER_TOKEN_BEDROCK` → Direct REST API
-2. **SDK with Access Keys**: `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` → AWS SDK
-3. **SDK with Profile**: `AWS_PROFILE` → Named profile from `~/.aws/credentials`
-4. **SDK with IAM Role**: Automatic → EC2, Lambda, ECS task roles
-
 **xAI Grok**:
 - Single credential: `GROK_API_KEY`
 - REST client with Bearer token authentication
 - Get API key at: https://console.x.ai
-
-**Why Both REST and SDK?**
-- REST: Simple API keys, quick setup, perfect for local development
-- SDK: IAM roles, profiles, workload identity - critical for Lambda/EC2/GCP deployments
 
 ### Config File Format
 
@@ -401,13 +388,8 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **gemini_api_key**: AIzaSy...
 **vertex_api_key**: AIzaSy...
 **vertex_project**: your-project-id
-**vertex_location**: us-central1
+**vertex_location**: global
 **vertex_credentials_path**: /path/to/service-account.json
-**aws_access_key_id**: AKIA...
-**aws_secret_access_key**: wJalr...
-**aws_region**: us-east-1
-**aws_profile**: default
-**aws_bedrock_api_key**: bearer-token-here
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
 **default_model**: gemini-3-pro-image
@@ -435,7 +417,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 
 **Environment Variable Priority**:
 - Environment variables override config file (by design)
-- Set `GEMINI_API_KEY`, `VERTEX_API_KEY`, `AWS_ACCESS_KEY_ID`, `GROK_API_KEY`, etc.
+- Set `GEMINI_API_KEY`, `VERTEX_API_KEY`, `GROK_API_KEY`, etc.
 - Use `gimage auth status` to check for conflicts
 
 **Warning About Conflicts**:
@@ -604,7 +586,7 @@ See the `gimage-deploy` sibling directory for deployment management.
 Core development phases:
 1. Project initialization
 2. Image processing core
-3. AI API integrations (Gemini → Vertex → Bedrock → Grok)
+3. AI API integrations (Gemini → Vertex → Grok)
 4. CLI commands
 5. Configuration system
 6. Testing suite
@@ -788,7 +770,6 @@ gimage-deploy tui  # Launch interactive terminal UI
 **IAM Permissions**:
 - Lambda basic execution (CloudWatch Logs)
 - S3 access for image storage
-- Bedrock access for AI generation
 - Principle of least privilege
 
 ### Storage and State

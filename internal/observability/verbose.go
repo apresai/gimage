@@ -20,7 +20,6 @@ type Component string
 const (
 	ComponentGemini  Component = "GEMINI"
 	ComponentVertex  Component = "VERTEX"
-	ComponentBedrock Component = "BEDROCK"
 	ComponentMCP     Component = "MCP"
 	ComponentLambda  Component = "LAMBDA"
 	ComponentCLI     Component = "CLI"

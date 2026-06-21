@@ -204,6 +204,9 @@ func TestBuildGenerateContentRequest_AdvancedActivatesThinkingAndGrounding(t *te
 	if len(req.Tools) != 1 || req.Tools[0].GoogleSearch == nil {
 		t.Errorf("expected exactly one tool with GoogleSearch set, got %#v", req.Tools)
 	}
+	if len(req.Contents) != 1 || req.Contents[0].Role != "user" {
+		t.Errorf("expected one content with role=user, got %#v", req.Contents)
+	}
 }
 
 // TestBuildGenerateContentRequest_NonAdvancedSilentlyDropsAdvancedFields is the

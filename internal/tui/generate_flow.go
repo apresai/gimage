@@ -39,7 +39,7 @@ const (
 type providerOption struct {
 	id         string // e.g., "gemini/flash-2.5"
 	name       string // e.g., "Gemini 2.5 Flash (via Gemini API)"
-	api        string // e.g., "gemini", "vertex", "bedrock"
+	api        string // e.g., "gemini", "vertex", "grok"
 	model      string // e.g., "gemini-2.5-flash-image"
 	cost       string // formatted cost string
 	free       bool
@@ -230,7 +230,6 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		{"1024x1024", "Square (1024x1024)", "1:1"},
 		{"1792x1024", "Landscape (1792x1024)", "16:9"},
 		{"1024x1792", "Portrait (1024x1792)", "9:16"},
-		{"1408x1408", "Ultra HD (1408x1408)", "1:1"},
 		{"custom", "Custom Size", ""},
 	}
 
@@ -254,7 +253,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	seedInput.Width = 30
 
 	cfgScaleInput := textinput.New()
-	cfgScaleInput.Placeholder = "7.0 (1.0-10.0, Bedrock only)"
+	cfgScaleInput.Placeholder = "7.0 (1.0-10.0)"
 	cfgScaleInput.CharLimit = 5
 	cfgScaleInput.Width = 20
 
@@ -669,8 +668,6 @@ func (m *GenerateFlowModel) updateSizeStep(msg tea.Msg) (*GenerateFlowModel, tea
 func (m *GenerateFlowModel) viewSizeStep() string {
 	var items []string
 
-	provider := m.providers[m.selectedProvider]
-
 	if !m.useCustom {
 		for i, size := range m.sizes {
 			var style lipgloss.Style
@@ -686,14 +683,6 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 			desc := ""
 			if size.aspect != "" {
 				desc = MutedStyle.Render("  Aspect ratio: " + size.aspect)
-			}
-			// Add note for Ultra HD size
-			if size.size == "1408x1408" {
-				if provider.api == "bedrock" {
-					desc += "\n" + MutedStyle.Render("  Nova Canvas max output: 1408x1408 (Bedrock)")
-				} else {
-					desc += "\n" + MutedStyle.Render("  Used for aspect ratio inference only (Gemini/Vertex)")
-				}
 			}
 
 			if desc != "" {
@@ -724,7 +713,7 @@ func (m *GenerateFlowModel) viewSizeStep() string {
 		SubtitleStyle.Render("Enter Custom Size") + "\n\n" +
 		FormatKeyValue("Width", m.customWidth.View()) + "\n\n" +
 		FormatKeyValue("Height", m.customHeight.View()) + "\n\n" +
-		WarningStyle.Render("Note: Nova Canvas caps at 1408x1408. For Gemini, native resolution is set via --image-size (1K/2K/4K)") + "\n\n" +
+		WarningStyle.Render("Note: For Gemini, native resolution is set via --image-size (1K/2K/4K)") + "\n\n" +
 		HelpStyle.Render("Tab: Switch field • Enter: Continue • Esc: Back")
 
 	box := FocusedBoxStyle.Width(76).Render(content)
@@ -896,7 +885,6 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 	// Get provider info to show relevant options
 	provider := m.providers[m.selectedProvider]
 	isGeminiAdvanced := strings.Contains(provider.model, "gemini-3")
-	isBedrock := provider.api == "bedrock"
 	isVertex := provider.api == "vertex"
 
 	var content string
@@ -975,17 +963,8 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 	content += focusIndicator + FormatKeyValue("Resize Mode", resizeModeValue) + "\n"
 	content += MutedStyle.Render("    ←/→ to change: "+m.resizeModes[m.selectedResizeMode].desc) + "\n\n"
 
-	// CFG Scale (Bedrock only)
-	focusIndicator = "  "
-	if m.advancedFocusIndex == 6 {
-		focusIndicator = "> "
-	}
-	if isBedrock {
-		content += focusIndicator + FormatKeyValue("CFG Scale", m.cfgScaleInput.View()) + "\n"
-		content += MutedStyle.Render("    1.0-10.0: higher = follows prompt more (Bedrock only)") + "\n\n"
-	} else {
-		content += MutedStyle.Render("  CFG Scale: (N/A - Bedrock only)") + "\n\n"
-	}
+	// CFG Scale - not supported by any current provider
+	content += MutedStyle.Render("  CFG Scale: (N/A - not supported by current providers)") + "\n\n"
 
 	// Number of Images - show correct max per provider
 	focusIndicator = "  "
@@ -1794,8 +1773,6 @@ func (m *GenerateFlowModel) maxCountForProvider() int {
 		return 10
 	case "vertex":
 		return 8
-	case "bedrock":
-		return 5
 	default: // gemini
 		return 4
 	}

@@ -34,6 +34,15 @@ func TestParseSizeString(t *testing.T) {
 }
 
 func TestNormalizeDimensions(t *testing.T) {
+	// multipleOf64Constraints exercises clamping and multiple-of rounding.
+	multipleOf64Constraints := APISizeConstraints{
+		MinWidth:   512,
+		MaxWidth:   2048,
+		MinHeight:  512,
+		MaxHeight:  2048,
+		MultipleOf: 64,
+	}
+
 	tests := []struct {
 		name        string
 		width       int
@@ -46,7 +55,7 @@ func TestNormalizeDimensions(t *testing.T) {
 			name:        "already valid",
 			width:       1024,
 			height:      1024,
-			constraints: BedrockConstraints,
+			constraints: multipleOf64Constraints,
 			wantWidth:   1024,
 			wantHeight:  1024,
 		},
@@ -54,7 +63,7 @@ func TestNormalizeDimensions(t *testing.T) {
 			name:        "below minimum clamped",
 			width:       100,
 			height:      100,
-			constraints: BedrockConstraints,
+			constraints: multipleOf64Constraints,
 			wantWidth:   512,
 			wantHeight:  512,
 		},
@@ -62,7 +71,7 @@ func TestNormalizeDimensions(t *testing.T) {
 			name:        "above maximum clamped",
 			width:       3000,
 			height:      3000,
-			constraints: BedrockConstraints,
+			constraints: multipleOf64Constraints,
 			wantWidth:   2048,
 			wantHeight:  2048,
 		},
@@ -70,7 +79,7 @@ func TestNormalizeDimensions(t *testing.T) {
 			name:        "rounded to nearest multiple of 64",
 			width:       1000,
 			height:      1000,
-			constraints: BedrockConstraints,
+			constraints: multipleOf64Constraints,
 			wantWidth:   1024,
 			wantHeight:  1024,
 		},
@@ -78,7 +87,7 @@ func TestNormalizeDimensions(t *testing.T) {
 			name:        "550 rounds to 576",
 			width:       550,
 			height:      550,
-			constraints: BedrockConstraints,
+			constraints: multipleOf64Constraints,
 			wantWidth:   576,
 			wantHeight:  576,
 		},

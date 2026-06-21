@@ -87,15 +87,6 @@ func TestValidateConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "valid config with bedrock api",
-			cfg: &Config{
-				DefaultAPI:  "bedrock",
-				DefaultSize: "1024x1024",
-				LogLevel:    "warn",
-			},
-			wantErr: false,
-		},
-		{
 			name: "valid config with grok api",
 			cfg: &Config{
 				DefaultAPI:  "grok",
@@ -227,16 +218,6 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "xai-test-grok-key-123", cfg.GrokAPIKey)
 	})
 
-	t.Run("env var AWS_REGION overrides default", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "config.md"))
-		t.Setenv("AWS_REGION", "eu-west-1")
-
-		cfg, err := LoadConfig()
-		require.NoError(t, err)
-		assert.Equal(t, "eu-west-1", cfg.AWSRegion)
-	})
-
 	t.Run("defaults when no env vars set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "config.md"))
@@ -244,11 +225,6 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("GEMINI_API_KEY", "")
 		t.Setenv("VERTEX_API_KEY", "")
 		t.Setenv("GROK_API_KEY", "")
-		t.Setenv("AWS_REGION", "")
-		t.Setenv("AWS_ACCESS_KEY_ID", "")
-		t.Setenv("AWS_SECRET_ACCESS_KEY", "")
-		t.Setenv("AWS_PROFILE", "")
-		t.Setenv("AWS_BEARER_TOKEN_BEDROCK", "")
 		t.Setenv("VERTEX_PROJECT", "")
 		t.Setenv("VERTEX_LOCATION", "")
 		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
@@ -258,8 +234,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "gemini", cfg.DefaultAPI)
 		assert.Equal(t, "1024x1024", cfg.DefaultSize)
-		assert.Equal(t, "us-east-1", cfg.AWSRegion)
-		assert.Equal(t, "us-central1", cfg.VertexLocation)
+		assert.Equal(t, "global", cfg.VertexLocation)
 		assert.Equal(t, "info", cfg.LogLevel)
 		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
 	})
@@ -306,11 +281,6 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("VERTEX_PROJECT", "my-project")
 		t.Setenv("VERTEX_LOCATION", "europe-west1")
 		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/creds.json")
-		t.Setenv("AWS_ACCESS_KEY_ID", "AKIATEST")
-		t.Setenv("AWS_SECRET_ACCESS_KEY", "secret123")
-		t.Setenv("AWS_REGION", "ap-southeast-1")
-		t.Setenv("AWS_PROFILE", "myprofile")
-		t.Setenv("AWS_BEARER_TOKEN_BEDROCK", "bearer-tok")
 		t.Setenv("GROK_API_KEY", "grok-key")
 		t.Setenv("GIMAGE_LOG_LEVEL", "debug")
 
@@ -321,11 +291,6 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "my-project", cfg.VertexProject)
 		assert.Equal(t, "europe-west1", cfg.VertexLocation)
 		assert.Equal(t, "/tmp/creds.json", cfg.VertexCredentialsPath)
-		assert.Equal(t, "AKIATEST", cfg.AWSAccessKeyID)
-		assert.Equal(t, "secret123", cfg.AWSSecretAccessKey)
-		assert.Equal(t, "ap-southeast-1", cfg.AWSRegion)
-		assert.Equal(t, "myprofile", cfg.AWSProfile)
-		assert.Equal(t, "bearer-tok", cfg.AWSBedrockAPIKey)
 		assert.Equal(t, "grok-key", cfg.GrokAPIKey)
 		assert.Equal(t, "debug", cfg.LogLevel)
 	})
@@ -342,7 +307,6 @@ func TestParseMarkdownConfig(t *testing.T) {
 **vertex_api_key**: vertex-key-456
 **vertex_project**: my-project
 **vertex_location**: us-central1
-**aws_region**: eu-west-1
 **grok_api_key**: xai-grok-key
 **default_api**: vertex
 **default_model**: gemini-3-pro-image
@@ -360,7 +324,6 @@ func TestParseMarkdownConfig(t *testing.T) {
 		assert.Equal(t, "vertex-key-456", cfg.VertexAPIKey)
 		assert.Equal(t, "my-project", cfg.VertexProject)
 		assert.Equal(t, "us-central1", cfg.VertexLocation)
-		assert.Equal(t, "eu-west-1", cfg.AWSRegion)
 		assert.Equal(t, "xai-grok-key", cfg.GrokAPIKey)
 		assert.Equal(t, "vertex", cfg.DefaultAPI)
 		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
@@ -419,14 +382,9 @@ gemini_api_key: no-bold
 **vertex_project**: my-proj
 **vertex_location**: us-east1
 **vertex_credentials_path**: /path/to/creds.json
-**aws_access_key_id**: AKIAEXAMPLE
-**aws_secret_access_key**: secret-key
-**aws_region**: us-west-2
-**aws_profile**: prod
-**aws_bedrock_api_key**: bedrock-bearer
 **grok_api_key**: grok-xai
-**default_api**: bedrock
-**default_model**: nova-canvas
+**default_api**: grok
+**default_model**: grok-imagine-image
 **default_size**: 768x768
 **cache_dir**: /tmp/cache
 **log_level**: warn
@@ -443,14 +401,9 @@ gemini_api_key: no-bold
 		assert.Equal(t, "my-proj", cfg.VertexProject)
 		assert.Equal(t, "us-east1", cfg.VertexLocation)
 		assert.Equal(t, "/path/to/creds.json", cfg.VertexCredentialsPath)
-		assert.Equal(t, "AKIAEXAMPLE", cfg.AWSAccessKeyID)
-		assert.Equal(t, "secret-key", cfg.AWSSecretAccessKey)
-		assert.Equal(t, "us-west-2", cfg.AWSRegion)
-		assert.Equal(t, "prod", cfg.AWSProfile)
-		assert.Equal(t, "bedrock-bearer", cfg.AWSBedrockAPIKey)
 		assert.Equal(t, "grok-xai", cfg.GrokAPIKey)
-		assert.Equal(t, "bedrock", cfg.DefaultAPI)
-		assert.Equal(t, "nova-canvas", cfg.DefaultModel)
+		assert.Equal(t, "grok", cfg.DefaultAPI)
+		assert.Equal(t, "grok-imagine-image", cfg.DefaultModel)
 		assert.Equal(t, "768x768", cfg.DefaultSize)
 		assert.Equal(t, "/tmp/cache", cfg.CacheDir)
 		assert.Equal(t, "warn", cfg.LogLevel)
@@ -474,7 +427,6 @@ func TestSaveConfig(t *testing.T) {
 			GrokAPIKey:   "save-test-grok-key",
 			DefaultAPI:   "gemini",
 			DefaultSize:  "1024x1024",
-			AWSRegion:    "us-east-1",
 			LogLevel:     "info",
 		}
 
@@ -524,11 +476,6 @@ func TestSaveConfig(t *testing.T) {
 		// Clear env vars so config file values are read back
 		t.Setenv("GEMINI_API_KEY", "")
 		t.Setenv("GROK_API_KEY", "")
-		t.Setenv("AWS_REGION", "")
-		t.Setenv("AWS_ACCESS_KEY_ID", "")
-		t.Setenv("AWS_SECRET_ACCESS_KEY", "")
-		t.Setenv("AWS_PROFILE", "")
-		t.Setenv("AWS_BEARER_TOKEN_BEDROCK", "")
 		t.Setenv("VERTEX_API_KEY", "")
 		t.Setenv("VERTEX_PROJECT", "")
 		t.Setenv("VERTEX_LOCATION", "")
@@ -540,7 +487,6 @@ func TestSaveConfig(t *testing.T) {
 			GrokAPIKey:   "roundtrip-grok-key",
 			DefaultAPI:   "grok",
 			DefaultSize:  "512x512",
-			AWSRegion:    "eu-west-1",
 			LogLevel:     "debug",
 		}
 
@@ -554,7 +500,6 @@ func TestSaveConfig(t *testing.T) {
 		assert.Equal(t, original.GrokAPIKey, loaded.GrokAPIKey)
 		assert.Equal(t, original.DefaultAPI, loaded.DefaultAPI)
 		assert.Equal(t, original.DefaultSize, loaded.DefaultSize)
-		assert.Equal(t, original.AWSRegion, loaded.AWSRegion)
 		assert.Equal(t, original.LogLevel, loaded.LogLevel)
 	})
 }

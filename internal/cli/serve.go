@@ -162,7 +162,7 @@ For more information: https://github.com/apresai/gimage`,
 				// Group by API
 				geminiProviders := []generate.AuthStatus{}
 				vertexProviders := []generate.AuthStatus{}
-				bedrockProviders := []generate.AuthStatus{}
+				grokProviders := []generate.AuthStatus{}
 
 				for _, status := range statuses {
 					if !status.Configured {
@@ -173,8 +173,8 @@ For more information: https://github.com/apresai/gimage`,
 						geminiProviders = append(geminiProviders, status)
 					case "vertex":
 						vertexProviders = append(vertexProviders, status)
-					case "bedrock":
-						bedrockProviders = append(bedrockProviders, status)
+					case "grok":
+						grokProviders = append(grokProviders, status)
 					}
 				}
 
@@ -206,9 +206,9 @@ For more information: https://github.com/apresai/gimage`,
 					fmt.Fprintln(os.Stderr, "")
 				}
 
-				if len(bedrockProviders) > 0 {
-					fmt.Fprintf(os.Stderr, "[gimage-mcp] ✓ AWS Bedrock - %d provider(s) configured\n", len(bedrockProviders))
-					for _, status := range bedrockProviders {
+				if len(grokProviders) > 0 {
+					fmt.Fprintf(os.Stderr, "[gimage-mcp] ✓ xAI Grok - %d provider(s) configured\n", len(grokProviders))
+					for _, status := range grokProviders {
 						p := status.Provider
 						pricingInfo := "Variable"
 						if p.Pricing.CostPerImage != nil {

@@ -33,7 +33,7 @@ type SettingsMenuModel struct {
 	currentPage SettingsPage
 
 	// Editing state
-	editingKey  string // Which key is being edited ("gemini", "vertex", "aws", etc.)
+	editingKey  string // Which key is being edited ("gemini", "vertex", etc.)
 	editInput   textinput.Model
 	saveMessage string
 	saveError   error
@@ -218,13 +218,6 @@ func (m *SettingsMenuModel) viewConfig() string {
 			configLines = append(configLines, FormatKeyValue("Vertex Project", m.cfg.VertexProject))
 		} else {
 			configLines = append(configLines, FormatKeyValue("Vertex API Key", ErrorStyle.Render("Not set")))
-		}
-
-		if m.cfg.AWSAccessKeyID != "" {
-			configLines = append(configLines, FormatKeyValue("AWS Access Key", "Set ("+maskKey(m.cfg.AWSAccessKeyID)+")"))
-			configLines = append(configLines, FormatKeyValue("AWS Region", m.cfg.AWSRegion))
-		} else {
-			configLines = append(configLines, FormatKeyValue("AWS Access Key", ErrorStyle.Render("Not set")))
 		}
 
 		configLines = append(configLines, "", FormatKeyValue("Default API", m.cfg.DefaultAPI))
@@ -418,8 +411,6 @@ func (m *SettingsMenuModel) viewEditAPIKey() string {
 		keyName = "Gemini API Key"
 	case "vertex":
 		keyName = "Vertex API Key"
-	case "aws":
-		keyName = "AWS Access Key"
 	default:
 		keyName = "API Key"
 	}
@@ -459,8 +450,6 @@ func (m *SettingsMenuModel) saveAPIKey() tea.Cmd {
 			cfg.GeminiAPIKey = newValue
 		case "vertex":
 			cfg.VertexAPIKey = newValue
-		case "aws":
-			cfg.AWSAccessKeyID = newValue
 		}
 
 		// Save config

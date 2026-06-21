@@ -19,7 +19,7 @@ to connect to the API and optionally generating a test image.
 
 Provider can be specified as:
 - Full ID: gemini/flash-2.5, vertex/flash-3.1
-- Alias: gemini, vertex-flash, nova
+- Alias: gemini, vertex-flash, grok
 - Pattern: gemini/* (tests all Gemini providers)`,
 	Example: `  # Test Gemini authentication
   gimage auth test gemini/flash-2.5
@@ -68,8 +68,8 @@ func runAuthTest(cmd *cobra.Command, args []string) error {
 				providers = registry.ListByAPI("gemini")
 			} else if args[0] == "vertex/*" || args[0] == "vertex" {
 				providers = registry.ListByAPI("vertex")
-			} else if args[0] == "bedrock/*" || args[0] == "bedrock" {
-				providers = registry.ListByAPI("bedrock")
+			} else if args[0] == "grok/*" || args[0] == "grok" {
+				providers = registry.ListByAPI("grok")
 			} else {
 				return err
 			}

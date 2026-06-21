@@ -218,11 +218,6 @@ func clearCredentialEnvVars(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("VERTEX_API_KEY", "")
 	t.Setenv("GROK_API_KEY", "")
-	t.Setenv("AWS_ACCESS_KEY_ID", "")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
-	t.Setenv("AWS_PROFILE", "")
-	t.Setenv("AWS_BEARER_TOKEN_BEDROCK", "")
-	t.Setenv("AWS_REGION", "")
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 	t.Setenv("VERTEX_PROJECT", "")
 	t.Setenv("VERTEX_LOCATION", "")
@@ -334,47 +329,6 @@ func TestHasGrokCredentials(t *testing.T) {
 	})
 }
 
-func TestHasBedrockCredentials(t *testing.T) {
-	t.Run("returns true when AWS_BEARER_TOKEN_BEDROCK set", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "nonexistent", "config.md"))
-		t.Setenv("AWS_BEARER_TOKEN_BEDROCK", "bearer-token")
-
-		assert.True(t, HasBedrockCredentials())
-	})
-
-	t.Run("returns true when both AWS access keys set", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "nonexistent", "config.md"))
-		t.Setenv("AWS_ACCESS_KEY_ID", "AKIATEST123")
-		t.Setenv("AWS_SECRET_ACCESS_KEY", "secret123")
-
-		assert.True(t, HasBedrockCredentials())
-	})
-
-	t.Run("returns true when AWS_PROFILE set", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "nonexistent", "config.md"))
-		t.Setenv("AWS_PROFILE", "production")
-
-		assert.True(t, HasBedrockCredentials())
-	})
-
-	t.Run("returns false with only access key ID (no secret)", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "nonexistent", "config.md"))
-		// Override HOME to prevent ~/.aws/credentials from being found
-		t.Setenv("HOME", tmpDir)
-		t.Setenv("AWS_ACCESS_KEY_ID", "AKIATEST123")
-
-		assert.False(t, HasBedrockCredentials())
-	})
-}
-
 func TestGetGeminiAPIKey(t *testing.T) {
 	t.Run("flag value returned first", func(t *testing.T) {
 		clearCredentialEnvVars(t)
@@ -461,46 +415,5 @@ func TestGetGrokAPIKey(t *testing.T) {
 		key, err := GetGrokAPIKey("")
 		require.NoError(t, err)
 		assert.Equal(t, "config-grok-key", key)
-	})
-}
-
-func TestGetAWSRegion(t *testing.T) {
-	t.Run("flag value returned first", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		t.Setenv("AWS_REGION", "ap-southeast-1")
-
-		region := GetAWSRegion("eu-west-1")
-		assert.Equal(t, "eu-west-1", region)
-	})
-
-	t.Run("env var returned when no flag", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		t.Setenv("AWS_REGION", "ap-southeast-1")
-
-		region := GetAWSRegion("")
-		assert.Equal(t, "ap-southeast-1", region)
-	})
-
-	t.Run("default us-east-1 when nothing set", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		t.Setenv("GIMAGE_CONFIG", filepath.Join(tmpDir, "nonexistent", "config.md"))
-
-		region := GetAWSRegion("")
-		assert.Equal(t, "us-east-1", region)
-	})
-
-	t.Run("config file region used when no flag or env", func(t *testing.T) {
-		clearCredentialEnvVars(t)
-		tmpDir := t.TempDir()
-		configPath := filepath.Join(tmpDir, "config.md")
-		t.Setenv("GIMAGE_CONFIG", configPath)
-
-		content := "**aws_region**: ap-northeast-1\n"
-		err := os.WriteFile(configPath, []byte(content), 0600)
-		require.NoError(t, err)
-
-		region := GetAWSRegion("")
-		assert.Equal(t, "ap-northeast-1", region)
 	})
 }

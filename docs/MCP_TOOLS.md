@@ -19,11 +19,11 @@ Complete reference for all 10 MCP tools available in the gimage server.
 
 ## generate_image
 
-Generate an AI image from a text prompt using Gemini, Vertex AI, AWS Bedrock, or xAI Grok.
+Generate an AI image from a text prompt using Gemini, Vertex AI, or xAI Grok.
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Nova Canvas, Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
 
 ### Parameters
 
@@ -38,8 +38,8 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
 | `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
 | `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
-| `cfg_scale`     | float   | No       | -                            | CFG scale for Bedrock (1.0-10.0, higher = more creative)                                       |
-| `count`         | integer | No       | 1                            | Number of images to generate (max varies by provider: Gemini 4, Bedrock 5, Vertex 8, Grok 10)  |
+| `cfg_scale`     | float   | No       | -                            | CFG scale (1.0-10.0, higher = more creative; no longer used by any active provider)            |
+| `count`         | integer | No       | 1                            | Number of images to generate (max varies by provider: Gemini 4, Vertex 8, Grok 10)             |
 | `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
 | `thinking`      | string  | No       | -                            | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
 | `grounding`     | boolean | No       | `false`                      | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
@@ -54,17 +54,6 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - `1024x1792`
 - `1792x1024`
 - native 1K/2K/4K (Gemini 3+ via `image_size` parameter)
-
-**AWS Bedrock (Nova Canvas):**
-
-- `1024x1024` (1:1 ratio)
-- `1280x720` (16:9 landscape)
-- `720x1280` (9:16 portrait)
-- `768x1152` (2:3 portrait)
-- `1152x768` (3:2 landscape)
-- `1408x1408` (1:1 large)
-- `1173x640` (ultra-wide landscape)
-- `640x1173` (ultra-wide portrait)
 
 ### Supported Models
 
@@ -82,10 +71,6 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - All use `gemini-3.1-flash-image` via Vertex generateContent
 - Pricing follows Gemini 3.1 Flash tiers: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K
 - Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
-
-**AWS Bedrock:**
-
-- **amazon.nova-canvas-v1:0** (Nova Canvas, $0.04 for <=1024x1024, $0.08 for larger, up to 1408x1408)
 
 **xAI Grok:**
 
@@ -149,11 +134,6 @@ Generate a 1024x1792 image of a forest scene, but exclude any people or building
 Generate an image in WebP format of a modern architecture building
 ```
 
-**Bedrock with CFG scale:**
-
-```
-Generate an abstract art image with CFG scale 10 for maximum creativity
-```
 
 **Batch generation (multiple images):**
 
@@ -183,18 +163,6 @@ Generate a quick product mockup using vertex-flash-fast model
 
 ```
 Generate a premium architectural visualization using vertex-flash-ultra model
-```
-
-**AWS Bedrock Nova Canvas:**
-
-```
-Generate an image of a futuristic cityscape using Nova Canvas model
-```
-
-**Nova Canvas ultra-wide format:**
-
-```
-Generate a 1173x640 panoramic landscape using Nova Canvas model
 ```
 
 **xAI Grok Imagine (fast, $0.02/image):**
@@ -669,8 +637,6 @@ Error messages are designed to be clear and actionable:
 - **Slow**: generate (5-30 seconds depending on model and size)
   - Gemini 2.5 Flash: ~5-10 seconds
   - Gemini 3.1 Flash via Vertex (vertex-flash): ~10-20 seconds
-  - Nova Canvas Standard: ~8-12 seconds
-  - Nova Canvas Premium: ~15-25 seconds
 
 ### Batch Operations
 
@@ -696,22 +662,18 @@ Different providers support different advanced parameters:
 
 - `output_format`: Control output format (png, jpeg, webp)
 
-**Bedrock (Nova Canvas) Only:**
-
-- `cfg_scale`: Control creativity/adherence to prompt (1.0-10.0, higher = more creative)
-
 **Grok Imagine Only:**
 
 - `aspect_ratio`: Control aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, etc.)
 
-**Gemini, Vertex AI, and Bedrock (not Grok):**
+**Gemini and Vertex AI (not Grok):**
 
 - `negative`: Negative prompt (exclude unwanted elements; Gemini Flash does not support negative prompts)
 - `seed`: Random seed for reproducibility (not supported by Grok)
 
 **All Providers:**
 
-- `count`: Generate multiple images (max varies: Gemini 4, Bedrock 5, Vertex 8, Grok 10)
+- `count`: Generate multiple images (max varies: Gemini 4, Vertex 8, Grok 10)
 
 ### Tips for Better Performance
 
@@ -724,7 +686,6 @@ Different providers support different advanced parameters:
    - Use **vertex-flash** for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image, medium thinking default)
    - Use **vertex-flash-fast** for the same Vertex backend with minimal thinking default
    - Use **vertex-flash-ultra** for the same Vertex backend with high thinking default
-   - Use **Nova Canvas** for AWS integration ($0.04-$0.08/image)
    - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
    - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times

@@ -55,7 +55,6 @@ Gemini API pricing:
 **For advanced users**:
 
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
-- **AWS Bedrock**: 4 authentication modes (Bearer Token/Access Keys/Profile/IAM Role)
 - **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine $0.02/image, Quality $0.05-$0.07/image)
 
 See [Authentication Guide](../README.md#configuration) for complete details.
@@ -126,8 +125,8 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 
 **Capabilities:**
 
-- **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (vertex-flash), Nova Canvas, Grok Imagine/Quality
-- **Size options**: Standard sizes from 512x512 to 1792x1024; native 1K/2K/4K with Gemini 3+ models via `image_size`; up to 1408x1408 with Nova Canvas
+- **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality
+- **Size options**: Standard sizes from 512x512 to 1792x1024; native 1K/2K/4K with Gemini 3+ models via `image_size`
 - **Style controls**: Photorealistic, artistic, anime
 - **Negative prompts**: Exclude unwanted elements
 - **Reproducible results**: Use seeds for consistent generation
@@ -135,7 +134,6 @@ Generate stunning images from text descriptions using state-of-the-art AI models
   - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
   - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
   - Output format (Vertex AI: PNG, JPEG, WebP)
-  - CFG scale (Bedrock: 1.0-10.0 for creativity control)
   - Batch generation (max count varies by provider)
 - **Gemini 3+ exclusives** (ignored by other providers):
   - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
@@ -151,7 +149,6 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 "Make me an image of a sunset, but avoid showing any people or buildings"
 "Generate a 16:9 wide landscape using Gemini 3 Pro"
 "Create 3 variations of a fantasy dragon in flight"
-"Generate an abstract art image with maximum creativity (CFG scale 10)"
 "Generate a portrait in WebP format for web optimization"
 "Drop this product on a marble counter under soft studio light" (with input_images=["product.png"])
 "Place this character in this environment, cinematic lighting" (with input_images=["character.png","scene.jpg"])
@@ -461,7 +458,7 @@ export GEMINI_API_KEY="your-key-here"
 # Vertex AI Express Mode
 export VERTEX_API_KEY="your-vertex-key"
 export VERTEX_PROJECT="your-gcp-project"
-export VERTEX_LOCATION="us-central1"
+export VERTEX_LOCATION="global"
 
 # Vertex AI Full Mode (Service Account)
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
@@ -484,10 +481,6 @@ export VERTEX_PROJECT="your-gcp-project"
 - Pricing follows Gemini 3.1 Flash tiers: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
 - Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
 
-**AWS Bedrock Models**:
-
-- `amazon.nova-canvas-v1:0` ($0.04-$0.08/image, up to 1408x1408)
-
 **xAI Grok Models**:
 
 - `grok-imagine-image` (fast, $0.02/image, supports aspect ratio and resolution)
@@ -501,7 +494,6 @@ export VERTEX_PROJECT="your-gcp-project"
 "Generate an image using gemini-2.5-flash-image for affordable generation"
 "Generate a 16:9 landscape using Gemini 3 Pro aspect ratio control"
 "Generate an image in WebP format using Vertex AI for smaller file size"
-"Generate an abstract image with CFG scale 10 using Nova Canvas for maximum creativity"
 ```
 
 ### Reproducible Generation
@@ -552,7 +544,6 @@ Claude can chain multiple operations:
    - vertex-flash: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
    - vertex-flash-fast: same Vertex-backed Gemini model with minimal thinking default
    - vertex-flash-ultra: same Vertex-backed Gemini model with high thinking default
-   - Nova Canvas: AWS integration, CFG scale for creativity control
    - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
    - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 
@@ -560,7 +551,7 @@ Claude can chain multiple operations:
 
    - Gemini 3 Pro: Aspect ratio (16:9 for landscapes) and native resolution (4K for detail)
    - Vertex AI: Output format (WebP for web optimization)
-   - Bedrock: CFG scale (higher values for more creative/abstract results)
+   - Grok: Aspect ratio and resolution controls
 
 6. **Batch generation** - Use count parameter for variations
    - "Generate 3 variations of..." instead of calling multiple times

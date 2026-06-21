@@ -220,14 +220,6 @@ func runAuthSetup(cmd *cobra.Command, args []string) error {
 				cfg.VertexLocation = value
 			case "vertex_api_key":
 				cfg.VertexAPIKey = value
-			case "aws_region":
-				cfg.AWSRegion = value
-			case "aws_bedrock_api_key":
-				cfg.AWSBedrockAPIKey = value
-			case "aws_access_key_id":
-				cfg.AWSAccessKeyID = value
-			case "aws_secret_access_key":
-				cfg.AWSSecretAccessKey = value
 			}
 		}
 
@@ -260,14 +252,6 @@ func getExistingValue(env generate.EnvVar, cfg *config.Config) string {
 		return cfg.VertexLocation
 	case "vertex_api_key":
 		return cfg.VertexAPIKey
-	case "aws_region":
-		return cfg.AWSRegion
-	case "aws_bedrock_api_key":
-		return cfg.AWSBedrockAPIKey
-	case "aws_access_key_id":
-		return cfg.AWSAccessKeyID
-	case "aws_secret_access_key":
-		return cfg.AWSSecretAccessKey
 	}
 
 	return ""

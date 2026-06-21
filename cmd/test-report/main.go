@@ -241,7 +241,7 @@ func checkE2ETests() {
 		fmt.Println("│ ⚠️  These tests require real API credentials and may cost money                │")
 		fmt.Println("│     - Gemini: ~$0.045-$0.24 per test, depending on model/resolution            │")
 		fmt.Println("│     - Vertex: Gemini 3.1 Flash tiered pricing via generateContent              │")
-		fmt.Println("│     - Bedrock: ~$0.04 per test                                                 │")
+		fmt.Println("│     - Grok: ~$0.02-$0.07 per test                                              │")
 		fmt.Println("│                                                                                 │")
 		fmt.Println("│ APIs Tested:                                                                    │")
 
@@ -261,10 +261,10 @@ func checkE2ETests() {
 				fmt.Println("│   ❌  Vertex AI                                                                │")
 			}
 
-			if strings.Contains(contentStr, "Bedrock") || strings.Contains(contentStr, "Nova") {
-				fmt.Println("│   ✅  AWS Bedrock Nova Canvas                                                  │")
+			if strings.Contains(contentStr, "Grok") {
+				fmt.Println("│   ✅  xAI Grok                                                                 │")
 			} else {
-				fmt.Println("│   ❌  AWS Bedrock Nova Canvas                                                  │")
+				fmt.Println("│   ❌  xAI Grok                                                                 │")
 			}
 		}
 		fmt.Println("└─────────────────────────────────────────────────────────────────────────────────┘")
@@ -290,7 +290,7 @@ func checkE2ETests() {
 		fmt.Println("│ Recommendation: Create E2E tests for:                                          │")
 		fmt.Println("│   - Gemini API real image generation                                           │")
 		fmt.Println("│   - Vertex AI real image generation                                            │")
-		fmt.Println("│   - AWS Bedrock Nova Canvas real image generation                              │")
+		fmt.Println("│   - xAI Grok real image generation                                             │")
 		fmt.Println("└─────────────────────────────────────────────────────────────────────────────────┘")
 		fmt.Println()
 	}

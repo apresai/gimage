@@ -3,10 +3,10 @@ info:
   title: Gimage API
   version: 1.2.66
   description: |
-    AI-powered image generation and processing API powered by Google Gemini, Vertex AI, and AWS Bedrock.
+    AI-powered image generation and processing API powered by Google Gemini, Vertex AI, and xAI Grok.
 
     ## Features
-    - **AI Image Generation**: Create images from text using Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash presets), or AWS Bedrock Nova Canvas
+    - **AI Image Generation**: Create images from text using Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash presets), or xAI Grok Aurora
     - **Image Processing**: Resize, scale, crop, compress, and convert images
     - **Batch Operations**: Process multiple images concurrently
     - **Flexible Response**: Small images as base64, large images as S3 presigned URLs
@@ -45,12 +45,12 @@ paths:
         - Generation
       summary: Generate image from text prompt
       description: |
-        Generate an AI image from a text description using Google Gemini, Vertex AI, or AWS Bedrock.
+        Generate an AI image from a text description using Google Gemini, Vertex AI, or xAI Grok.
 
         **Models Available:**
         - Gemini: `gemini-2.5-flash-image` ($0.039/image), `gemini-3.1-flash-image` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image` ($0.134-$0.24/image, native 4K)
         - Vertex AI: `vertex-flash` (medium thinking, default), `vertex-flash-fast` (minimal thinking), `vertex-flash-ultra` (high thinking) — all use Gemini 3.1 Flash via Vertex generateContent; $0.045-$0.151/image tiered by resolution; thinking depth varies by preset
-        - AWS Bedrock: `amazon.nova-canvas-v1:0` ($0.04-$0.08/image)
+        - xAI Grok: `grok-imagine-image` ($0.02/image), `grok-imagine-image-quality` ($0.05-$0.07/image)
 
         **Response Formats:**
         - `base64`: Image data encoded in base64 (for images < 512KB)
@@ -399,6 +399,7 @@ paths:
         Returns status of:
         - Gemini API (if credentials configured)
         - Vertex AI (if credentials configured)
+        - xAI Grok (if credentials configured)
 
       operationId: healthCheck
       responses:
@@ -417,7 +418,7 @@ paths:
                     apis:
                       gemini: "available"
                       vertex: "available"
-                      bedrock: "available"
+                      grok: "available"
                 gemini_only:
                   summary: Gemini only
                   value:
@@ -426,7 +427,7 @@ paths:
                     apis:
                       gemini: "available"
                       vertex: "not_configured"
-                      bedrock: "not_configured"
+                      grok: "not_configured"
 
 components:
   schemas:
@@ -452,7 +453,6 @@ components:
             - vertex-flash
             - vertex-flash-fast
             - vertex-flash-ultra
-            - amazon.nova-canvas-v1:0
             - grok-imagine-image
             - grok-imagine-image-quality
         size:

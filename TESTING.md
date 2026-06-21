@@ -93,7 +93,6 @@ go test -short ./...
 ```bash
 export GEMINI_API_KEY="your-key-here"
 export VERTEX_API_KEY="your-vertex-key"  # Optional (for Gemini 3.1 Flash via Vertex)
-export AWS_ACCESS_KEY_ID="your-aws-key"  # Optional (for Nova Canvas)
 export GROK_API_KEY="your-grok-key"      # Optional (for Grok)
 ```
 
@@ -205,12 +204,6 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 - Provider: Gemini 3 Pro
 - Cost: $0.134 per test run (1K), $0.134 per test run (2K)
 
-**TestBedrockNovaCanvasDimensions** - Tests Bedrock dimension constraints
-- Tests: 512x512, 1024x1024, 1024x768
-- Validates: Exact dimensions
-- Provider: AWS Bedrock Nova Canvas
-- Cost: $0.04-$0.08 per test run
-
 #### 2. Aspect Ratio Validation
 
 **TestGemini3ProAspectRatio** - Tests aspect ratio controls
@@ -233,12 +226,6 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 - Validates: Successful generation
 - Provider: Gemini 2.5 Flash ($0.039/image)
 - Cost: $0.039/image
-
-**TestBedrockCfgScale** - Tests CFG scale parameter
-- Tests: CFG values 1.0, 5.0, 10.0
-- Validates: No errors at different scales
-- Provider: AWS Bedrock Nova Canvas
-- Cost: $0.12-$0.24 (3 tests)
 
 #### 4. File Operations
 
@@ -264,9 +251,6 @@ go test -tags=integration -v -run TestGemini ./test/integration/...
 # Run only square image test ($0.039)
 go test -tags=integration -v -run TestGeminiSquareImage ./test/integration/...
 
-# Run Bedrock tests (PAID)
-go test -tags=integration -v -run TestBedrock ./test/integration/...
-
 # Run benchmarks
 go test -tags=integration -bench=. ./test/integration/...
 ```
@@ -283,10 +267,8 @@ go test -tags=integration -bench=. ./test/integration/...
 **PAID Tests**:
 - TestGemini3ProAspectRatio: ~$0.40
 - TestGemini3ProImageSize: ~$0.27
-- TestBedrockNovaCanvasDimensions: ~$0.12-$0.24
-- TestBedrockCfgScale: ~$0.12-$0.24
 
-**Total Cost for Full Suite**: ~$1.00-$1.50 per run
+**Total Cost for Full Suite**: ~$0.70-$1.00 per run
 
 ### Validation Functions
 
@@ -501,7 +483,7 @@ Integration tests are run manually before releases.
 
 ### Mocking Policy
 
-**DO NOT MOCK cloud provider APIs** (Gemini, Vertex AI, Bedrock, Grok).
+**DO NOT MOCK cloud provider APIs** (Gemini, Vertex AI, Grok).
 
 Why?
 - Mocks test your mock, not the real API

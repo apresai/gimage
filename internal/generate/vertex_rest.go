@@ -28,6 +28,17 @@ type VertexRESTClient struct {
 }
 
 // NewVertexRESTClient creates a new Vertex REST API client
+// vertexGenerateContentURL builds the Vertex AI generateContent endpoint URL.
+// The "global" location uses the un-prefixed host (aiplatform.googleapis.com);
+// every other region uses "{location}-aiplatform.googleapis.com".
+func vertexGenerateContentURL(location, projectID, modelName string) string {
+	host := fmt.Sprintf("%s-aiplatform.googleapis.com", location)
+	if location == "global" {
+		host = "aiplatform.googleapis.com"
+	}
+	return fmt.Sprintf("https://%s/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent", host, projectID, location, modelName)
+}
+
 func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("API key is required")
@@ -41,7 +52,9 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 	}
 
 	if location == "" {
-		location = "us-central1" // Default location
+		// gimage's Vertex models (Gemini 3.1 Flash image) are served from the
+		// global endpoint, not regional ones.
+		location = "global"
 	}
 
 	return &VertexRESTClient{
@@ -135,8 +148,8 @@ func (c *VertexRESTClient) generateWithRetry(ctx context.Context, modelName, pro
 
 		c.log.Debug("Gemini request body: %s", string(requestJSON))
 
-		// Build API URL for Vertex AI generateContent endpoint
-		apiURL := fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent", c.location, c.projectID, c.location, modelName)
+		// Build API URL for Vertex AI generateContent endpoint.
+		apiURL := vertexGenerateContentURL(c.location, c.projectID, modelName)
 
 		maskedKey := c.apiKey
 		if len(maskedKey) > 8 {
@@ -220,7 +233,7 @@ func (c *VertexRESTClient) handleHTTPError(statusCode int, body []byte) error {
 	case 403:
 		return fmt.Errorf("permission denied (403): API key may not have access to Vertex AI or project")
 	case 404:
-		return fmt.Errorf("not found (404): check project ID (%s) and model name", c.projectID)
+		return fmt.Errorf("not found (404): check project ID (%s), location (%s), and model name — Gemini image models are served from the 'global' location", c.projectID, c.location)
 	case 429:
 		return fmt.Errorf("rate limit exceeded (429): too many requests, please try again later")
 	case 500, 502, 503:

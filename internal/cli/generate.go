@@ -193,7 +193,7 @@ func printSuccessDetails(provider *generate.Provider, output string, imageData [
 var generateCmd = &cobra.Command{
 	Use:   "generate [prompt]",
 	Short: "Generate an image from a text prompt using AI",
-	Long: `Generate an image from a text prompt using Google Gemini, Vertex AI, or AWS Bedrock.
+	Long: `Generate an image from a text prompt using Google Gemini, Vertex AI, or xAI Grok.
 
 The prompt should describe the image you want to generate. You can optionally
 specify style, size, negative prompts, and other parameters.
@@ -214,8 +214,8 @@ Examples:
   # Generate with specific model (auto-detects API)
   gimage generate "futuristic city" --model vertex-flash
 
-  # Generate with AWS Bedrock Nova Canvas
-  gimage generate "futuristic city" --model nova-canvas
+  # Generate with xAI Grok
+  gimage generate "futuristic city" --model grok-imagine
 
   # Generate with specific style and size
   gimage generate "abstract art" --size 1024x1024 --style photorealistic
@@ -291,7 +291,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	style, _ := cmd.Flags().GetString("style")
 	negative, _ := cmd.Flags().GetString("negative")
 	seed, _ := cmd.Flags().GetInt64("seed")
-	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale") // For Bedrock Nova Canvas
+	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale") // Guidance scale (provider-dependent)
 	count, _ := cmd.Flags().GetInt("count")            // Number of images to generate
 	outputFormat, _ := cmd.Flags().GetString("output-format")
 	listModels, _ := cmd.Flags().GetBool("list-models")
@@ -344,7 +344,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			// Auto-detect from available credentials
 			hasGemini := config.HasGeminiCredentials()
 			hasVertex := config.HasVertexCredentials()
-			hasBedrock := config.HasBedrockCredentials()
 			hasGrok := config.HasGrokCredentials()
 
 			// Count available credentials
@@ -353,9 +352,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				availableCount++
 			}
 			if hasVertex {
-				availableCount++
-			}
-			if hasBedrock {
 				availableCount++
 			}
 			if hasGrok {
@@ -367,7 +363,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("no API credentials found. Please set up credentials using:\n" +
 					"  Gemini:  gimage auth gemini\n" +
 					"  Vertex:  gimage auth vertex\n" +
-					"  Bedrock: gimage auth bedrock\n" +
 					"  Grok:    export GROK_API_KEY=your-key")
 			} else if availableCount == 1 {
 				// Only one API available
@@ -377,9 +372,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 				} else if hasVertex {
 					selectedAPI = "vertex"
 					printVerbose("Auto-detected Vertex API (found credentials)")
-				} else if hasBedrock {
-					selectedAPI = "bedrock"
-					printVerbose("Auto-detected AWS Bedrock API (found credentials)")
 				} else {
 					selectedAPI = "grok"
 					printVerbose("Auto-detected xAI Grok API (found credentials)")
@@ -569,72 +561,6 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			generatedImages, err = client.GenerateImage(ctx, prompt, options)
 		}
-	} else if selectedAPI == "bedrock" {
-		// Use AWS Bedrock API - choose between REST (bearer token) or SDK (IAM/keys)
-		region := config.GetAWSRegion("")
-		printVerbose("Using AWS Bedrock region: %s", region)
-
-		modelName := model
-		if modelName == "" {
-			modelName = generate.ModelNovaCanvas
-		}
-
-		printVerbose("Using model: %s", modelName)
-
-		// Resolve provider alias and show info
-		registry := generate.GetProviderRegistry()
-		resolvedProvider, err = registry.ResolveProvider(modelName)
-		if err != nil {
-			return fmt.Errorf("unknown provider/model: %s", modelName)
-		}
-
-		// Use the resolved full model ID
-		resolvedModelID := resolvedProvider.ModelID
-		printVerbose("Resolved model ID: %s (Provider: %s)", resolvedModelID, resolvedProvider.ID)
-
-		// Show provider info using standardized output
-		printProviderHeader(resolvedProvider)
-		printPricingInfo(resolvedProvider, imageSize, size, style)
-
-		// Update options to use resolved model ID (not alias)
-		bedrockOptions := options
-		bedrockOptions.Model = resolvedModelID
-
-		// Determine which authentication method to use
-		// Priority: Bearer token (REST) > AWS SDK (keys/profile/IAM)
-		cfg, _ := config.LoadConfig()
-		bearerToken := os.Getenv("AWS_BEARER_TOKEN_BEDROCK")
-		if bearerToken == "" && cfg != nil {
-			bearerToken = cfg.AWSBedrockAPIKey
-		}
-
-		printInfo("Generating image...")
-
-		if bearerToken != "" {
-			// Use REST client with bearer token
-			printVerbose("Using Bedrock REST API with bearer token authentication")
-
-			client, clientErr := generate.NewBedrockRESTClient(bearerToken, region)
-			if clientErr != nil {
-				return fmt.Errorf("failed to create AWS Bedrock REST client: %w", clientErr)
-			}
-			defer client.Close()
-
-			startTime = time.Now()
-			generatedImages, err = client.GenerateImage(ctx, prompt, bedrockOptions)
-		} else {
-			// Use SDK client with IAM/keys/profile
-			printVerbose("Using Bedrock SDK with IAM/keys/profile authentication")
-
-			client, clientErr := generate.NewBedrockSDKClient(ctx, region)
-			if clientErr != nil {
-				return fmt.Errorf("failed to create AWS Bedrock SDK client: %w", clientErr)
-			}
-			defer client.Close()
-
-			startTime = time.Now()
-			generatedImages, err = client.GenerateImage(ctx, prompt, bedrockOptions)
-		}
 	} else if selectedAPI == "grok" {
 		// Use xAI Grok API. Distinct error name to avoid shadowing outer `err`.
 		key, keyErr := config.GetGrokAPIKey("")
@@ -670,7 +596,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		startTime = time.Now()
 		generatedImages, err = client.GenerateImage(ctx, prompt, options)
 	} else {
-		return fmt.Errorf("invalid API: %s (must be 'gemini', 'vertex', 'bedrock', or 'grok')", selectedAPI)
+		return fmt.Errorf("invalid API: %s (must be 'gemini', 'vertex', or 'grok')", selectedAPI)
 	}
 
 	if err != nil {
@@ -789,7 +715,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		Style:              style,
 		NegativePrompt:     negative,
 		Seed:               seed,
-		CfgScale:           cfgScale,     // For Bedrock Nova Canvas (1.0-10.0)
+		CfgScale:           cfgScale,     // Guidance scale (provider-dependent, 1.0-10.0)
 		NumberOfImages:     count,        // Number of images to generate (1-5)
 		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
 		ThinkingLevel:      thinkingLevel,
@@ -1041,7 +967,6 @@ func printAvailableModels() error {
 		printInfo("\n  To get started, authenticate with at least one API:")
 		printInfo("    gimage auth gemini   # Fastest, most affordable")
 		printInfo("    gimage auth vertex   # Highest quality (paid)")
-		printInfo("    gimage auth bedrock  # AWS integration (paid)")
 		printInfo("    gimage auth grok     # xAI Aurora (paid)")
 	}
 
@@ -1215,9 +1140,6 @@ func printPromptHowto() error {
 │ Gemini 3.1 Flash pricing (tiered by resolution):                                │
 │   0.5K: $0.045    1K: $0.067    2K: $0.101    4K: $0.151                        │
 │                                                                                 │
-│ Nova Canvas pricing (varies by dimensions):                                     │
-│   ≤1024x1024: $0.04/image    >1024x1024: $0.08/image                            │
-│                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -1288,7 +1210,7 @@ func init() {
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime")
 	generateCmd.Flags().String("negative", "", "Negative prompt to avoid certain features")
 	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility (0 for random)")
-	generateCmd.Flags().Float64("cfg-scale", 0, "Guidance scale for Nova Canvas (1.0-10.0, default 7.0)")
+	generateCmd.Flags().Float64("cfg-scale", 0, "Guidance scale (provider-dependent, 1.0-10.0)")
 	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (1-5, default 1)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
