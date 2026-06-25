@@ -139,7 +139,7 @@ Both images are identical. Seeds ensure reproducible results, which is useful wh
 - Create consistent variations
 ```
 
-### Example 6: Using Negative Prompts
+### Example 6: Stating Exclusions in the Prompt
 
 **User Prompt:**
 ```
@@ -148,9 +148,9 @@ Generate a beautiful garden scene, but I don't want any people, buildings, or mo
 
 **Claude's Actions:**
 ```
-I'll generate a garden scene and use negative prompts to exclude unwanted elements.
+I'll generate a garden scene with the exclusions stated directly in the prompt.
 
-[Calls generate_image with negative="people, buildings, modern objects, cars, technology"]
+[Calls generate_image with prompt="A beautiful garden scene with no people, no buildings, no modern objects, no cars, no technology. Pure nature only."]
 ```
 
 **Result:**
@@ -510,7 +510,7 @@ For example:
 ✓ Generated 20 OpenGraph images (1200x630)
 Style: Consistent modern tech aesthetic
 Color palette: Blues, purples, grays
-Text-overlay ready: Yes (negative prompts excluded text)
+Text-overlay ready: Yes (prompts specified no text)
 
 All images follow OpenGraph standards and will display correctly on Twitter, LinkedIn, Facebook, and Slack.
 ```
@@ -611,7 +611,7 @@ Generate promotional graphics for our summer sale:
 ```
 I'll generate 5 summer sale promotional graphics for you.
 
-[Generates 5 images with summer themes, negative prompt excludes text]
+[Generates 5 images with summer themes, prompts specify no text overlays]
 
 Generated images:
 1. summer-promo-beach.png - Tropical beach with palm trees
@@ -1185,9 +1185,9 @@ Your handmade candle business now has professional-looking product photography w
 ✓ "Resize to 800x600 pixels for web use"
 ```
 
-### Use Negative Prompts
+### State Exclusions in the Prompt
 ```
-✓ "Generate a street scene, but exclude people, cars, and modern buildings"
+✓ "Generate a street scene with no people, no cars, and no modern buildings"
 ```
 
 ### Chain Operations Clearly

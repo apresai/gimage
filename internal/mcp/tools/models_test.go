@@ -134,9 +134,10 @@ func TestListModelsTool_ProviderStructure(t *testing.T) {
 		"provider_id", "name", "api", "model_id", "description",
 		"available", "missing_credentials",
 		"pricing", "pricing_summary",
-		"supports_styles", "supports_negative_prompt", "supports_seed",
+		"supports_styles", "supports_seed",
 		"supports_image_size", "supports_aspect_ratio", "supports_thinking",
 		"supports_grounding", "supports_input_images",
+		"supports_output_format", "supports_multiple_images",
 		"max_prompt_length",
 	}
 

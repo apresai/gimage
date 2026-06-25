@@ -84,8 +84,8 @@ func TestGenerateImageTool_InputSchema(t *testing.T) {
 
 	// Verify optional properties — full enumeration to catch silent schema drift.
 	optionalProps := []string{
-		"output", "size", "model", "style", "negative", "seed",
-		"image_size", "aspect_ratio", "cfg_scale", "count", "output_format",
+		"output", "size", "model", "style", "seed",
+		"image_size", "aspect_ratio", "count", "output_format",
 		"thinking", "grounding", "input_images",
 	}
 	for _, prop := range optionalProps {

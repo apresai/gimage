@@ -148,11 +148,6 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 			log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
-		if options.NegativePrompt != "" {
-			imageConfig.NegativePrompt = options.NegativePrompt
-			log.Debug("Using negativePrompt: %s", options.NegativePrompt)
-		}
-
 		// Set aspectRatio - use explicit value, infer from Size, or default to 1:1
 		if options.AspectRatio != "" {
 			imageConfig.AspectRatio = options.AspectRatio
@@ -465,9 +460,8 @@ type geminiGenerationConfig struct {
 }
 
 type geminiImageConfig struct {
-	AspectRatio    string `json:"aspectRatio,omitempty"`
-	ImageSize      string `json:"imageSize,omitempty"` // "1K", "2K", "4K" — API requires uppercase
-	NegativePrompt string `json:"negativePrompt,omitempty"`
+	AspectRatio string `json:"aspectRatio,omitempty"`
+	ImageSize   string `json:"imageSize,omitempty"` // "1K", "2K", "4K" — API requires uppercase
 }
 
 // geminiThinkingConfig controls reasoning depth on Gemini 3+ models.

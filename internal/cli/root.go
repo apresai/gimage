@@ -63,8 +63,8 @@ EXAMPLES:
   3. Generate photorealistic image:
      $ gimage generate "portrait of a wise old wizard" --style photorealistic --size 1024x1024
 
-  4. Generate with negative prompts:
-     $ gimage generate "peaceful forest" --negative "people, buildings, roads"
+  4. Generate with a specific aspect ratio:
+     $ gimage generate "cinematic mountain vista" --aspect-ratio 16:9
 
   5. Generate reproducible image with seed:
      $ gimage generate "abstract geometric patterns" --seed 42

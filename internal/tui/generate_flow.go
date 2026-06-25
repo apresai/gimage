@@ -27,7 +27,7 @@ const (
 	StepProvider              // Select provider (was StepModel)
 	StepSize
 	StepStyle
-	StepAdvanced // NEW: Advanced options (negative prompt, seed, aspect ratio, etc.)
+	StepAdvanced // NEW: Advanced options (seed, aspect ratio, image size, etc.)
 	StepOutput
 	StepCommand // Show command preview before generating
 	StepProgress
@@ -113,7 +113,6 @@ type GenerateFlowModel struct {
 	selectedStyle int
 
 	// Step 5: Advanced options (NEW)
-	negativePromptInput  textinput.Model
 	seedInput            textinput.Model
 	aspectRatios         []aspectRatioOption
 	selectedAspectRatio  int
@@ -123,9 +122,8 @@ type GenerateFlowModel struct {
 	selectedOutputFormat int
 	resizeModes          []resizeModeOption
 	selectedResizeMode   int
-	cfgScaleInput        textinput.Model
 	countInput           textinput.Model
-	advancedFocusIndex   int // Track which field is focused (0-7)
+	advancedFocusIndex   int // Track which field is focused (0-5)
 
 	// Step 6: Output path
 	outputInput textinput.Model
@@ -242,20 +240,10 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	}
 
 	// Initialize advanced options inputs
-	negativePromptInput := textinput.New()
-	negativePromptInput.Placeholder = "e.g., blurry, low quality, watermark"
-	negativePromptInput.CharLimit = 500
-	negativePromptInput.Width = 60
-
 	seedInput := textinput.New()
 	seedInput.Placeholder = "e.g., 12345 (for reproducibility)"
 	seedInput.CharLimit = 20
 	seedInput.Width = 30
-
-	cfgScaleInput := textinput.New()
-	cfgScaleInput.Placeholder = "7.0 (1.0-10.0)"
-	cfgScaleInput.CharLimit = 5
-	cfgScaleInput.Width = 20
 
 	countInput := textinput.New()
 	countInput.Placeholder = "1"
@@ -315,7 +303,6 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		styles:           styleOpts,
 		selectedStyle:    0,
 		// Advanced options
-		negativePromptInput:  negativePromptInput,
 		seedInput:            seedInput,
 		aspectRatios:         aspectRatioOpts,
 		selectedAspectRatio:  0,
@@ -325,7 +312,6 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		selectedOutputFormat: 0,
 		resizeModes:          resizeModeOpts,
 		selectedResizeMode:   0,
-		cfgScaleInput:        cfgScaleInput,
 		countInput:           countInput,
 		advancedFocusIndex:   0,
 		// Other steps
@@ -471,7 +457,7 @@ func (m *GenerateFlowModel) resetFocusForStep() {
 		m.promptTextarea.Focus()
 	case StepAdvanced:
 		m.advancedFocusIndex = 0
-		m.negativePromptInput.Focus()
+		m.seedInput.Focus()
 	case StepOutput:
 		m.outputInput.Focus()
 	}
@@ -743,7 +729,7 @@ func (m *GenerateFlowModel) updateStyleStep(msg tea.Msg) (*GenerateFlowModel, te
 			// Go to Advanced Options step
 			m.currentStep = StepAdvanced
 			m.advancedFocusIndex = 0
-			m.negativePromptInput.Focus()
+			m.seedInput.Focus()
 			return m, textinput.Blink
 		}
 	}
@@ -803,13 +789,13 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 		case "tab", "down", "j":
 			// Move to next field
 			m.blurAllAdvancedInputs()
-			m.advancedFocusIndex = (m.advancedFocusIndex + 1) % 8
+			m.advancedFocusIndex = (m.advancedFocusIndex + 1) % 6
 			m.focusAdvancedInput()
 			return m, textinput.Blink
 		case "shift+tab", "up", "k":
 			// Move to previous field
 			m.blurAllAdvancedInputs()
-			m.advancedFocusIndex = (m.advancedFocusIndex - 1 + 8) % 8
+			m.advancedFocusIndex = (m.advancedFocusIndex - 1 + 6) % 6
 			m.focusAdvancedInput()
 			return m, textinput.Blink
 		case "enter":
@@ -820,25 +806,25 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 			return m, textinput.Blink
 		case "left", "h":
 			// Navigate picker options left
-			if m.advancedFocusIndex == 2 && m.selectedAspectRatio > 0 {
+			if m.advancedFocusIndex == 1 && m.selectedAspectRatio > 0 {
 				m.selectedAspectRatio--
-			} else if m.advancedFocusIndex == 3 && m.selectedImageSize > 0 {
+			} else if m.advancedFocusIndex == 2 && m.selectedImageSize > 0 {
 				m.selectedImageSize--
-			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat > 0 {
+			} else if m.advancedFocusIndex == 3 && m.selectedOutputFormat > 0 {
 				m.selectedOutputFormat--
-			} else if m.advancedFocusIndex == 5 && m.selectedResizeMode > 0 {
+			} else if m.advancedFocusIndex == 4 && m.selectedResizeMode > 0 {
 				m.selectedResizeMode--
 			}
 			return m, nil
 		case "right", "l":
 			// Navigate picker options right
-			if m.advancedFocusIndex == 2 && m.selectedAspectRatio < len(m.aspectRatios)-1 {
+			if m.advancedFocusIndex == 1 && m.selectedAspectRatio < len(m.aspectRatios)-1 {
 				m.selectedAspectRatio++
-			} else if m.advancedFocusIndex == 3 && m.selectedImageSize < len(m.imageSizes)-1 {
+			} else if m.advancedFocusIndex == 2 && m.selectedImageSize < len(m.imageSizes)-1 {
 				m.selectedImageSize++
-			} else if m.advancedFocusIndex == 4 && m.selectedOutputFormat < len(m.outputFormats)-1 {
+			} else if m.advancedFocusIndex == 3 && m.selectedOutputFormat < len(m.outputFormats)-1 {
 				m.selectedOutputFormat++
-			} else if m.advancedFocusIndex == 5 && m.selectedResizeMode < len(m.resizeModes)-1 {
+			} else if m.advancedFocusIndex == 4 && m.selectedResizeMode < len(m.resizeModes)-1 {
 				m.selectedResizeMode++
 			}
 			return m, nil
@@ -848,12 +834,8 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 	// Update the focused input
 	switch m.advancedFocusIndex {
 	case 0:
-		m.negativePromptInput, cmd = m.negativePromptInput.Update(msg)
-	case 1:
 		m.seedInput, cmd = m.seedInput.Update(msg)
-	case 6:
-		m.cfgScaleInput, cmd = m.cfgScaleInput.Update(msg)
-	case 7:
+	case 5:
 		m.countInput, cmd = m.countInput.Update(msg)
 	}
 
@@ -861,23 +843,17 @@ func (m *GenerateFlowModel) updateAdvancedStep(msg tea.Msg) (*GenerateFlowModel,
 }
 
 func (m *GenerateFlowModel) blurAllAdvancedInputs() {
-	m.negativePromptInput.Blur()
 	m.seedInput.Blur()
-	m.cfgScaleInput.Blur()
 	m.countInput.Blur()
 }
 
 func (m *GenerateFlowModel) focusAdvancedInput() {
 	switch m.advancedFocusIndex {
 	case 0:
-		m.negativePromptInput.Focus()
-	case 1:
 		m.seedInput.Focus()
-	case 6:
-		m.cfgScaleInput.Focus()
-	case 7:
+	case 5:
 		m.countInput.Focus()
-		// 2, 3, 4, 5 are pickers - no focus needed
+		// 1, 2, 3, 4 are pickers - no focus needed
 	}
 }
 
@@ -891,21 +867,9 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 	content = TitleStyle.Render("Generate Image - Step 5/8") + "\n\n" +
 		SubtitleStyle.Render("Advanced Options (Optional)") + "\n\n"
 
-	// Negative Prompt
+	// Seed
 	focusIndicator := "  "
 	if m.advancedFocusIndex == 0 {
-		focusIndicator = "> "
-	}
-	if m.supportsNegativePrompt() {
-		content += focusIndicator + FormatKeyValue("Negative Prompt", m.negativePromptInput.View()) + "\n"
-		content += MutedStyle.Render("    Describe what you DON'T want in the image") + "\n\n"
-	} else {
-		content += MutedStyle.Render("  Negative Prompt: N/A for "+provider.api) + "\n\n"
-	}
-
-	// Seed
-	focusIndicator = "  "
-	if m.advancedFocusIndex == 1 {
 		focusIndicator = "> "
 	}
 	if m.supportsSeed() {
@@ -917,7 +881,7 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 
 	// Aspect Ratio (Gemini Flash, Gemini 3 Pro, and Vertex)
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 2 {
+	if m.advancedFocusIndex == 1 {
 		focusIndicator = "> "
 	}
 	aspectRatioValue := m.aspectRatios[m.selectedAspectRatio].label
@@ -930,7 +894,7 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 
 	// Image Size (Gemini 3 Pro native upscaling)
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 3 {
+	if m.advancedFocusIndex == 2 {
 		focusIndicator = "> "
 	}
 	imageSizeValue := m.imageSizes[m.selectedImageSize].label
@@ -943,7 +907,7 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 
 	// Output Format (Vertex AI only)
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 4 {
+	if m.advancedFocusIndex == 3 {
 		focusIndicator = "> "
 	}
 	outputFormatValue := m.outputFormats[m.selectedOutputFormat].label
@@ -956,19 +920,16 @@ func (m *GenerateFlowModel) viewAdvancedStep() string {
 
 	// Resize Mode (all providers)
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 5 {
+	if m.advancedFocusIndex == 4 {
 		focusIndicator = "> "
 	}
 	resizeModeValue := m.resizeModes[m.selectedResizeMode].label
 	content += focusIndicator + FormatKeyValue("Resize Mode", resizeModeValue) + "\n"
 	content += MutedStyle.Render("    ←/→ to change: "+m.resizeModes[m.selectedResizeMode].desc) + "\n\n"
 
-	// CFG Scale - not supported by any current provider
-	content += MutedStyle.Render("  CFG Scale: (N/A - not supported by current providers)") + "\n\n"
-
 	// Number of Images - show correct max per provider
 	focusIndicator = "  "
-	if m.advancedFocusIndex == 7 {
+	if m.advancedFocusIndex == 5 {
 		focusIndicator = "> "
 	}
 	maxCount := m.maxCountForProvider()
@@ -1063,9 +1024,6 @@ func (m *GenerateFlowModel) buildCommand() {
 	}
 
 	// Add advanced options
-	if m.negativePromptInput.Value() != "" {
-		cmdParts = append(cmdParts, fmt.Sprintf("--negative \"%s\"", m.negativePromptInput.Value()))
-	}
 	if m.seedInput.Value() != "" {
 		cmdParts = append(cmdParts, fmt.Sprintf("--seed %s", m.seedInput.Value()))
 	}
@@ -1077,9 +1035,6 @@ func (m *GenerateFlowModel) buildCommand() {
 	}
 	if m.outputFormats[m.selectedOutputFormat].value != "" {
 		cmdParts = append(cmdParts, fmt.Sprintf("--output-format %s", m.outputFormats[m.selectedOutputFormat].value))
-	}
-	if m.cfgScaleInput.Value() != "" {
-		cmdParts = append(cmdParts, fmt.Sprintf("--cfg-scale %s", m.cfgScaleInput.Value()))
 	}
 	if m.countInput.Value() != "" && m.countInput.Value() != "1" {
 		cmdParts = append(cmdParts, fmt.Sprintf("--count %s", m.countInput.Value()))
@@ -1275,7 +1230,7 @@ func (m *GenerateFlowModel) renderHelp() string {
 		"2. Choose an AI provider\n" +
 		"3. Select image size\n" +
 		"4. Pick a style (optional)\n" +
-		"5. Advanced options (negative prompt, seed, etc.)\n" +
+		"5. Advanced options (seed, aspect ratio, image size, etc.)\n" +
 		"6. Specify output path\n" +
 		"7. Preview command\n" +
 		"8. Watch the progress\n\n" +
@@ -1588,11 +1543,6 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 			fmt.Sscanf(m.seedInput.Value(), "%d", &seed)
 		}
 
-		var cfgScale float64
-		if m.cfgScaleInput.Value() != "" {
-			fmt.Sscanf(m.cfgScaleInput.Value(), "%f", &cfgScale)
-		}
-
 		var count int
 		if m.countInput.Value() != "" {
 			fmt.Sscanf(m.countInput.Value(), "%d", &count)
@@ -1603,12 +1553,10 @@ func (m *GenerateFlowModel) generateImageCmd() tea.Cmd {
 			Model:          provider.model,
 			Size:           size,
 			Style:          m.styles[m.selectedStyle].value,
-			NegativePrompt: m.negativePromptInput.Value(),
 			Seed:           seed,
 			AspectRatio:    m.aspectRatios[m.selectedAspectRatio].value,
 			ImageSize:      m.imageSizes[m.selectedImageSize].value,
 			OutputFormat:   m.outputFormats[m.selectedOutputFormat].value,
-			CfgScale:       cfgScale,
 			NumberOfImages: count,
 			ResizeMode:     m.resizeModes[m.selectedResizeMode].value,
 		}
@@ -1776,26 +1724,6 @@ func (m *GenerateFlowModel) maxCountForProvider() int {
 	default: // gemini
 		return 4
 	}
-}
-
-// supportsNegativePrompt returns whether the selected provider supports negative prompts
-func (m *GenerateFlowModel) supportsNegativePrompt() bool {
-	if m.selectedProvider >= len(m.providers) {
-		return true
-	}
-	provider := m.providers[m.selectedProvider]
-	if strings.HasPrefix(provider.id, "vertex/flash-3.1") {
-		return false
-	}
-	// Grok doesn't support negative prompts
-	if provider.api == "grok" {
-		return false
-	}
-	// Gemini Flash doesn't support negative prompts (only Gemini 3 Pro does)
-	if provider.api == "gemini" && !strings.Contains(provider.model, "gemini-3") {
-		return false
-	}
-	return true
 }
 
 // supportsSeed returns whether the selected provider supports seed

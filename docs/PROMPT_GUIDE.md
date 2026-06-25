@@ -217,7 +217,7 @@ gimage generate "..." --model gemini-3.1-flash --image-size 4K
 1. **Start simple**, add details incrementally
 2. **Be specific** about what matters most
 3. **Use concrete nouns** over abstract concepts
-4. **Specify what you don't want** in the negative prompt (MCP only)
+4. **State what you don't want** directly in the prompt (e.g. "no text, no watermark")
 5. **Try different phrasings** - small changes can yield different results
 
 ## Examples by Category

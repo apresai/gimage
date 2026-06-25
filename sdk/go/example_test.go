@@ -58,7 +58,6 @@ func Example_withAPIKey() {
 		Model:          modelPtr(gimage.Gemini25FlashImage),
 		Size:           stringPtr("1024x1024"),
 		Style:          stylePtr(gimage.Photorealistic),
-		NegativePrompt: stringPtr("people, text"),
 		Seed:           int64Ptr(42),
 		ResponseFormat: respFmtPtr(gimage.GenerateRequestResponseFormatBase64),
 	})

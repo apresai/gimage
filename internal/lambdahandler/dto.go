@@ -6,7 +6,6 @@ type GenerateRequest struct {
 	Model          string `json:"model,omitempty"`
 	Size           string `json:"size,omitempty"`
 	Style          string `json:"style,omitempty"`
-	NegativePrompt string `json:"negative_prompt,omitempty"`
 	Seed           int64  `json:"seed,omitempty"`
 	ResponseFormat string `json:"response_format,omitempty"` // "base64" or "s3_url"
 }
@@ -66,9 +65,9 @@ type BatchRequest struct {
 
 // ImageResponse represents the response for image operations
 type ImageResponse struct {
-	Image     string            `json:"image,omitempty"`      // base64 encoded (for small images)
-	S3URL     string            `json:"s3_url,omitempty"`     // presigned URL (for large images)
-	S3Key     string            `json:"s3_key,omitempty"`     // S3 key for chaining operations
+	Image     string            `json:"image,omitempty"`  // base64 encoded (for small images)
+	S3URL     string            `json:"s3_url,omitempty"` // presigned URL (for large images)
+	S3Key     string            `json:"s3_key,omitempty"` // S3 key for chaining operations
 	Width     int               `json:"width"`
 	Height    int               `json:"height"`
 	Format    string            `json:"format"`
@@ -78,9 +77,9 @@ type ImageResponse struct {
 
 // BatchResponse represents the response for batch operations
 type BatchResponse struct {
-	BatchID   string `json:"batch_id"`
-	Status    string `json:"status"` // "processing", "completed", "failed"
-	StatusURL string `json:"status_url,omitempty"`
+	BatchID   string          `json:"batch_id"`
+	Status    string          `json:"status"` // "processing", "completed", "failed"
+	StatusURL string          `json:"status_url,omitempty"`
 	Results   []ImageResponse `json:"results,omitempty"`
 }
 

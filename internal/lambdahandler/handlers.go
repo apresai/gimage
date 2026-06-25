@@ -37,11 +37,10 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 
 	// Build generate options
 	options := models.GenerateOptions{
-		Model:          req.Model,
-		Size:           req.Size,
-		Style:          req.Style,
-		NegativePrompt: req.NegativePrompt,
-		Seed:           req.Seed,
+		Model: req.Model,
+		Size:  req.Size,
+		Style: req.Style,
+		Seed:  req.Seed,
 	}
 
 	// Set defaults

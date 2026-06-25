@@ -22,7 +22,7 @@ Production-ready serverless REST API for web applications and remote processing.
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, or xAI Grok
 - Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Grok Imagine ($0.02-$0.07/image)
-- Control size, style, quality, aspect ratio, and provider-supported negative prompts
+- Control size, style, quality, and aspect ratio
 - Reproducible results with seed values on providers that support seeds
 - Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+), aspect ratio (Grok)
 - Batch generation: create multiple images at once
@@ -140,8 +140,8 @@ gimage generate "abstract art" --size 1024x1024 --style photorealistic
 # Use Gemini 3.1 Flash via Vertex (auto-detects vertex API)
 gimage generate "beautiful landscape" --model vertex-flash
 
-# Use negative prompts to avoid unwanted elements
-gimage generate "forest scene" --negative "people, buildings"
+# State exclusions directly in the prompt
+gimage generate "forest scene with no people, no buildings"
 
 # Reproducible results with seed
 gimage generate "random pattern" --seed 12345
@@ -336,7 +336,7 @@ gimage auth status  # Shows which credentials are active and their sources
 
 ### Vertex AI (Google Cloud) - Paid
 
-All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateContent endpoint. Gemini 3.1 Flash via Vertex does not support negative prompts or seeds; those options are ignored.
+All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateContent endpoint. Options unsupported by the chosen provider are reported and ignored.
 
 - **`vertex-flash`** (provider alias: `vertex/flash-3.1`)
 
@@ -693,7 +693,7 @@ gimage tui
 
 - Step-by-step image generation workflow (8 steps)
 - Provider selection with pricing and auth status
-- All CLI options available: size, style, negative prompt, seed, aspect ratio, image size, output format, resize mode, CFG scale, count
+- All CLI options available: size, style, seed, aspect ratio, image size, output format, resize mode, count
 - Command preview before generation
 - Progress tracking and error handling
 
