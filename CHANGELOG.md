@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
-- **`--negative` (negative prompt) and `--cfg-scale` flags**: removed from the `generate` CLI, the MCP `generate_image` tool, the TUI, and the HTTP API. No current backend (Gemini, Vertex/Gemini, Grok) supports negative prompts or guidance scale; both were leftovers from the retired Imagen models and silently did nothing. **Breaking for HTTP/SDK callers:** `negative_prompt` has been dropped from `openapi.yaml`, the regenerated Go SDK, and the Lambda request DTO. State exclusions directly in the prompt instead (e.g. "...no text, no people").
+(empty - ready for next release)
+
+## [1.2.143] - 2026-06-25
 
 ### Added
-- **Per-provider flag reconciliation.** Options the chosen provider does not support are now reported with a friendly warning and stripped before the request, instead of being silently ignored. The CLI prints a warning to stderr; the MCP tool returns the messages in the response `warning` field. Driven by `ModelCapabilities`, so every provider is covered uniformly.
+- Per-provider flag reconciliation: options the selected provider doesn't support are now reported via a friendly warning and stripped before the request, instead of being silently ignored (CLI warns on stderr; MCP returns messages in the response `warning` field). Driven uniformly by `ModelCapabilities`.
 - `list_models` now reports `supports_output_format` and `supports_multiple_images`.
 
 ### Fixed
-- Grok provider capability flags now correctly advertise `supports_image_size` and `supports_aspect_ratio` (the code already honored both; the flags wrongly read false).
-- `--count`/`-n` guidance: Grok returns N images exactly; the Gemini family is best-effort (often a single image) and now says so when `--count > 1`.
+- Grok capability flags now correctly advertise `supports_image_size` and `supports_aspect_ratio` (behavior was already honored; the flags wrongly read false).
+- `--count`/`-n` guidance: Grok returns N images exactly, while the Gemini family is best-effort (often a single image) and now says so when `--count > 1`.
+
+### Removed
+- `--negative` (negative prompt) and `--cfg-scale` flags removed from the `generate` CLI, the MCP `generate_image` tool, the TUI, and the HTTP API. No current backend supports them; both were dead leftovers from the retired Imagen models. **Breaking for HTTP/SDK callers:** `negative_prompt` is dropped from `openapi.yaml`, the generated Go SDK, and the Lambda request DTO. State exclusions directly in the prompt instead.
+
 
 ## [1.2.141] - 2026-06-21
 
