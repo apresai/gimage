@@ -67,13 +67,14 @@ type PricingInfo struct {
 // ModelCapabilities represents what features a model supports
 type ModelCapabilities struct {
 	SupportsStyles         bool
-	SupportsNegativePrompt bool
 	SupportsSeed           bool
 	SupportsImageSize      bool
 	SupportsAspectRatio    bool
 	SupportsThinking       bool
 	SupportsGrounding      bool
 	SupportsInputImages    bool
+	SupportsOutputFormat   bool // Only the Vertex full-mode (unified SDK) path honors OutputMIMEType
+	SupportsMultipleImages bool // count>1: Grok returns N exactly; Gemini/Vertex are best-effort
 	MaxPromptLength        int
 }
 
@@ -160,10 +161,10 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
 			SupportsAspectRatio:    true,
 			SupportsInputImages:    true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        480,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -201,13 +202,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
 			SupportsInputImages:    true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -243,13 +244,13 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: true,
 			SupportsSeed:           true,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
 			SupportsInputImages:    true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        2000, // 65k context window
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -298,13 +299,14 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
 			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -361,13 +363,14 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
 			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -424,13 +427,14 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
 			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -475,8 +479,10 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         false,
-			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        8000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -511,8 +517,10 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         false,
-			SupportsNegativePrompt: false,
 			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsMultipleImages: true,
 			MaxPromptLength:        8000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
@@ -813,6 +821,63 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 	}
 
 	return nil, fmt.Errorf("no provider found for: %s", input)
+}
+
+// ReconcileOptions strips every generation option the resolved provider does not
+// support and returns one friendly, user-facing warning per ignored option. It
+// mutates *o in place. It is safe to call with a nil provider or nil options (it
+// returns nil and changes nothing), which the legacy runGenerate path relies on
+// when provider resolution fails.
+//
+// NumberOfImages is never stripped: Grok honors N exactly, and the Gemini family
+// attempts it via candidateCount (best-effort). For the Gemini family we emit an
+// advisory note when count > 1 rather than silently implying N images are
+// guaranteed. ResizeMode is client-side post-processing and works everywhere, so
+// it is never reconciled.
+func ReconcileOptions(p *Provider, o *models.GenerateOptions) []string {
+	if p == nil || o == nil {
+		return nil
+	}
+	c := p.Capabilities
+	var warnings []string
+
+	if o.Style != "" && !c.SupportsStyles {
+		warnings = append(warnings, fmt.Sprintf("--style is ignored by %s; describe the look in the prompt, or use a gemini/* or vertex/* provider", p.ID))
+		o.Style = ""
+	}
+	if o.Seed != 0 && !c.SupportsSeed {
+		warnings = append(warnings, fmt.Sprintf("--seed is ignored by %s; reproducible seeds need a gemini/* API provider", p.ID))
+		o.Seed = 0
+	}
+	if o.ImageSize != "" && !c.SupportsImageSize {
+		warnings = append(warnings, fmt.Sprintf("--image-size is ignored by %s; use --size here (--image-size needs Gemini 3+ or Grok)", p.ID))
+		o.ImageSize = ""
+	}
+	if o.AspectRatio != "" && !c.SupportsAspectRatio {
+		warnings = append(warnings, fmt.Sprintf("--aspect-ratio is ignored by %s", p.ID))
+		o.AspectRatio = ""
+	}
+	if o.ThinkingLevel != "" && !c.SupportsThinking {
+		warnings = append(warnings, fmt.Sprintf("--thinking is ignored by %s; it needs a Gemini 3+ provider", p.ID))
+		o.ThinkingLevel = ""
+	}
+	if o.WebSearchGrounding && !c.SupportsGrounding {
+		warnings = append(warnings, fmt.Sprintf("--grounding is ignored by %s; it needs a Gemini 3+ provider", p.ID))
+		o.WebSearchGrounding = false
+	}
+	if len(o.InputImages) > 0 && !c.SupportsInputImages {
+		warnings = append(warnings, fmt.Sprintf("--input-image is ignored by %s; reference images need a gemini/* or vertex/* provider", p.ID))
+		o.InputImages = nil
+	}
+	if o.OutputFormat != "" && !c.SupportsOutputFormat {
+		warnings = append(warnings, fmt.Sprintf("--output-format is ignored by %s; the provider's default format is returned (convert afterward with `gimage convert`)", p.ID))
+		o.OutputFormat = ""
+	}
+	if o.NumberOfImages > 1 && p.API != "grok" {
+		warnings = append(warnings, fmt.Sprintf("--count %d is best-effort on %s; the Gemini image API often returns a single image (use a grok/* model for an exact count)", o.NumberOfImages, p.ID))
+	}
+
+	return warnings
 }
 
 // ResolveModelName resolves a model alias to its official name (for backward compatibility)

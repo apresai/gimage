@@ -135,10 +135,6 @@ func printGenerationTiming(elapsed time.Duration) {
 	printInfo("Generation completed in %.2fs", elapsed.Seconds())
 }
 
-func isVertexFlashProvider(provider *generate.Provider) bool {
-	return provider != nil && strings.HasPrefix(provider.ID, "vertex/flash-3.1")
-}
-
 func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 	if provider == nil {
 		return ""
@@ -155,24 +151,12 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 	}
 }
 
-func warnIgnoredVertexFlashOptions(provider *generate.Provider, negative string, seed int64) {
-	if !isVertexFlashProvider(provider) {
-		return
+// reconcileAndWarn strips options the resolved provider does not support and
+// prints a friendly warning for each one. No-ops safely on a nil provider.
+func reconcileAndWarn(provider *generate.Provider, options *models.GenerateOptions) {
+	for _, msg := range generate.ReconcileOptions(provider, options) {
+		printWarning("%s", msg)
 	}
-	if negative != "" {
-		printWarning("%s: Gemini 3.1 Flash via Vertex does not support negative prompts; --negative is ignored", provider.ID)
-	}
-	if seed != 0 {
-		printWarning("%s: Gemini 3.1 Flash via Vertex does not support seed; --seed is ignored", provider.ID)
-	}
-}
-
-func stripUnsupportedVertexFlashOptions(provider *generate.Provider, options *models.GenerateOptions) {
-	if !isVertexFlashProvider(provider) || options == nil {
-		return
-	}
-	options.NegativePrompt = ""
-	options.Seed = 0
 }
 
 // printSuccessDetails prints the standard success block for a single image
@@ -196,7 +180,8 @@ var generateCmd = &cobra.Command{
 	Long: `Generate an image from a text prompt using Google Gemini, Vertex AI, or xAI Grok.
 
 The prompt should describe the image you want to generate. You can optionally
-specify style, size, negative prompts, and other parameters.
+specify style, size, aspect ratio, and other parameters. Options that the chosen
+provider does not support are reported and ignored.
 
 You can provide the prompt as a positional argument (recommended for quick use)
 or use the --prompt flag for explicit clarity.
@@ -223,8 +208,8 @@ Examples:
   # Override API selection (rarely needed)
   gimage generate "abstract art" --api vertex --model vertex-flash
 
-  # Use negative prompts and seed for reproducibility
-  gimage generate "forest scene" --negative "people, buildings" --seed 12345`,
+  # Use a seed for reproducibility (Gemini API providers)
+  gimage generate "forest scene" --seed 12345`,
 	Args: cobra.ArbitraryArgs,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// Check if --list-models flag is set
@@ -289,10 +274,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
 	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 	style, _ := cmd.Flags().GetString("style")
-	negative, _ := cmd.Flags().GetString("negative")
 	seed, _ := cmd.Flags().GetInt64("seed")
-	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale") // Guidance scale (provider-dependent)
-	count, _ := cmd.Flags().GetInt("count")            // Number of images to generate
+	count, _ := cmd.Flags().GetInt("count") // Number of images to generate
 	outputFormat, _ := cmd.Flags().GetString("output-format")
 	listModels, _ := cmd.Flags().GetBool("list-models")
 	listProviders, _ := cmd.Flags().GetBool("list-providers")
@@ -330,7 +313,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	// Handle new provider system if --provider is specified
 	if providerID != "" {
-		return runGenerateWithProvider(cmd, prompt, providerID, output, size, style, negative, seed)
+		return runGenerateWithProvider(cmd, prompt, providerID, output, size, style, seed)
 	}
 
 	// Determine which API to use
@@ -414,9 +397,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		ImageSize:          imageSize,
 		AspectRatio:        aspectRatio,
 		Style:              style,
-		NegativePrompt:     negative,
 		Seed:               seed,
-		CfgScale:           cfgScale,
 		NumberOfImages:     count,
 		OutputFormat:       outputFormat,
 		ResizeMode:         resizeMode,
@@ -464,6 +445,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		// Update model name in options if needed
 		options.Model = modelName
+
+		reconcileAndWarn(resolvedProvider, &options)
 
 		startTime = time.Now()
 		generatedImages, err = client.GenerateImage(ctx, prompt, options)
@@ -514,8 +497,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			thinkingLevel = defaultThinkingLevelForProvider(resolvedProvider)
 			options.ThinkingLevel = thinkingLevel
 		}
-		warnIgnoredVertexFlashOptions(resolvedProvider, negative, seed)
-		stripUnsupportedVertexFlashOptions(resolvedProvider, &options)
+		reconcileAndWarn(resolvedProvider, &options)
 
 		printInfo("Generating image...")
 
@@ -593,6 +575,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		// Use the unified options with resolved model name
 		options.Model = modelName
 
+		reconcileAndWarn(resolvedProvider, &options)
+
 		startTime = time.Now()
 		generatedImages, err = client.GenerateImage(ctx, prompt, options)
 	} else {
@@ -657,7 +641,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 }
 
 // runGenerateWithProvider handles image generation using the new provider system
-func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, size, style, negative string, seed int64) error {
+func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, size, style string, seed int64) error {
 	imageSize, _ := cmd.Flags().GetString("image-size")     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
 	aspectRatio, _ := cmd.Flags().GetString("aspect-ratio") // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 	registry := generate.GetProviderRegistry()
@@ -697,7 +681,6 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	defer client.Close()
 
 	// Prepare options
-	cfgScale, _ := cmd.Flags().GetFloat64("cfg-scale")
 	count, _ := cmd.Flags().GetInt("count")
 	outputFormat, _ := cmd.Flags().GetString("output-format")
 	thinkingLevel, _ := cmd.Flags().GetString("thinking")
@@ -713,17 +696,14 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		ImageSize:          imageSize,   // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
 		AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 		Style:              style,
-		NegativePrompt:     negative,
 		Seed:               seed,
-		CfgScale:           cfgScale,     // Guidance scale (provider-dependent, 1.0-10.0)
 		NumberOfImages:     count,        // Number of images to generate (1-5)
 		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
 	}
-	warnIgnoredVertexFlashOptions(provider, negative, seed)
-	stripUnsupportedVertexFlashOptions(provider, &options)
+	reconcileAndWarn(provider, &options)
 
 	// Generate image
 	printInfo("Generating image...")
@@ -1179,12 +1159,12 @@ func printPromptHowto() error {
 │   1. Start simple, add details incrementally                                    │
 │   2. Be specific about what matters most                                        │
 │   3. Use concrete nouns over abstract concepts                                  │
-│   4. Specify what you don't want with --negative flag                           │
+│   4. State exclusions directly in the prompt (e.g. "no text, no people")        │
 │   5. Try different phrasings - small changes yield different results            │
-│   6. Use --seed for reproducibility when iterating                              │
+│   6. Use --seed for reproducibility when iterating (Gemini API providers)       │
 │                                                                                 │
-│ Example with negative prompt:                                                   │
-│   gimage generate "serene forest path" --negative "people, buildings, cars"     │
+│ Example excluding elements in the prompt:                                       │
+│   gimage generate "serene empty forest path, no people, no buildings, no cars"  │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
@@ -1207,11 +1187,9 @@ func init() {
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
 	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3+ (Pro/3.1 Flash): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only.")
 	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
-	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime")
-	generateCmd.Flags().String("negative", "", "Negative prompt to avoid certain features")
-	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility (0 for random)")
-	generateCmd.Flags().Float64("cfg-scale", 0, "Guidance scale (provider-dependent, 1.0-10.0)")
-	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (1-5, default 1)")
+	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime (Gemini/Vertex only)")
+	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility, 0 for random (Gemini API providers)")
+	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (Grok returns N exactly; Gemini is best-effort)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
 	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Ignored for Gemini 2.5 Flash.")

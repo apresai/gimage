@@ -6,13 +6,11 @@ type GenerateOptions struct {
 	Size           string
 	AspectRatio    string
 	Style          string
-	NegativePrompt string
 	Seed           int64
-	ImageSize      string  // For Gemini 3 Pro: "1K", "2K", "4K" (native upscaling)
-	CfgScale       float64 // Guidance scale (1.0-10.0, default 7.0); ignored by providers that don't support it
-	NumberOfImages int     // Number of images to generate (1-4, default 1)
-	OutputFormat   string  // Output format: "png", "jpeg", "webp" (default varies by API)
-	ResizeMode     string  // "stretch", "fit", "crop" (default "crop")
+	ImageSize      string // For Gemini 3 Pro: "1K", "2K", "4K" (native upscaling)
+	NumberOfImages int    // Number of images to generate (Grok exact; Gemini best-effort)
+	OutputFormat   string // Output format: "png", "jpeg", "webp" (default varies by API)
+	ResizeMode     string // "stretch", "fit", "crop" (default "crop")
 
 	// Gemini 3+ exclusive features (ignored by other providers / older Gemini models)
 	ThinkingLevel      string   // "minimal", "low", "medium", "high" — controls reasoning depth on Gemini 3+

@@ -62,13 +62,14 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 
 					// Capabilities
 					"supports_styles":          p.Capabilities.SupportsStyles,
-					"supports_negative_prompt": p.Capabilities.SupportsNegativePrompt,
 					"supports_seed":            p.Capabilities.SupportsSeed,
 					"supports_image_size":      p.Capabilities.SupportsImageSize,
 					"supports_aspect_ratio":    p.Capabilities.SupportsAspectRatio,
 					"supports_thinking":        p.Capabilities.SupportsThinking,
 					"supports_grounding":       p.Capabilities.SupportsGrounding,
 					"supports_input_images":    p.Capabilities.SupportsInputImages,
+					"supports_output_format":   p.Capabilities.SupportsOutputFormat,
+					"supports_multiple_images": p.Capabilities.SupportsMultipleImages,
 					"max_prompt_length":        p.Capabilities.MaxPromptLength,
 				}
 

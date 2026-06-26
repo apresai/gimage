@@ -404,53 +404,6 @@ func TestSeedReproducibility(t *testing.T) {
 	// Note: We don't check exact pixel-by-pixel match as that's not guaranteed by most APIs
 }
 
-// TestNegativePrompt tests that negative prompts are processed without error
-func TestNegativePrompt(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	apiKey, err := config.GetGeminiAPIKey("")
-	if err != nil {
-		t.Skipf("Gemini API key not configured: %v", err)
-	}
-
-	client, err := generate.NewGeminiRESTClient(apiKey)
-	if err != nil {
-		t.Fatalf("Failed to create Gemini client: %v", err)
-	}
-	defer client.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	opts := models.GenerateOptions{
-		Model:          "gemini-2.5-flash-image",
-		Size:           "512x512",
-		AspectRatio:    "1:1",
-		NegativePrompt: "text, watermarks, logos, blurry, low quality",
-	}
-
-	result, err := client.GenerateImage(ctx, "a serene mountain landscape at dawn", opts)
-	if err != nil {
-		t.Fatalf("Generation with negative prompt failed: %v", err)
-	}
-
-	validation, err := ValidateImage(result[0].Data, 0, 0, "")
-	if err != nil {
-		t.Fatalf("Validation failed: %v", err)
-	}
-
-	t.Logf("Generated image with negative prompt: %dx%d, %d bytes",
-		validation.Width, validation.Height, validation.FileSizeBytes)
-
-	if !validation.IsValid {
-		for _, e := range validation.Errors {
-			t.Errorf("Validation error: %s", e)
-		}
-	}
-}
-
 // TestSaveAndLoadImage tests the full save/load cycle
 func TestSaveAndLoadImage(t *testing.T) {
 	if testing.Short() {

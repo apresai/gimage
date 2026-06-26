@@ -221,12 +221,6 @@ Located in `/Users/chad/dev/gimage/test/integration/generate_validation_test.go`
 - Cost: $0.039/image (two generations)
 - Note: Exact pixel-by-pixel matching not guaranteed
 
-**TestNegativePrompt** - Tests negative prompt processing
-- Tests: Negative prompts don't cause errors
-- Validates: Successful generation
-- Provider: Gemini 2.5 Flash ($0.039/image)
-- Cost: $0.039/image
-
 #### 4. File Operations
 
 **TestSaveAndLoadImage** - Tests complete save/load cycle
@@ -260,7 +254,6 @@ go test -tags=integration -bench=. ./test/integration/...
 **Low-Cost Tests** (using Gemini 2.5 Flash at $0.039/image):
 - TestGeminiSquareImage
 - TestSeedReproducibility
-- TestNegativePrompt
 - TestSaveAndLoadImage
 - BenchmarkGeneration
 

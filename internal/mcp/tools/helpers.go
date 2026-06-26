@@ -155,7 +155,7 @@ func validateNonNegativeInt(value interface{}, name string) (int, error) {
 }
 
 // validateFloatInRange validates that a value is a float within a specified range.
-// Used for scale factors, cfg_scale, etc.
+// Used for scale factors, etc.
 func validateFloatInRange(value interface{}, name string, min, max float64) (float64, error) {
 	num, err := coerceToFloat(value, name)
 	if err != nil {

@@ -219,8 +219,9 @@ func showDetailedList(statuses []generate.AuthStatus) error {
 		fmt.Printf("\nCapabilities:\n")
 		caps := p.Capabilities
 		fmt.Printf("  • Styles: %v\n", caps.SupportsStyles)
-		fmt.Printf("  • Negative prompts: %v\n", caps.SupportsNegativePrompt)
 		fmt.Printf("  • Seed: %v\n", caps.SupportsSeed)
+		fmt.Printf("  • Image size (1K/2K/4K): %v\n", caps.SupportsImageSize)
+		fmt.Printf("  • Aspect ratio: %v\n", caps.SupportsAspectRatio)
 		fmt.Printf("  • Max prompt length: %d tokens\n", caps.MaxPromptLength)
 	}
 

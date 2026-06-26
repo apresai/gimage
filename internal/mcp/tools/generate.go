@@ -15,10 +15,6 @@ import (
 	"github.com/apresai/gimage/pkg/models"
 )
 
-func isVertexFlashProvider(provider *generate.Provider) bool {
-	return provider != nil && strings.HasPrefix(provider.ID, "vertex/flash-3.1")
-}
-
 func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 	if provider == nil {
 		return ""
@@ -35,25 +31,11 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 	}
 }
 
-func vertexFlashWarning(provider *generate.Provider, negative string, seed int64) string {
-	if !isVertexFlashProvider(provider) {
-		return ""
-	}
-	var warnings []string
-	if negative != "" {
-		warnings = append(warnings, provider.ID+": Gemini 3.1 Flash via Vertex does not support negative prompts; ignored")
-	}
-	if seed != 0 {
-		warnings = append(warnings, provider.ID+": Gemini 3.1 Flash via Vertex does not support seed; ignored")
-	}
-	return strings.Join(warnings, "; ")
-}
-
 // RegisterGenerateImageTool registers the generate_image tool
 func RegisterGenerateImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "generate_image",
-		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. Supports generating up to 5 images at once using the 'count' parameter, which will be saved as image_1.png, image_2.png, etc. Styles, negative prompts, and seeds depend on provider capabilities. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
+		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. The 'count' parameter requests multiple images (Grok returns N exactly; the Gemini family is best-effort), saved as image_1.png, image_2.png, etc. Styles, seeds, image_size, and other options depend on provider capabilities; options the chosen provider does not support are reported in the response 'warning' field and ignored. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: false, // Creates new files but doesn't modify existing ones
 			IdempotentHint:  false, // Each call generates a different image
@@ -115,28 +97,18 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"enum":        []string{"photorealistic", "artistic", "anime"},
 					"description": "Image style. Affects rendering approach. Optional.",
 				},
-				"negative": map[string]interface{}{
-					"type":        "string",
-					"description": "Negative prompt - describe what you DON'T want in the image (e.g., 'people, buildings, modern objects')",
-				},
 				"seed": map[string]interface{}{
 					"type":        "integer",
-					"description": "Random seed for reproducible generation. Use the same seed to get the same image.",
+					"description": "Random seed for reproducible generation (Gemini API providers). Use the same seed to get the same image.",
 				},
 				"aspect_ratio": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"},
 					"description": "Aspect ratio for Gemini 3+ (gemini-3-pro-image, gemini-3.1-flash-image) and Grok Imagine models. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
 				},
-				"cfg_scale": map[string]interface{}{
-					"type":        "number",
-					"description": "Guidance scale (1.0-10.0). Higher values follow the prompt more closely. Only honored by providers that support it.",
-					"minimum":     1.0,
-					"maximum":     10.0,
-				},
 				"count": map[string]interface{}{
 					"type":        "integer",
-					"description": "Number of images to generate (1-5). Images will be saved with _1, _2 suffixes.",
+					"description": "Number of images to generate (1-5). Grok returns N exactly; the Gemini family is best-effort and often returns one. Images are saved with _1, _2 suffixes.",
 					"minimum":     1,
 					"maximum":     5,
 					"default":     1,
@@ -227,7 +199,6 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			modelName = selectedProvider.ModelID
 
 			style, _ := args["style"].(string)
-			negative, _ := args["negative"].(string)
 			imageSize, _ := args["image_size"].(string)     // For Gemini 3+ (Pro/3.1 Flash): 1K, 2K, 4K
 			aspectRatio, _ := args["aspect_ratio"].(string) // For Gemini 3+ and Grok Imagine
 			outputFormat, _ := args["output_format"].(string)
@@ -245,18 +216,6 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					seed = int64(seedVal)
 				}
 			}
-			featureWarning := vertexFlashWarning(selectedProvider, negative, seed)
-			if isVertexFlashProvider(selectedProvider) {
-				negative = ""
-				seed = 0
-			}
-
-			var cfgScale float64
-			if args["cfg_scale"] != nil {
-				if cfgVal, cErr := coerceToFloat(args["cfg_scale"], "cfg_scale"); cErr == nil {
-					cfgScale = cfgVal
-				}
-			}
 
 			var count int
 			if args["count"] != nil {
@@ -270,11 +229,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Model:              modelName,
 				Size:               size,
 				Style:              style,
-				NegativePrompt:     negative,
 				Seed:               seed,
 				ImageSize:          imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
 				AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine
-				CfgScale:           cfgScale,    // Guidance scale (provider-dependent)
 				NumberOfImages:     count,
 				OutputFormat:       outputFormat,
 				ThinkingLevel:      thinkingLevel,
@@ -282,17 +239,20 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				InputImages:        inputImages,
 			}
 
+			// Strip options the resolved provider does not support and collect a
+			// friendly warning for each. Surfaced to the caller via result["warning"].
+			featureWarning := strings.Join(generate.ReconcileOptions(selectedProvider, &opts), "; ")
+
 			log.LogGenerationStart(prompt, map[string]interface{}{
 				"model":              modelName,
 				"size":               size,
-				"style":              style,
-				"image_size":         imageSize,
-				"aspect_ratio":       aspectRatio,
-				"negative_prompt":    negative,
-				"seed":               seed,
-				"thinking":           thinkingLevel,
-				"grounding":          grounding,
-				"input_images_count": len(inputImages),
+				"style":              opts.Style,
+				"image_size":         opts.ImageSize,
+				"aspect_ratio":       opts.AspectRatio,
+				"seed":               opts.Seed,
+				"thinking":           opts.ThinkingLevel,
+				"grounding":          opts.WebSearchGrounding,
+				"input_images_count": len(opts.InputImages),
 			})
 
 			// Determine backend from the resolved provider. This preserves aliases

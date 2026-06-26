@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, or xAI Grok.
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Negative prompts and seeds are supported only on providers that advertise those capabilities through `list_models`.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Options the chosen provider does not support are stripped and reported in the response `warning` field.
 
 ### Parameters
 
@@ -36,9 +36,7 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
 | `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3+ and Grok Imagine: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
-| `negative`      | string  | No       | -                            | Negative prompt (what to exclude)                                                              |
 | `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
-| `cfg_scale`     | float   | No       | -                            | CFG scale (1.0-10.0, higher = more creative; no longer used by any active provider)            |
 | `count`         | integer | No       | 1                            | Number of images to generate (max varies by provider: Gemini 4, Vertex 8, Grok 10)             |
 | `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
 | `thinking`      | string  | No       | -                            | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
@@ -70,14 +68,14 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 - **vertex-flash-ultra** (`vertex/flash-3.1-ultra`, high thinking default)
 - All use `gemini-3.1-flash-image` via Vertex generateContent
 - Pricing follows Gemini 3.1 Flash tiers: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K
-- Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
+- Options unsupported by the chosen provider are reported in the response `warning` field and ignored.
 
 **xAI Grok:**
 
-- **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio and resolution)
+- **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio and image-size)
 - **grok-imagine-image-quality** (quality tier, $0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro` retired by xAI 2026-05-15)
-  - Note: Grok models do not support size, style, negative prompts, or seed parameters
-  - Grok Imagine models support `aspect_ratio` and `resolution` parameters
+  - Note: Grok models do not support size, style, or seed parameters (reported as warnings if passed)
+  - Grok Imagine models support `aspect_ratio` and `image_size` (1K or 2K) parameters
 
 ### Returns
 
@@ -122,10 +120,10 @@ Generate a 4K image of a detailed infographic about space exploration
 Generate a 16:9 wide landscape image of mountains at sunset
 ```
 
-**With size and negative prompt:**
+**With size and in-prompt exclusions:**
 
 ```
-Generate a 1024x1792 image of a forest scene, but exclude any people or buildings
+Generate a 1024x1792 image of a forest scene with no people and no buildings
 ```
 
 **Vertex AI with output format:**
@@ -574,13 +572,14 @@ None
       "available": true,
       "pricing_summary": "$0.1340/image",
       "supports_styles": true,
-      "supports_negative_prompt": true,
       "supports_seed": true,
       "supports_image_size": true,
       "supports_aspect_ratio": true,
       "supports_thinking": true,
       "supports_grounding": true,
-      "supports_input_images": true
+      "supports_input_images": true,
+      "supports_output_format": false,
+      "supports_multiple_images": true
     }
     // ... more providers
   ],
@@ -668,8 +667,7 @@ Different providers support different advanced parameters:
 
 **Gemini and Vertex AI (not Grok):**
 
-- `negative`: Negative prompt (exclude unwanted elements; Gemini Flash does not support negative prompts)
-- `seed`: Random seed for reproducibility (not supported by Grok)
+- `seed`: Random seed for reproducibility (not supported by Grok; reported as a warning if passed)
 
 **All Providers:**
 

@@ -128,7 +128,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **Multiple AI models**: Gemini 3 Pro (default), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality
 - **Size options**: Standard sizes from 512x512 to 1792x1024; native 1K/2K/4K with Gemini 3+ models via `image_size`
 - **Style controls**: Photorealistic, artistic, anime
-- **Negative prompts**: Exclude unwanted elements
+- **In-prompt exclusions**: State what to exclude directly in the prompt text
 - **Reproducible results**: Use seeds for consistent generation
 - **Advanced controls**:
   - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
@@ -479,7 +479,7 @@ export VERTEX_PROJECT="your-gcp-project"
 - `vertex-flash-fast` (`vertex/flash-3.1-fast`, minimal thinking default)
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`, high thinking default)
 - Pricing follows Gemini 3.1 Flash tiers: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
-- Negative prompts and seeds are not supported by Gemini 3.1 Flash via Vertex.
+- Options unsupported by the chosen provider are reported in the response warning field and ignored.
 
 **xAI Grok Models**:
 
@@ -533,9 +533,9 @@ Claude can chain multiple operations:
 
    - "photorealistic", "artistic", "anime", "painting", "sketch", etc.
 
-3. **Use negative prompts** - Exclude unwanted elements
+3. **State exclusions in the prompt** - Include what you don't want directly in the prompt text (e.g. "no text, no people")
 
-   - "Generate a forest scene, but avoid showing any people, buildings, or modern objects"
+   - "Generate a forest scene with no people, no buildings, no modern objects"
 
 4. **Try different models** - Each has strengths
 

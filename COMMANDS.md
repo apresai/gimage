@@ -66,9 +66,7 @@ gimage generate --prompt "your prompt" [flags]
 | `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image` |
 | `--size`           | string | Image size (WxH)                                                                        | `1024x1024`                  |
 | `--style`          | string | Style: `photorealistic`, `artistic`, `anime`                                            | -                            |
-| `--negative`       | string | Negative prompt to avoid features                                                       | -                            |
 | `--seed`           | int    | Random seed for reproducibility                                                         | `0` (random)                 |
-| `--cfg-scale`      | float  | CFG scale for creativity (1.0-10.0, higher = more creative; no longer used)             | Model default                |
 | `-n, --count`      | int    | Number of images to generate (max varies by provider)                                   | `1`                          |
 | `--output-format`  | string | Output format for Vertex AI: `png`, `jpeg`, or `webp`                                   | Provider default             |
 | `-o, --output`     | string | Output file path                                                                        | `generated_<timestamp>.png`  |
@@ -94,7 +92,7 @@ gimage generate --prompt "your prompt" [flags]
 - `vertex-flash` (`vertex/flash-3.1`) - Gemini 3.1 Flash via Vertex, tiered $0.045-$0.151/image, medium thinking default
 - `vertex-flash-fast` (`vertex/flash-3.1-fast`) - same backend with minimal thinking default
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`) - same backend with high thinking default
-- Gemini 3.1 Flash via Vertex does not support negative prompts or seeds; those options are ignored.
+- Options the chosen provider does not support are reported with a warning and ignored (e.g. seed on Grok, image-size on Gemini 2.5 Flash).
 - Retired names (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` or `-pro` variants) now error with guidance to use the `vertex-flash` aliases above.
 
 **xAI Grok (Paid):**
@@ -122,10 +120,10 @@ gimage generate "futuristic city" --size 1024x1024 --style photorealistic
 gimage generate "abstract art" --provider vertex/flash-3.1
 ```
 
-**With negative prompts:**
+**Stating exclusions in the prompt:**
 
 ```bash
-gimage generate "forest scene" --negative "people, buildings, cars"
+gimage generate "forest scene with no people, no buildings, no cars"
 ```
 
 **Reproducible generation:**
@@ -942,7 +940,6 @@ Launches an 8-step interactive menu for image generation:
 3. **Choose Size** - Select image dimensions
 4. **Select Style** - Pick style (photorealistic, artistic, anime, or none)
 5. **Advanced Options** - Configure optional parameters:
-   - Negative prompt (exclude unwanted elements)
    - Seed (for reproducibility)
    - Aspect ratio (Gemini 3 Pro: Auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
    - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
@@ -989,7 +986,7 @@ gimage --interactive
 
 - Tab: Move between input fields and pickers
 - ←→: Adjust picker values (aspect ratio, resolution, format, count)
-- Type directly: Enter values for text fields (negative prompt, seed, CFG scale)
+- Type directly: Enter values for text fields (seed)
 
 The TUI provides context-sensitive help throughout the workflow.
 

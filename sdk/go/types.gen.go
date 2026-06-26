@@ -251,9 +251,6 @@ type GenerateRequest struct {
 	// Model AI model to use for generation
 	Model *GenerateRequestModel `json:"model,omitempty"`
 
-	// NegativePrompt Elements to avoid in the image
-	NegativePrompt *string `json:"negative_prompt,omitempty"`
-
 	// Prompt Text description of the image to generate
 	Prompt string `json:"prompt"`
 

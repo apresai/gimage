@@ -89,7 +89,6 @@ func main() {
 		Model:          stringPtr("gemini-2.5-flash-image"),
 		Size:           stringPtr("1024x1024"),
 		Style:          (*gimage.ImageStyle)(stringPtr("photorealistic")),
-		NegativePrompt: stringPtr("people, text"),
 		Seed:           intPtr(42),
 		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("base64")),
 	})
@@ -177,9 +176,9 @@ the authoritative shapes:
 - **godoc**: <https://pkg.go.dev/github.com/apresai/gimage/sdk/go>
 
 `GenerateImageJSONRequestBody` currently exposes optional pointer fields for all
-generation knobs including `Model`, `Size`, `Style`, `NegativePrompt`, `Seed`,
-`ResponseFormat`, `ImageSize`, `AspectRatio`, `ThinkingLevel`, `Grounding`, and
-`InputImages`. Enums like `ImageStyle`, `ResponseFormat`, and
+generation knobs including `Model`, `Size`, `Style`, `Seed`, `ResponseFormat`,
+`ImageSize`, `AspectRatio`, `ThinkingLevel`, `Grounding`, and `InputImages`.
+Enums like `ImageStyle`, `ResponseFormat`, and
 `GenerateRequestThinkingLevel` are exported as typed string constants — see
 `types.gen.go` for the full set.
 

@@ -75,7 +75,6 @@ paths:
                   model: "gemini-2.5-flash-image"
                   size: "1024x1024"
                   style: "photorealistic"
-                  negative_prompt: "people, text"
                   seed: 42
                   response_format: "s3_url"
       responses:
@@ -469,11 +468,6 @@ components:
             - artistic
             - anime
           example: "photorealistic"
-        negative_prompt:
-          type: string
-          description: Elements to avoid in the image
-          example: "people, text, watermark"
-          maxLength: 1000
         seed:
           type: integer
           format: int64

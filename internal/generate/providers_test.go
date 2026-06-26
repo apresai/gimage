@@ -304,16 +304,35 @@ func TestMigratedVertexProviderCapabilities(t *testing.T) {
 			p, err := reg.Get(providerID)
 			require.NoError(t, err)
 			assert.Equal(t, "gemini-3.1-flash-image", p.ModelID)
-			assert.False(t, p.Capabilities.SupportsNegativePrompt, "Gemini 3.1 Flash via Vertex does not support negative prompts")
 			assert.False(t, p.Capabilities.SupportsSeed, "Gemini 3.1 Flash via Vertex does not support seed")
 			assert.True(t, p.Capabilities.SupportsImageSize)
 			assert.True(t, p.Capabilities.SupportsAspectRatio)
 			assert.True(t, p.Capabilities.SupportsThinking)
 			assert.True(t, p.Capabilities.SupportsGrounding)
 			assert.True(t, p.Capabilities.SupportsInputImages)
+			assert.True(t, p.Capabilities.SupportsOutputFormat, "Vertex full-mode honors output format")
 			assert.Contains(t, p.Name, "Gemini 3.1 Flash via Vertex")
 			assert.Contains(t, p.Description, "Gemini 3.1 Flash via Vertex")
 			assert.Contains(t, p.Description, "generateContent")
+		})
+	}
+}
+
+func TestGrokProviderCapabilities(t *testing.T) {
+	reg := GetProviderRegistry()
+	for _, providerID := range []string{"grok/grok-imagine", "grok/grok-imagine-quality"} {
+		t.Run(providerID, func(t *testing.T) {
+			p, err := reg.Get(providerID)
+			require.NoError(t, err)
+			// Grok DOES honor image size (1K/2K) and aspect ratio on imagine models.
+			assert.True(t, p.Capabilities.SupportsImageSize, "Grok imagine honors resolution 1K/2K")
+			assert.True(t, p.Capabilities.SupportsAspectRatio, "Grok imagine honors aspect_ratio")
+			// Grok ignores styles, seed, and output format.
+			assert.False(t, p.Capabilities.SupportsStyles)
+			assert.False(t, p.Capabilities.SupportsSeed)
+			assert.False(t, p.Capabilities.SupportsOutputFormat)
+			// Grok returns N images exactly.
+			assert.True(t, p.Capabilities.SupportsMultipleImages)
 		})
 	}
 }

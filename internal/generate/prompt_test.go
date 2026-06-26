@@ -81,37 +81,6 @@ func TestEnhancePromptWithStyle(t *testing.T) {
 	}
 }
 
-func TestBuildPromptWithNegative(t *testing.T) {
-	tests := []struct {
-		name           string
-		prompt         string
-		negativePrompt string
-		want           string
-	}{
-		{
-			name:           "with negative prompt",
-			prompt:         "a beautiful sunset",
-			negativePrompt: "people, cars",
-			want:           "a beautiful sunset\n\nAvoid: people, cars",
-		},
-		{
-			name:           "without negative prompt",
-			prompt:         "a beautiful sunset",
-			negativePrompt: "",
-			want:           "a beautiful sunset",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := BuildPromptWithNegative(tt.prompt, tt.negativePrompt)
-			if got != tt.want {
-				t.Errorf("BuildPromptWithNegative() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestValidatePrompt(t *testing.T) {
 	tests := []struct {
 		name    string

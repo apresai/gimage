@@ -74,15 +74,6 @@ func EnhancePromptWithStyle(userPrompt, style string) string {
 	return fmt.Sprintf("%s, %s", prompt, styleTemplate)
 }
 
-// BuildPromptWithNegative combines a prompt with negative prompts
-func BuildPromptWithNegative(prompt, negativePrompt string) string {
-	if negativePrompt == "" {
-		return prompt
-	}
-
-	return fmt.Sprintf("%s\n\nAvoid: %s", prompt, negativePrompt)
-}
-
 // ExtractKeywords extracts potential keywords from a prompt for metadata
 func ExtractKeywords(prompt string) []string {
 	// Simple keyword extraction: split on common delimiters and take first 10 words
