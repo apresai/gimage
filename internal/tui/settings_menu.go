@@ -6,9 +6,9 @@ import (
 
 	"github.com/apresai/gimage/internal/config"
 	"github.com/apresai/gimage/internal/generate"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // SettingsPage represents different settings pages
@@ -48,7 +48,7 @@ func NewSettingsMenuModel() *SettingsMenuModel {
 	editInput := textinput.New()
 	editInput.Placeholder = "Enter API key..."
 	editInput.CharLimit = 256
-	editInput.Width = 60
+	editInput.SetWidth(60)
 
 	return &SettingsMenuModel{
 		cfg:         cfg,
@@ -120,7 +120,7 @@ func (m *SettingsMenuModel) Update(msg tea.Msg) (*SettingsMenuModel, tea.Cmd) {
 			if m.selectedOp < len(m.options)-1 {
 				m.selectedOp++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			// Only handle enter on the menu page
 			if m.currentPage == SettingsPageMenu {
 				switch m.selectedOp {

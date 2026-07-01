@@ -4,8 +4,8 @@ package tui
 import (
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // Screen represents the different screens in the TUI
@@ -146,8 +146,17 @@ func (m *Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View renders the TUI
-func (m *Model) View() string {
+// View renders the TUI. In bubbletea v2 the alt-screen and mouse mode are set
+// declaratively on the returned View (they were tea.NewProgram options in v1).
+func (m *Model) View() tea.View {
+	v := tea.NewView(m.render())
+	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
+	return v
+}
+
+// render produces the content string for the current screen.
+func (m *Model) render() string {
 	if m.err != nil {
 		return m.renderError()
 	}
@@ -211,11 +220,8 @@ func Navigate(screen Screen) tea.Cmd {
 
 // Run starts the TUI
 func Run() error {
-	p := tea.NewProgram(
-		NewModel(),
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
+	// Alt-screen and mouse mode are now declared on the model's View (v2).
+	p := tea.NewProgram(NewModel())
 
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("error running TUI: %w", err)

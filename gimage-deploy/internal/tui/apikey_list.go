@@ -6,7 +6,7 @@ import (
 	"github.com/apresai/gimage-deploy/internal/models"
 	"github.com/apresai/gimage-deploy/internal/storage"
 	"github.com/apresai/gimage-deploy/pkg/utils"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // APIKeyListModel represents the API key list view

@@ -4,8 +4,8 @@ package tui
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // MenuItem represents an item in the main menu
@@ -66,7 +66,7 @@ func (m *MainMenuModel) Update(msg tea.Msg) (*MainMenuModel, tea.Cmd) {
 			if m.selected < len(m.items)-1 {
 				m.selected++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			// Navigate to selected screen
 			return m, Navigate(m.items[m.selected].Screen)
 		case "?":
