@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.147] - 2026-07-01
+
+### Changed
+- Migrated Charm TUI stack from v1 to v2 (`bubbletea`, `bubbles`, `lipgloss`)
+- Aligned Go toolchain and CI to Go 1.26; un-pinned `@latest` build tooling for reproducible builds
+- Bumped runtime SDKs and dependencies to latest (Google `genai`, AWS SDK v2)
+
+### Fixed
+- Cleared outstanding `govulncheck` findings via dependency updates
+
+
 ## [1.2.143] - 2026-06-25
 
 ### Added
