@@ -14,7 +14,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - AWS Lambda API deployment
 
 **Technology Stack**:
-- Pure Go 1.22+ (zero C dependencies for portability)
+- Pure Go 1.26+ (zero C dependencies for portability)
 - Image processing: `github.com/disintegration/imaging`
 - CLI: Cobra + Viper
 - APIs: Gemini API, Vertex AI, xAI Grok
@@ -691,7 +691,7 @@ gimage-deploy/           # Deployment management tool (separate repo)
 ### Architecture
 
 **Technology Stack**:
-- Pure Go 1.22+
+- Pure Go 1.26+
 - AWS SDK v2 (Lambda, S3, IAM, API Gateway, CloudWatch, STS)
 - Cobra for CLI framework
 - Bubbletea for TUI

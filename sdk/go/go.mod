@@ -1,6 +1,8 @@
 module github.com/apresai/gimage/sdk/go
 
-go 1.22.5
+go 1.26
+
+toolchain go1.26.4
 
 require github.com/getkin/kin-openapi v0.135.0
 
