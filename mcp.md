@@ -1,7 +1,7 @@
 # Gimage MCP Server
 
 **Version**: 1.2.99+ (see CHANGELOG.md for current version)
-**Runtime**: Go 1.22+
+**Runtime**: Go 1.26+
 **Protocol**: Model Context Protocol (stdio transport)
 
 ---

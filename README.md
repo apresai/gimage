@@ -934,7 +934,7 @@ make package-lambda
 - AWS Account
 - AWS CLI configured
 - Node.js 20+ (for CDK deployment)
-- Go 1.22+ (for building)
+- Go 1.26+ (for building)
 
 ## Support & Documentation
 

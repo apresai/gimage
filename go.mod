@@ -1,6 +1,8 @@
 module github.com/apresai/gimage
 
-go 1.25.3
+go 1.26
+
+toolchain go1.26.4
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0

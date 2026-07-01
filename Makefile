@@ -259,7 +259,7 @@ lint:
 	@if command -v $(GOLINT) > /dev/null; then \
 		$(GOLINT) run ./...; \
 	else \
-		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2"; \
 		exit 1; \
 	fi
 
@@ -475,7 +475,10 @@ SDK_PKG=github.com/apresai/gimage/sdk/go
 ## install-sdk-tools: Install oapi-codegen for SDK generation
 install-sdk-tools:
 	@echo "Installing oapi-codegen..."
-	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	@# Pinned to the version that generated the committed sdk/go/*.gen.go so
+	@# `make generate-sdk` stays reproducible. Bumping to v2.7.x (breaking output
+	@# changes + Go 1.24 min) is a deliberate, separate regeneration PR.
+	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.5.1
 	@echo "✓ SDK tools installed"
 
 ## generate-sdk: Generate Go SDK from OpenAPI spec
