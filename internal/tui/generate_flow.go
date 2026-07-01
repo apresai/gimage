@@ -12,11 +12,11 @@ import (
 	"github.com/apresai/gimage/internal/generate"
 	"github.com/apresai/gimage/internal/logging"
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // GenerateStep represents a step in the image generation workflow
@@ -178,21 +178,21 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	widthInput := textinput.New()
 	widthInput.Placeholder = "1024"
 	widthInput.CharLimit = 4
-	widthInput.Width = 10
+	widthInput.SetWidth(10)
 
 	heightInput := textinput.New()
 	heightInput.Placeholder = "1024"
 	heightInput.CharLimit = 4
-	heightInput.Width = 10
+	heightInput.SetWidth(10)
 
 	// Initialize output path input
 	outputInput := textinput.New()
 	outputInput.Placeholder = "~/Desktop/gimage_output.png"
 	outputInput.CharLimit = 256
-	outputInput.Width = 60
+	outputInput.SetWidth(60)
 
 	// Initialize progress bar
-	prog := progress.New(progress.WithDefaultGradient())
+	prog := progress.New(progress.WithDefaultBlend())
 
 	// Load available providers
 	registry := generate.GetProviderRegistry()
@@ -243,12 +243,12 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	seedInput := textinput.New()
 	seedInput.Placeholder = "e.g., 12345 (for reproducibility)"
 	seedInput.CharLimit = 20
-	seedInput.Width = 30
+	seedInput.SetWidth(30)
 
 	countInput := textinput.New()
 	countInput.Placeholder = "1"
 	countInput.CharLimit = 2
-	countInput.Width = 10
+	countInput.SetWidth(10)
 
 	// Aspect ratio options (for Gemini 3 Pro)
 	aspectRatioOpts := []aspectRatioOption{
@@ -288,7 +288,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	providerRetryInput := textinput.New()
 	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/flash-3.1"
 	providerRetryInput.CharLimit = 100
-	providerRetryInput.Width = 70
+	providerRetryInput.SetWidth(70)
 
 	return &GenerateFlowModel{
 		currentStep:      StepPrompt,
@@ -403,10 +403,9 @@ func (m *GenerateFlowModel) Update(msg tea.Msg) (*GenerateFlowModel, tea.Cmd) {
 	case StepCommand:
 		return m.updateCommandStep(msg)
 	case StepProgress:
-		// Update progress bar - convert the model back to progress.Model
-		var progModel tea.Model
-		progModel, cmd = m.progressBar.Update(msg)
-		m.progressBar = progModel.(progress.Model)
+		// bubbles v2: progress.Model.Update returns a concrete progress.Model,
+		// so no tea.Model type assertion is needed.
+		m.progressBar, cmd = m.progressBar.Update(msg)
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	case StepProviderRetry:
@@ -521,7 +520,7 @@ func (m *GenerateFlowModel) updateProviderStep(msg tea.Msg) (*GenerateFlowModel,
 			if m.selectedProvider < len(m.providers)-1 {
 				m.selectedProvider++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			// Check if provider is configured
 			provider := m.providers[m.selectedProvider]
 			if !provider.configured {
@@ -636,7 +635,7 @@ func (m *GenerateFlowModel) updateSizeStep(msg tea.Msg) (*GenerateFlowModel, tea
 			if m.selectedSize < len(m.sizes)-1 {
 				m.selectedSize++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			// Check if custom size is selected
 			if m.sizes[m.selectedSize].size == "custom" {
 				m.useCustom = true
@@ -725,7 +724,7 @@ func (m *GenerateFlowModel) updateStyleStep(msg tea.Msg) (*GenerateFlowModel, te
 			if m.selectedStyle < len(m.styles)-1 {
 				m.selectedStyle++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			// Go to Advanced Options step
 			m.currentStep = StepAdvanced
 			m.advancedFocusIndex = 0

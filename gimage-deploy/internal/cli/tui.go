@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/apresai/gimage-deploy/internal/tui"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -24,8 +24,8 @@ The TUI provides a visual interface for:
 		// Create TUI model
 		model := tui.NewModel()
 
-		// Create program
-		p := tea.NewProgram(model, tea.WithAltScreen())
+		// Create program (alt-screen is now declared on the model's View in v2)
+		p := tea.NewProgram(model)
 
 		// Run program
 		if _, err := p.Run(); err != nil {

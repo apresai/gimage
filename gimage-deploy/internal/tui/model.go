@@ -2,7 +2,7 @@ package tui
 
 import (
 	"github.com/apresai/gimage-deploy/internal/storage"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // Screen represents different TUI screens
@@ -110,8 +110,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the model
-func (m Model) View() string {
+// View renders the model. In bubbletea v2 the alt-screen is declared on the
+// returned View instead of via a tea.NewProgram option.
+func (m Model) View() tea.View {
+	v := tea.NewView(m.render())
+	v.AltScreen = true
+	return v
+}
+
+// render produces the content string for the current screen.
+func (m Model) render() string {
 	switch m.screen {
 	case ScreenMainMenu:
 		return m.mainMenu.View()

@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/apresai/gimage/internal/imaging"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // ProcessStep represents a step in the image processing workflow
@@ -117,7 +117,7 @@ func createNumberInput(placeholder string, width int) textinput.Model {
 	ti := textinput.New()
 	ti.Placeholder = placeholder
 	ti.CharLimit = 10
-	ti.Width = width
+	ti.SetWidth(width)
 	return ti
 }
 
@@ -125,7 +125,7 @@ func createTextInput(placeholder string, width int) textinput.Model {
 	ti := textinput.New()
 	ti.Placeholder = placeholder
 	ti.CharLimit = 256
-	ti.Width = width
+	ti.SetWidth(width)
 	return ti
 }
 
@@ -279,7 +279,7 @@ func (m *ProcessMenuModel) updateSelectOperation(msg tea.Msg) (*ProcessMenuModel
 			if m.selectedOp < len(m.operations)-1 {
 				m.selectedOp++
 			}
-		case "enter", " ":
+		case "enter", "space":
 			m.currentOp = ProcessOperation(m.selectedOp)
 			m.currentStep = ProcessStepConfigure
 			m.focusedInput = 0
