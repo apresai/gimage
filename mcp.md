@@ -6,7 +6,7 @@
 
 ---
 
-## <img src="docs/icons/target.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/target-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Overview
+## <img src="docs/icons/target.svg" width="24" height="24" alt="" /> Overview
 
 The Gimage MCP server enables AI assistants (like Claude and ChatGPT) to perform AI-powered image generation and processing operations directly through the Model Context Protocol.
 
@@ -19,7 +19,7 @@ The Gimage MCP server enables AI assistants (like Claude and ChatGPT) to perform
 
 ---
 
-## <img src="docs/icons/layers.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/layers-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Architecture
+## <img src="docs/icons/layers.svg" width="24" height="24" alt="" /> Architecture
 
 The MCP server uses **stdio transport** for communication, making it compatible with Claude Desktop and other MCP-aware clients.
 
@@ -41,7 +41,7 @@ graph TD
 
 ---
 
-## <img src="docs/icons/tools.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/tools-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> MCP Tools
+## <img src="docs/icons/tools.svg" width="24" height="24" alt="" /> MCP Tools
 
 The server exposes 10 tools covering all gimage operations. For a complete parameter reference, see [docs/MCP_TOOLS.md](docs/MCP_TOOLS.md).
 
@@ -66,7 +66,7 @@ The server exposes 10 tools covering all gimage operations. For a complete param
 
 ---
 
-## <img src="docs/icons/rocket.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/rocket-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Installation & Setup
+## <img src="docs/icons/rocket.svg" width="24" height="24" alt="" /> Installation & Setup
 
 For detailed installation instructions for Claude Desktop, see [README.md#installation-methods](README.md#installation-methods) or [docs/MCP_USAGE.md](docs/MCP_USAGE.md).
 
@@ -92,7 +92,7 @@ Then add to your Claude Desktop config:
 
 ---
 
-## <img src="docs/icons/doc.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/doc-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Documentation Links
+## <img src="docs/icons/doc.svg" width="24" height="24" alt="" /> Documentation Links
 
 - [**Usage Guide**](docs/MCP_USAGE.md): Complete setup and configuration guide.
 - [**Tool Reference**](docs/MCP_TOOLS.md): Detailed parameter schemas and return types.

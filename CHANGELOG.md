@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Docs icons now use Camo-safe hardcoded stroke color (were invisible: theme fragments + CSS-in-SVG stripped by GitHub)
+
 ### Changed
-- User docs polish: monochrome theme-aware icons (light/dark), removed em dashes, fixed broken manual binary download URLs, synced Grok editing/aspect-ratio docs
+- User docs polish: monochrome icons, removed em dashes, fixed broken manual install URLs, synced Grok editing docs
 
 ## [1.2.150] - 2026-07-11
 

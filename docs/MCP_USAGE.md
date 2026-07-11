@@ -157,7 +157,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 "Generate the official Nintendo Switch 2 console" (with grounding=true)
 ```
 
-### <img src="icons/image.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="icons/image-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Image Processing
+### <img src="icons/image.svg" width="24" height="24" alt="" /> Image Processing
 
 #### Resize
 
@@ -220,7 +220,7 @@ Change image format (PNG, JPG, WebP, GIF, TIFF, BMP).
 "Change all images to WebP for better web performance"
 ```
 
-### <img src="icons/bolt.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="icons/bolt-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Batch Operations
+### <img src="icons/bolt.svg" width="24" height="24" alt="" /> Batch Operations
 
 Process multiple images concurrently for efficient workflows.
 

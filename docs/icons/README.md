@@ -1,14 +1,9 @@
 # Docs icons
 
-Monochrome line icons for user-facing docs. One ink color per theme:
+Monochrome line icons for user-facing docs. Single ink `#8b949e` (visible on GitHub light and dark).
 
-- `*.svg` - light mode (`#3d4450`)
-- `*-dark.svg` - dark mode (`#c9d1d9`)
-
-GitHub theme-aware usage:
+Stroke is set as SVG attributes (not CSS) so GitHub's image proxy cannot strip the color.
 
 ```markdown
-<img src="docs/icons/rocket.svg#gh-light-mode-only" width="18" height="18" alt="" />
-<img src="docs/icons/rocket-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" />
-Three Ways to Use Gimage
+## <img src="docs/icons/rocket.svg" width="22" height="22" alt="" /> Three Ways to Use Gimage
 ```

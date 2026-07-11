@@ -2,7 +2,7 @@
 
 **Gimage** is a powerful tool for generating AI images and processing them with ease. Built with pure Go for maximum portability.
 
-## <img src="docs/icons/rocket.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/rocket-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Three Ways to Use Gimage
+## <img src="docs/icons/rocket.svg" width="24" height="24" alt="" /> Three Ways to Use Gimage
 
 ### 1. Command-Line Tool (CLI)
 
@@ -18,7 +18,7 @@ Production-ready serverless REST API for web applications and remote processing.
 
 ## What Can You Do with Gimage?
 
-### <img src="docs/icons/spark.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/spark-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> AI Image Generation
+### <img src="docs/icons/spark.svg" width="24" height="24" alt="" /> AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, or xAI Grok
 - Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Grok Imagine ($0.02-$0.07/image)
@@ -27,7 +27,7 @@ Production-ready serverless REST API for web applications and remote processing.
 - Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+ / Grok), aspect ratio (Grok 14 values), reference-image editing (Gemini, Vertex, Grok)
 - Batch generation: create multiple images at once
 
-### <img src="docs/icons/tools.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/tools-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Image Processing
+### <img src="docs/icons/tools.svg" width="24" height="24" alt="" /> Image Processing
 
 - **Resize** - Change image dimensions while preserving aspect ratio (crop or fit)
 - **Scale** - Scale images by factor (2x, 0.5x, etc.)
@@ -35,13 +35,13 @@ Production-ready serverless REST API for web applications and remote processing.
 - **Compress** - Reduce file size while maintaining quality
 - **Convert** - Transform between formats (PNG, JPG, WebP, GIF, TIFF, BMP)
 
-### <img src="docs/icons/bolt.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/bolt-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Batch Processing (MCP Server Only)
+### <img src="docs/icons/bolt.svg" width="24" height="24" alt="" /> Batch Processing (MCP Server Only)
 
 - Process multiple images concurrently via MCP server
 - Optimized for AI assistants (Claude Desktop)
 - CLI users: use shell scripts or `find` + `xargs`
 
-### <img src="docs/icons/plug.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/plug-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Integration Options
+### <img src="docs/icons/plug.svg" width="24" height="24" alt="" /> Integration Options
 
 - **Claude Desktop**: Run as MCP server
 - **Web Applications**: REST API via AWS Lambda
