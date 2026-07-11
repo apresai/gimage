@@ -482,6 +482,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsSeed:           false,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
+			SupportsInputImages:    true, // POST /v1/images/edits, max 3
 			SupportsMultipleImages: true,
 			MaxPromptLength:        8000,
 		},
@@ -500,7 +501,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Grok Imagine Quality (via xAI)",
 		API:         "grok",
 		ModelID:     "grok-imagine-image-quality",
-		Description: "xAI's quality-tier image generation - replaces deprecated grok-imagine-image-pro",
+		Description: "xAI quality tier ($0.05/image at 1K, $0.07 at 2K) — replaces deprecated grok-imagine-image-pro",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -520,6 +521,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsSeed:           false,
 			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
+			SupportsInputImages:    true, // POST /v1/images/edits, max 3
 			SupportsMultipleImages: true,
 			MaxPromptLength:        8000,
 		},
@@ -866,7 +868,7 @@ func ReconcileOptions(p *Provider, o *models.GenerateOptions) []string {
 		o.WebSearchGrounding = false
 	}
 	if len(o.InputImages) > 0 && !c.SupportsInputImages {
-		warnings = append(warnings, fmt.Sprintf("--input-image is ignored by %s; reference images need a gemini/* or vertex/* provider", p.ID))
+		warnings = append(warnings, fmt.Sprintf("--input-image is ignored by %s; reference images need a gemini/*, vertex/*, or grok/* provider", p.ID))
 		o.InputImages = nil
 	}
 	if o.OutputFormat != "" && !c.SupportsOutputFormat {

@@ -74,10 +74,10 @@ gimage generate --prompt "your prompt" [flags]
 | `--list-providers` | bool   | List all providers with auth status                                                     | `false`                      |
 | `--prompt-howto`   | bool   | Show tips and examples for writing effective prompts                                    | `false`                      |
 | `--image-size`     | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | -                            |
-| `--aspect-ratio`   | string | Aspect ratio for Gemini 3 Pro (e.g., `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`) | -                            |
+| `--aspect-ratio`   | string | Aspect ratio. Gemini 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` | -                            |
 | `--thinking`       | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | -                            |
 | `--grounding`      | bool   | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false`                      |
-| `--input-image`    | string | Local path to a reference image for compositional editing. Repeatable. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | -                            |
+| `--input-image`    | string | Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | -                            |
 
 ### Available Models
 
@@ -97,8 +97,8 @@ gimage generate --prompt "your prompt" [flags]
 
 **xAI Grok (Paid):**
 
-- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model)
-- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (replaces deprecated `-pro` retired by xAI 2026-05-15)
+- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model); aspect ratio (14 values incl. `auto`); `--input-image` edits (max 3)
+- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (replaces deprecated `-pro` retired by xAI 2026-05-15); same aspect/edit support
 
 ### Examples
 
@@ -132,12 +132,16 @@ gimage generate "forest scene with no people, no buildings, no cars"
 gimage generate "random pattern" --seed 12345
 ```
 
-**Compositional editing with reference images (Gemini 3+):**
+**Reference image editing (Gemini, Vertex, Grok):**
 
 ```bash
 # Single reference: drop a product into a new scene
 gimage generate "place this on a marble counter, soft studio light" \
   --model gemini-3.1-flash --input-image product.png
+
+# Grok edit via xAI /images/edits (max 3 images)
+gimage generate "render this as a pencil sketch with detailed shading" \
+  --model grok-quality --input-image photo.png --image-size 2K
 
 # Multi-reference: combine character and background
 gimage generate "this character standing in this environment, cinematic lighting" \

@@ -102,15 +102,18 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"description": "Random seed for reproducible generation (Gemini API providers). Use the same seed to get the same image.",
 				},
 				"aspect_ratio": map[string]interface{}{
-					"type":        "string",
-					"enum":        []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"},
-					"description": "Aspect ratio for Gemini 3+ (gemini-3-pro-image, gemini-3.1-flash-image) and Grok Imagine models. Overrides size. Common: '1:1' (square), '16:9' (landscape), '9:16' (portrait).",
+					"type": "string",
+					"enum": []string{
+						"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5",
+						"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto",
+					},
+					"description": "Aspect ratio. Gemini 3+: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 5:4, 4:5. Grok Imagine also supports 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto. Overrides size.",
 				},
 				"count": map[string]interface{}{
 					"type":        "integer",
-					"description": "Number of images to generate (1-5). Grok returns N exactly; the Gemini family is best-effort and often returns one. Images are saved with _1, _2 suffixes.",
+					"description": "Number of images to generate (1-10). Grok returns N exactly; the Gemini family is best-effort and often returns one. Images are saved with _1, _2 suffixes.",
 					"minimum":     1,
-					"maximum":     5,
+					"maximum":     10,
 					"default":     1,
 				},
 				"output_format": map[string]interface{}{
@@ -131,7 +134,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"input_images": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]interface{}{"type": "string"},
-					"description": "Optional local file paths to reference images for compositional editing (Nano Banana style). Accepted formats: PNG, JPEG, WebP. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Ignored by non-Gemini providers.",
+					"description": "Optional local file paths to reference images for compositional editing. Accepted formats: PNG, JPEG, WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits; for multi-image Grok prompts you may reference <IMAGE_0>, <IMAGE_1>, etc.",
 					"maxItems":    14,
 				},
 			},

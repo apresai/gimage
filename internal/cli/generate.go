@@ -697,7 +697,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine: 1:1, 16:9, etc.
 		Style:              style,
 		Seed:               seed,
-		NumberOfImages:     count,        // Number of images to generate (1-5)
+		NumberOfImages:     count,        // Number of images to generate (Grok exact up to 10)
 		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
@@ -1123,19 +1123,28 @@ func printPromptHowto() error {
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│ GEMINI 3+ ADVANCED FEATURES (silently ignored on other models)                  │
+│ REFERENCE IMAGE EDITING (Gemini, Vertex, Grok)                                  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
-│ Compositional editing (Nano Banana style): pass one or more reference images    │
-│ via --input-image and describe the transformation in the prompt.                │
-│   Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14                 │
+│ Pass one or more reference images via --input-image and describe the change.    │
+│   Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14       │
 │   Formats: PNG, JPEG, WebP. Each image capped at 20 MB.                         │
+│   Grok uses xAI /images/edits; multi-image prompts may use <IMAGE_0>, etc.      │
 │                                                                                 │
 │   gimage generate "place this on a marble counter, soft studio light" \         │
 │     --model gemini-3.1-flash --input-image product.png                          │
 │                                                                                 │
+│   gimage generate "render this as a pencil sketch with detailed shading" \      │
+│     --model grok-quality --input-image photo.png --image-size 2K                │
+│                                                                                 │
 │   gimage generate "this character in this scene, cinematic lighting" \          │
 │     --model gemini-3-pro --input-image character.png --input-image scene.jpg    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ GEMINI 3+ ADVANCED FEATURES (silently ignored on other models)                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │ Thinking mode: dial up reasoning depth for text-heavy or complex layouts.       │
 │   Levels: minimal | low (default) | medium | high                               │
@@ -1186,15 +1195,15 @@ func init() {
 	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
 	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3+ (Pro/3.1 Flash): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only.")
-	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine (e.g., 1:1, 16:9, 4:3, 3:4, 9:16)")
+	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine. Grok: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime (Gemini/Vertex only)")
 	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility, 0 for random (Gemini API providers)")
-	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (Grok returns N exactly; Gemini is best-effort)")
+	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (Grok returns N exactly up to 10; Gemini is best-effort)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
 	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Ignored for Gemini 2.5 Flash.")
 	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query).")
-	generateCmd.Flags().StringArray("input-image", []string{}, "Local path to a reference image for compositional editing. Repeatable. Caps: Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
+	generateCmd.Flags().StringArray("input-image", []string{}, "Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
 
 	// Bind to viper for config file support
 	viper.BindPFlag("generate.api", generateCmd.Flags().Lookup("api"))

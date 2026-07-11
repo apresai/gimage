@@ -24,7 +24,7 @@ Production-ready serverless REST API for web applications and remote processing.
 - Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Grok Imagine ($0.02-$0.07/image)
 - Control size, style, quality, and aspect ratio
 - Reproducible results with seed values on providers that support seeds
-- Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+), aspect ratio (Grok)
+- Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+ / Grok), aspect ratio (Grok 14 values), reference-image editing (Gemini, Vertex, Grok)
 - Batch generation: create multiple images at once
 
 ### 🛠️ Image Processing
@@ -152,11 +152,15 @@ gimage generate "fantasy landscape" --count 3
 # Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
 gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
 
-# Compositional editing with reference images (Gemini 3+, Nano Banana style)
+# Compositional editing with reference images (Gemini, Vertex, or Grok)
 gimage generate "place this product on a marble counter, soft light" \
   --model gemini-3.1-flash --input-image product.png
 
-# Combine multiple references (character + scene) — caps: 3 (2.5 Flash), 11 (3 Pro), 14 (3.1 Flash)
+# Grok image edit via xAI /images/edits (max 3 reference images)
+gimage generate "render this as a pencil sketch with detailed shading" \
+  --model grok-quality --input-image photo.png --image-size 2K
+
+# Combine multiple references (character + scene) — caps: Grok=3, Gemini 2.5=3, 3 Pro=11, 3.1 Flash=14
 gimage generate "this character in this environment, cinematic" \
   --model gemini-3-pro --input-image character.png --input-image scene.jpg
 
@@ -362,13 +366,14 @@ All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateC
 - **`grok-imagine-image`** (default Grok model, fast and affordable)
 
   - Pricing: $0.02/image
-  - Supports aspect ratio (13 ratios: 1:1, 16:9, 9:16, 4:3, 3:4, etc.)
+  - Supports aspect ratio (14 values: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
+  - Supports image editing via `--input-image` (up to 3 reference images)
   - Best for: Quick iterations, affordable image generation
 
 - **`grok-imagine-image-quality`** (quality tier, replaces deprecated `-pro` retired by xAI 2026-05-15)
 
   - Pricing: $0.05/image at 1K, $0.07/image at 2K
-  - Supports aspect ratio and resolution (`1k`, `2k`)
+  - Supports aspect ratio, resolution (`1k`, `2k`), and `--input-image` editing (max 3)
   - Best for: Higher quality creative images
   - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here
 
