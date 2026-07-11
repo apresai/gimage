@@ -34,14 +34,14 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
 | `model`         | string  | No       | "gemini-3-pro-image"         | AI model to use                                                                                |
 | `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
-| `aspect_ratio`  | string  | No       | -                            | Aspect ratio for Gemini 3+ and Grok Imagine: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5" |
+| `aspect_ratio`  | string  | No       | -                            | Aspect ratio. Gemini 3+: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5". Grok Imagine also: "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto" |
 | `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
 | `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
-| `count`         | integer | No       | 1                            | Number of images to generate (max varies by provider: Gemini 4, Vertex 8, Grok 10)             |
+| `count`         | integer | No       | 1                            | Number of images to generate (1-10; Grok returns N exactly, Gemini family is best-effort)      |
 | `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
 | `thinking`      | string  | No       | -                            | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
 | `grounding`     | boolean | No       | `false`                      | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
-| `input_images`  | array of strings | No | -                            | Local file paths to reference images for compositional editing (Nano Banana style). PNG/JPEG/WebP only. Per-model caps - Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. |
+| `input_images`  | array of strings | No | -                            | Local file paths to reference images for editing/composition. PNG/JPEG/WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits. |
 
 ### Supported Sizes
 

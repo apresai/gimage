@@ -250,9 +250,10 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 	countInput.CharLimit = 2
 	countInput.SetWidth(10)
 
-	// Aspect ratio options (for Gemini 3 Pro)
+	// Aspect ratio options (Gemini 3+ + Grok Imagine full set)
 	aspectRatioOpts := []aspectRatioOption{
-		{"", "Auto (from size)"},
+		{"", "Default (omit)"},
+		{"auto", "Auto (Grok)"},
 		{"1:1", "Square (1:1)"},
 		{"16:9", "Landscape (16:9)"},
 		{"9:16", "Portrait (9:16)"},
@@ -260,6 +261,14 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 		{"3:4", "Portrait (3:4)"},
 		{"3:2", "Photo (3:2)"},
 		{"2:3", "Portrait Photo (2:3)"},
+		{"2:1", "Banner (2:1)"},
+		{"1:2", "Tall Banner (1:2)"},
+		{"5:4", "Gemini (5:4)"},
+		{"4:5", "Gemini (4:5)"},
+		{"19.5:9", "Phone (19.5:9)"},
+		{"9:19.5", "Phone Portrait (9:19.5)"},
+		{"20:9", "Ultra-wide (20:9)"},
+		{"9:20", "Ultra-tall (9:20)"},
 	}
 
 	// Image size options (for Gemini 3 Pro native resolution)

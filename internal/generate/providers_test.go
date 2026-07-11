@@ -324,9 +324,10 @@ func TestGrokProviderCapabilities(t *testing.T) {
 		t.Run(providerID, func(t *testing.T) {
 			p, err := reg.Get(providerID)
 			require.NoError(t, err)
-			// Grok DOES honor image size (1K/2K) and aspect ratio on imagine models.
+			// Grok DOES honor image size (1K/2K), aspect ratio, and input-image edits.
 			assert.True(t, p.Capabilities.SupportsImageSize, "Grok imagine honors resolution 1K/2K")
 			assert.True(t, p.Capabilities.SupportsAspectRatio, "Grok imagine honors aspect_ratio")
+			assert.True(t, p.Capabilities.SupportsInputImages, "Grok imagine supports /images/edits via --input-image")
 			// Grok ignores styles, seed, and output format.
 			assert.False(t, p.Capabilities.SupportsStyles)
 			assert.False(t, p.Capabilities.SupportsSeed)

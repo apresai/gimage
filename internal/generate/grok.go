@@ -18,8 +18,11 @@ import (
 )
 
 const (
-	grokBaseURL      = "https://api.x.ai/v1"
-	grokDefaultModel = "grok-imagine-image"
+	grokBaseURL         = "https://api.x.ai/v1"
+	grokDefaultModel    = "grok-imagine-image"
+	grokMaxInputImages  = 3
+	grokGenerationsPath = "/images/generations"
+	grokEditsPath       = "/images/edits"
 )
 
 // GrokClient handles interactions with the xAI Grok API for image generation
@@ -29,7 +32,14 @@ type GrokClient struct {
 	circuitBreaker *gobreaker.CircuitBreaker
 }
 
-// GrokImageRequest represents the request body for Grok image generation
+// GrokImageSource is a single input image for the edits endpoint (URL or data URI).
+type GrokImageSource struct {
+	URL  string `json:"url"`
+	Type string `json:"type,omitempty"` // "image_url" for compatibility with xAI examples
+}
+
+// GrokImageRequest represents the request body for Grok image generation or editing.
+// When Image/Images are set, the client POSTs to /v1/images/edits instead of /generations.
 type GrokImageRequest struct {
 	Model          string `json:"model"`
 	Prompt         string `json:"prompt"`
@@ -38,6 +48,11 @@ type GrokImageRequest struct {
 	AspectRatio    string `json:"aspect_ratio,omitempty"`
 	// Resolution is the xAI native resolution: "1k" or "2k". Only honored by grok-imagine-* models.
 	Resolution string `json:"resolution,omitempty"`
+	// Image is used for single-image edits (mutually exclusive with Images).
+	Image *GrokImageSource `json:"image,omitempty"`
+	// Images is used for multi-reference edits (up to grokMaxInputImages). Reference as
+	// <IMAGE_0>, <IMAGE_1>, … in the prompt when needed.
+	Images []GrokImageSource `json:"images,omitempty"`
 }
 
 // GrokImageResponse represents the response from Grok image generation
@@ -45,13 +60,20 @@ type GrokImageResponse struct {
 	Created int64            `json:"created"`
 	Data    []GrokImageData  `json:"data"`
 	Error   *GrokErrorDetail `json:"error,omitempty"`
+	Usage   *GrokUsage       `json:"usage,omitempty"`
+}
+
+// GrokUsage holds cost metadata returned by the xAI images API.
+type GrokUsage struct {
+	CostInUSDTicks int64 `json:"cost_in_usd_ticks"`
 }
 
 // GrokImageData contains the generated image data
 type GrokImageData struct {
-	URL            string `json:"url,omitempty"`
-	B64JSON        string `json:"b64_json,omitempty"`
-	RevisedPrompt  string `json:"revised_prompt,omitempty"`
+	URL           string `json:"url,omitempty"`
+	B64JSON       string `json:"b64_json,omitempty"`
+	RevisedPrompt string `json:"revised_prompt,omitempty"`
+	MimeType      string `json:"mime_type,omitempty"`
 }
 
 // GrokErrorDetail contains error information from the API
@@ -74,6 +96,16 @@ func NewGrokClient(apiKey string) (*GrokClient, error) {
 		},
 		circuitBreaker: newCircuitBreaker("GrokAPI"),
 	}, nil
+}
+
+// isValidGrokAspectRatio reports whether ratio is in the official xAI set.
+func isValidGrokAspectRatio(ratio string) bool {
+	for _, r := range GrokAspectRatios {
+		if r == ratio {
+			return true
+		}
+	}
+	return false
 }
 
 // buildGrokImageRequest assembles the xAI request body from generation options.
@@ -100,7 +132,12 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 
 	isImagine := isGrokImagineModel(request.Model)
 	if options.AspectRatio != "" && isImagine {
-		request.AspectRatio = options.AspectRatio
+		if isValidGrokAspectRatio(options.AspectRatio) {
+			request.AspectRatio = options.AspectRatio
+		} else {
+			fmt.Fprintf(os.Stderr, "warning: --aspect-ratio %q not supported on Grok; valid: %s; using xAI default\n",
+				options.AspectRatio, strings.Join(GrokAspectRatios, ", "))
+		}
 	}
 	if isImagine && options.ImageSize != "" {
 		switch options.ImageSize {
@@ -116,17 +153,57 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 	return request
 }
 
-// GenerateImage generates an image from a text prompt using the Grok API
+// attachGrokInputImages loads local reference images into the request for /images/edits.
+// One path uses the singular `image` field; two or more use `images` (max 3).
+func attachGrokInputImages(request *GrokImageRequest, paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+	if len(paths) > grokMaxInputImages {
+		return fmt.Errorf("Grok Imagine supports at most %d input images, got %d", grokMaxInputImages, len(paths))
+	}
+
+	sources := make([]GrokImageSource, 0, len(paths))
+	for _, path := range paths {
+		data, mimeType, err := readInputImageData(path)
+		if err != nil {
+			return fmt.Errorf("read input image %s: %w", path, err)
+		}
+		dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(data))
+		sources = append(sources, GrokImageSource{
+			URL:  dataURL,
+			Type: "image_url",
+		})
+	}
+
+	if len(sources) == 1 {
+		request.Image = &sources[0]
+	} else {
+		request.Images = sources
+	}
+	return nil
+}
+
+// GenerateImage generates or edits an image using the Grok API.
+// With --input-image / InputImages set, requests go to POST /v1/images/edits;
+// otherwise POST /v1/images/generations.
 func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options models.GenerateOptions) ([]*models.GeneratedImage, error) {
 	if prompt == "" {
 		return nil, fmt.Errorf("prompt cannot be empty")
 	}
 
 	request := buildGrokImageRequest(EnhancePrompt(prompt), options)
+	endpoint := grokGenerationsPath
+	if len(options.InputImages) > 0 {
+		if err := attachGrokInputImages(&request, options.InputImages); err != nil {
+			return nil, err
+		}
+		endpoint = grokEditsPath
+	}
 
 	// Execute through circuit breaker
 	result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
-		return c.doRequest(ctx, request)
+		return c.doRequest(ctx, endpoint, request)
 	})
 
 	if err != nil {
@@ -140,7 +217,7 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 }
 
 // doRequest performs the actual HTTP request to the Grok API
-func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) ([]*models.GeneratedImage, error) {
+func (c *GrokClient) doRequest(ctx context.Context, endpoint string, request GrokImageRequest) ([]*models.GeneratedImage, error) {
 	// Marshal request body
 	requestBody, err := json.Marshal(request)
 	if err != nil {
@@ -148,7 +225,7 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) ([
 	}
 
 	// Create HTTP request
-	url := fmt.Sprintf("%s/images/generations", grokBaseURL)
+	url := fmt.Sprintf("%s%s", grokBaseURL, endpoint)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -230,9 +307,16 @@ func (c *GrokClient) doRequest(ctx context.Context, request GrokImageRequest) ([
 			"api":       "grok",
 			"generated": time.Now().UTC().Format(time.RFC3339),
 			"candidate": fmt.Sprintf("%d", i),
+			"endpoint":  endpoint,
 		}
 		if imageData.RevisedPrompt != "" {
 			metadata["revised_prompt"] = imageData.RevisedPrompt
+		}
+		if imageData.MimeType != "" {
+			metadata["mime_type"] = imageData.MimeType
+		}
+		if grokResp.Usage != nil && grokResp.Usage.CostInUSDTicks > 0 {
+			metadata["cost_in_usd_ticks"] = fmt.Sprintf("%d", grokResp.Usage.CostInUSDTicks)
 		}
 
 		generatedImages = append(generatedImages, &models.GeneratedImage{

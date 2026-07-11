@@ -21,6 +21,13 @@ type APISizeConstraints struct {
 var (
 	// Gemini 3 Pro / Gemini 3.1 Flash: Flexible but prefers certain ratios
 	GoogleAspectRatios = []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"}
+
+	// GrokAspectRatios is the full set accepted by xAI Grok Imagine (generation + edits).
+	// See https://docs.x.ai/developers/model-capabilities/images/generation
+	GrokAspectRatios = []string{
+		"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3",
+		"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto",
+	}
 )
 
 // NormalizeDimensions adjusts dimensions to meet API constraints using a "closest match" strategy

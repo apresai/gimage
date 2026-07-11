@@ -150,12 +150,15 @@ Map informal names to exact model IDs:
 
 **Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`. **Grok Imagine** and **Grok Imagine Quality** also accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
 
-**Grok Imagine** supports `aspect_ratio` parameter (13 ratios including 1:1, 16:9, 9:16, 4:3, 3:4, etc.).
+**Grok Imagine** supports `aspect_ratio` with 14 values: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto`.
+
+**Reference image editing** via repeatable `--input-image` (PNG/JPEG/WebP, local paths only):
+- **Grok** (max 3): routes to `POST /v1/images/edits`. Multi-image prompts may reference `<IMAGE_0>`, `<IMAGE_1>`, etc.
+- **Gemini / Vertex**: compositional editing (Nano Banana style). Caps — Gemini 2.5 Flash: 3, Gemini 3 Pro: 11 (docs: 6 objects + 5 characters), Gemini 3.1 Flash: 14 (10 objects + 4 characters). The API doesn't distinguish object vs character images in the payload, so gimage enforces a single combined total per model.
 
 **Gemini 3+ exclusive options** (silently ignored by Gemini 2.5 Flash and non-Gemini providers):
 - `--thinking` (`minimal|low|medium|high`): controls reasoning depth before generation. Higher = better layouts and text, slightly slower.
 - `--grounding` (bool): enables Google Search grounding via `tools: [{"google_search":{}}]`. Billed per search query in addition to per-image cost. Useful when the prompt references real-world current entities (products, news, logos).
-- `--input-image` (repeatable): attaches reference images for compositional editing (Nano Banana style). Caps per model — Gemini 2.5 Flash: 3, Gemini 3 Pro: 11 (docs: 6 objects + 5 characters), Gemini 3.1 Flash: 14 (10 objects + 4 characters). PNG/JPEG/WebP only. Local file paths only in v1 (no URL fetch). The API doesn't distinguish object vs character images in the payload, so gimage enforces a single combined total per model.
 
 **Batch pricing tier (Gemini, ~50% off)** is available via Google's separate `:batchGenerateContent` async endpoint with a 24-hour SLA. This is **not** wired into the gimage CLI — adding it requires a job-submission/polling subsystem, tracked as future work.
 

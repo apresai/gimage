@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Added
+- Grok Imagine image editing via `--input-image` / MCP `input_images` (routes to xAI `POST /v1/images/edits`, max 3 reference images)
+- Full Grok aspect ratio set: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` (14 values total)
+
+### Changed
+- Bumped Go direct dependencies (Charm TUI, AWS SDK v2, `genai`, `x/image`, `x/term`) and npm `tar` to latest patch/minor
+- MCP `generate_image` `count` maximum raised from 5 to 10 (matches Grok client/TUI)
+- Grok Imagine Quality description now notes tiered pricing ($0.05 @ 1K / $0.07 @ 2K)
 
 ## [1.2.147] - 2026-07-01
 

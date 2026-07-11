@@ -138,7 +138,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **Gemini 3+ exclusives** (ignored by other providers):
   - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
   - `grounding` (bool): enables Google Search grounding (billed per search query)
-  - `input_images` (array of file paths): reference images for compositional editing — Nano Banana style. Caps: 2.5 Flash=3, 3 Pro=11, 3.1 Flash=14
+  - `input_images` (array of file paths): reference images for editing/composition. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses xAI `/images/edits`.
 
 **Example Prompts:**
 

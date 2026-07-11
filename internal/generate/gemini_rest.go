@@ -558,6 +558,8 @@ func maxInputImagesForModel(modelName string) int {
 		return geminiPro3MaxRefImages
 	case strings.Contains(modelName, "gemini-2.5-flash-image"):
 		return geminiFlash25MaxRefImages
+	case strings.HasPrefix(modelName, "grok-imagine"):
+		return grokMaxInputImages
 	default:
 		return geminiFlash25MaxRefImages
 	}
