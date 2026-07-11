@@ -91,22 +91,22 @@ Pass one or more reference images via `--input-image` (repeatable) for editing o
 
 ```bash
 gimage generate "place this product on a marble counter, soft light" \
-  --model gemini-3.1-flash --input-image product.png
+ --model gemini-3.1-flash --input-image product.png
 
 gimage generate "render this as a pencil sketch with detailed shading" \
-  --model grok-quality --input-image photo.png
+ --model grok-quality --input-image photo.png
 
 gimage generate "this character in this environment, cinematic" \
-  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+ --model gemini-3-pro --input-image character.png --input-image scene.jpg
 
 # Multi-object composition (Gemini 3.1 Flash, up to 14 refs)
 gimage generate "an office group photo of these people making funny faces" \
-  --model gemini-3.1-flash \
-  --input-image person1.png --input-image person2.png --input-image person3.png
+ --model gemini-3.1-flash \
+ --input-image person1.png --input-image person2.png --input-image person3.png
 ```
 
 **Tips:**
-- The prompt should describe the *transformation*, not re-describe the references — the model already sees them.
+- The prompt should describe the *transformation*, not re-describe the references - the model already sees them.
 - For "place X in Y" tasks, the FIRST reference image tends to anchor as the subject.
 - Empty / whitespace-only paths are silently dropped, so it's safe to wire this through scripts that may not always have a reference.
 
@@ -127,7 +127,7 @@ gimage generate "menu board with 5 items and prices" --thinking medium
 
 # High: best for text-heavy or complex composition
 gimage generate "infographic: 'Q3 revenue up 18%' with 4 bullet points" \
-  --model gemini-3-pro --image-size 4K --thinking high
+ --model gemini-3-pro --image-size 4K --thinking high
 ```
 
 **When to dial it up:**
@@ -147,11 +147,11 @@ Enable `--grounding` to let Gemini pull real-time visual references from the web
 ```bash
 # Generate based on current real-world visual references
 gimage generate "official Nintendo Switch 2 console front view, white background" \
-  --model gemini-3-pro --grounding
+ --model gemini-3-pro --grounding
 
 # Anchor a stylized version to a real reference
 gimage generate "watercolor painting of the Sydney Opera House at sunset" \
-  --model gemini-3.1-flash --grounding
+ --model gemini-3.1-flash --grounding
 ```
 
 **When grounding helps:**

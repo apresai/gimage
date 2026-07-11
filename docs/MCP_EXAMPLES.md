@@ -203,7 +203,7 @@ The original sneaker stays visually consistent and appears on a freshly-generate
 
 **User Prompt:**
 ```
-Combine these three reference images — a character (character.png), a background scene (forest.jpg), and a prop (sword.png) — into a single cinematic shot of the character in the forest holding the sword.
+Combine these three reference images - a character (character.png), a background scene (forest.jpg), and a prop (sword.png) - into a single cinematic shot of the character in the forest holding the sword.
 ```
 
 **Claude's Actions:**
@@ -228,9 +228,9 @@ Generate a Q3 2026 revenue infographic with these data points: revenue up 18%, g
 
 **Claude's Actions:**
 ```
-This is a text-heavy multi-element layout — exactly where thinking mode pays off. Using Gemini 3 Pro at 4K with high thinking level for careful text rendering and composition planning.
+This is a text-heavy multi-element layout - exactly where thinking mode pays off. Using Gemini 3 Pro at 4K with high thinking level for careful text rendering and composition planning.
 
-[Calls generate_image with prompt="corporate infographic for Q3 2026: 'Revenue up 18%' as headline, three labeled sections — 'Gross Margin +4pp', '3 New Product Launches', and a small trend chart. Navy and gold palette, modern sans-serif typography, clean white background", model="gemini-3-pro-image", image_size="4K", thinking="high", output="~/Desktop/q3-infographic.png"]
+[Calls generate_image with prompt="corporate infographic for Q3 2026: 'Revenue up 18%' as headline, three labeled sections - 'Gross Margin +4pp', '3 New Product Launches', and a small trend chart. Navy and gold palette, modern sans-serif typography, clean white background", model="gemini-3-pro-image", image_size="4K", thinking="high", output="~/Desktop/q3-infographic.png"]
 
 Higher thinking levels add latency but materially improve text legibility and element alignment on dense layouts.
 ```
@@ -353,7 +353,7 @@ I'll create a complete responsive image set with 4 sizes.
 
 You can now use these in responsive HTML with srcset:
 <img srcset="hero-small.webp 640w, hero-medium.webp 1024w, hero-large.webp 1920w"
-     src="hero-medium.webp" alt="Hero image">
+ src="hero-medium.webp" alt="Hero image">
 ```
 
 ---
@@ -539,8 +539,8 @@ Total: 75 KB for all 50 images
 
 Usage in HTML:
 <img src="placeholder-tiny.jpg"
-     data-src="full-size-image.jpg"
-     class="blur-up lazyload" />
+ data-src="full-size-image.jpg"
+ class="blur-up lazyload" />
 
 These placeholders will load instantly while full images lazy-load, providing a smooth UX.
 ```
@@ -807,22 +807,22 @@ I'll generate three distinct cover concepts for your sci-fi novel.
 
 Cover Concepts:
 1. cover-minimalist.png
-   - Clean geometric shapes forming circuit pattern
-   - Monochromatic with accent color
-   - Modern, sophisticated aesthetic
-   - Great for tech-savvy audience
+ - Clean geometric shapes forming circuit pattern
+ - Monochromatic with accent color
+ - Modern, sophisticated aesthetic
+ - Great for tech-savvy audience
 
 2. cover-dramatic.png
-   - Dystopian future city skyline
-   - Lone figure silhouette
-   - Moody, atmospheric lighting
-   - Appeals to traditional sci-fi fans
+ - Dystopian future city skyline
+ - Lone figure silhouette
+ - Moody, atmospheric lighting
+ - Appeals to traditional sci-fi fans
 
 3. cover-symbolic.png
-   - Abstract digital consciousness
-   - Neural network visualization
-   - Ethereal, thought-provoking
-   - Unique, artistic approach
+ - Abstract digital consciousness
+ - Neural network visualization
+ - Ethereal, thought-provoking
+ - Unique, artistic approach
 
 All 1024x1792 portrait format. Each concept offers different marketing angles. You can test with your target audience or show to publishers.
 ```
@@ -1094,24 +1094,24 @@ HERO SHOTS (Product Focus)
 [Generates 3 hero product images]
 
 1. hero-amber.png
-   - Amber soy candle in glass jar
-   - Dramatic side lighting
-   - Dark background, warm glow
-   - Kraft paper label visible
-   - Professional studio quality
+ - Amber soy candle in glass jar
+ - Dramatic side lighting
+ - Dark background, warm glow
+ - Kraft paper label visible
+ - Professional studio quality
 
 2. hero-white.png
-   - White soy candle, clean aesthetic
-   - Soft diffused lighting
-   - Light neutral background
-   - Minimalist composition
-   - Artisan craftsmanship evident
+ - White soy candle, clean aesthetic
+ - Soft diffused lighting
+ - Light neutral background
+ - Minimalist composition
+ - Artisan craftsmanship evident
 
 3. hero-sage.png
-   - Sage green candle
-   - Natural window lighting effect
-   - Organic, earthy vibe
-   - Product details clear
+ - Sage green candle
+ - Natural window lighting effect
+ - Organic, earthy vibe
+ - Product details clear
 
 ──────────────────────────────────
 LIFESTYLE SHOTS (In Context)
@@ -1120,18 +1120,18 @@ LIFESTYLE SHOTS (In Context)
 [Generates 2 lifestyle images]
 
 1. lifestyle-living-room.png
-   - Candles on coffee table
-   - Cozy home interior
-   - Soft ambient lighting
-   - Natural home setting
-   - Inviting atmosphere
+ - Candles on coffee table
+ - Cozy home interior
+ - Soft ambient lighting
+ - Natural home setting
+ - Inviting atmosphere
 
 2. lifestyle-bathroom.png
-   - Candle near bathtub
-   - Spa-like environment
-   - Self-care theme
-   - Calm, relaxing mood
-   - Product in use context
+ - Candle near bathtub
+ - Spa-like environment
+ - Self-care theme
+ - Calm, relaxing mood
+ - Product in use context
 
 ──────────────────────────────────
 FLAT LAY (Storytelling Shot)
@@ -1140,12 +1140,12 @@ FLAT LAY (Storytelling Shot)
 [Generates flat lay composition]
 
 flatlay-natural.png
-   - Top-down view
-   - Multiple candles arranged
-   - Natural props (eucalyptus, stones)
-   - Kraft paper, twine elements
-   - Instagram-worthy composition
-   - Organic, artisan aesthetic
+ - Top-down view
+ - Multiple candles arranged
+ - Natural props (eucalyptus, stones)
+ - Kraft paper, twine elements
+ - Instagram-worthy composition
+ - Organic, artisan aesthetic
 
 ──────────────────────────────────
 PRODUCT PHOTOGRAPHY SET SUMMARY
@@ -1175,13 +1175,13 @@ Your handmade candle business now has professional-looking product photography w
 
 ### Be Specific
 ```
-❌ "Generate an image of a forest"
+✗ "Generate an image of a forest"
 ✓ "Generate a photorealistic image of a misty pine forest at dawn with sunbeams filtering through trees"
 ```
 
 ### Specify Technical Requirements
 ```
-❌ "Make it smaller"
+✗ "Make it smaller"
 ✓ "Resize to 800x600 pixels for web use"
 ```
 

@@ -12,10 +12,10 @@ Complete reference for all gimage commands, flags, and options.
 - [compress](#compress) - Compress images
 - [convert](#convert) - Convert image formats
 - [auth](#auth) - Configure authentication
-  - [auth setup](#auth-setup) - Interactive setup wizard
-  - [auth test](#auth-test) - Test authentication
-  - [auth list](#auth-list) - List all providers
-  - [auth status](#auth-status) - Show auth status
+ - [auth setup](#auth-setup) - Interactive setup wizard
+ - [auth test](#auth-test) - Test authentication
+ - [auth list](#auth-list) - List all providers
+ - [auth status](#auth-status) - Show auth status
 - [serve](#serve) - Start MCP server (includes batch operations)
 - [tui](#tui) - Launch interactive terminal UI
 - [completion](#completion) - Generate shell completions
@@ -26,12 +26,12 @@ Complete reference for all gimage commands, flags, and options.
 
 These flags work with any command:
 
-| Flag            | Description           | Default                   |
+| Flag | Description | Default |
 | --------------- | --------------------- | ------------------------- |
-| `--config`      | Path to config file   | `$HOME/.gimage/config.md` |
-| `--verbose`     | Enable verbose output | `false`                   |
-| `-h, --help`    | Show help for command | -                         |
-| `-v, --version` | Show version          | -                         |
+| `--config` | Path to config file | `$HOME/.gimage/config.md` |
+| `--verbose` | Enable verbose output | `false` |
+| `-h, --help` | Show help for command | - |
+| `-v, --version` | Show version | - |
 
 **Examples:**
 
@@ -58,26 +58,26 @@ gimage generate --prompt "your prompt" [flags]
 
 ### Flags
 
-| Flag               | Type   | Description                                                                             | Default                      |
+| Flag | Type | Description | Default |
 | ------------------ | ------ | --------------------------------------------------------------------------------------- | ---------------------------- |
-| `-p, --prompt`     | string | Text prompt (alternative to positional arg)                                             | -                            |
-| `--provider`       | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/flash-3.1`)                              | Auto-detected                |
-| `--api`            | string | API to use: `gemini` or `vertex` (deprecated, use `--provider`)                         | Auto-detected from model     |
-| `--model`          | string | Model to use (deprecated, use `--provider`)                                             | `gemini-3-pro-image` |
-| `--size`           | string | Image size (WxH)                                                                        | `1024x1024`                  |
-| `--style`          | string | Style: `photorealistic`, `artistic`, `anime`                                            | -                            |
-| `--seed`           | int    | Random seed for reproducibility                                                         | `0` (random)                 |
-| `-n, --count`      | int    | Number of images to generate (max varies by provider)                                   | `1`                          |
-| `--output-format`  | string | Output format for Vertex AI: `png`, `jpeg`, or `webp`                                   | Provider default             |
-| `-o, --output`     | string | Output file path                                                                        | `generated_<timestamp>.png`  |
-| `--list-models`    | bool   | List all available models with pricing                                                  | `false`                      |
-| `--list-providers` | bool   | List all providers with auth status                                                     | `false`                      |
-| `--prompt-howto`   | bool   | Show tips and examples for writing effective prompts                                    | `false`                      |
-| `--image-size`     | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | -                            |
-| `--aspect-ratio`   | string | Aspect ratio. Gemini 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` | -                            |
-| `--thinking`       | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | -                            |
-| `--grounding`      | bool   | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false`                      |
-| `--input-image`    | string | Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | -                            |
+| `-p, --prompt` | string | Text prompt (alternative to positional arg) | - |
+| `--provider` | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/flash-3.1`) | Auto-detected |
+| `--api` | string | API to use: `gemini` or `vertex` (deprecated, use `--provider`) | Auto-detected from model |
+| `--model` | string | Model to use (deprecated, use `--provider`) | `gemini-3-pro-image` |
+| `--size` | string | Image size (WxH) | `1024x1024` |
+| `--style` | string | Style: `photorealistic`, `artistic`, `anime` | - |
+| `--seed` | int | Random seed for reproducibility | `0` (random) |
+| `-n, --count` | int | Number of images to generate (max varies by provider) | `1` |
+| `--output-format` | string | Output format for Vertex AI: `png`, `jpeg`, or `webp` | Provider default |
+| `-o, --output` | string | Output file path | `generated_<timestamp>.png` |
+| `--list-models` | bool | List all available models with pricing | `false` |
+| `--list-providers` | bool | List all providers with auth status | `false` |
+| `--prompt-howto` | bool | Show tips and examples for writing effective prompts | `false` |
+| `--image-size` | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | - |
+| `--aspect-ratio` | string | Aspect ratio. Gemini 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` | - |
+| `--thinking` | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | - |
+| `--grounding` | bool | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false` |
+| `--input-image` | string | Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | - |
 
 ### Available Models
 
@@ -137,15 +137,15 @@ gimage generate "random pattern" --seed 12345
 ```bash
 # Single reference: drop a product into a new scene
 gimage generate "place this on a marble counter, soft studio light" \
-  --model gemini-3.1-flash --input-image product.png
+ --model gemini-3.1-flash --input-image product.png
 
 # Grok edit via xAI /images/edits (max 3 images)
 gimage generate "render this as a pencil sketch with detailed shading" \
-  --model grok-quality --input-image photo.png --image-size 2K
+ --model grok-quality --input-image photo.png --image-size 2K
 
 # Multi-reference: combine character and background
 gimage generate "this character standing in this environment, cinematic lighting" \
-  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+ --model gemini-3-pro --input-image character.png --input-image scene.jpg
 ```
 
 **Thinking mode (Gemini 3+):**
@@ -153,7 +153,7 @@ gimage generate "this character standing in this environment, cinematic lighting
 ```bash
 # More planning for complex layouts/text rendering
 gimage generate "infographic showing 'Q3 revenue up 18%'" \
-  --model gemini-3-pro --image-size 4K --thinking high
+ --model gemini-3-pro --image-size 4K --thinking high
 ```
 
 **Google Search grounding (Gemini 3+):**
@@ -161,7 +161,7 @@ gimage generate "infographic showing 'Q3 revenue up 18%'" \
 ```bash
 # Let the model pull current visual references from the web
 gimage generate "official Nintendo Switch 2 console front view" \
-  --model gemini-3-pro --grounding
+ --model gemini-3-pro --grounding
 ```
 
 **Custom output path:**
@@ -267,18 +267,18 @@ gimage resize [input] [width] [height] [flags]
 
 ### Arguments
 
-| Argument | Type   | Description             | Required |
+| Argument | Type | Description | Required |
 | -------- | ------ | ----------------------- | -------- |
-| `input`  | string | Input image file path   | Yes      |
-| `width`  | int    | Target width in pixels  | Yes      |
-| `height` | int    | Target height in pixels | Yes      |
+| `input` | string | Input image file path | Yes |
+| `width` | int | Target width in pixels | Yes |
+| `height` | int | Target height in pixels | Yes |
 
 ### Flags
 
-| Flag           | Type   | Description                | Default                 |
+| Flag | Type | Description | Default |
 | -------------- | ------ | -------------------------- | ----------------------- |
-| `-o, --output` | string | Output file path           | `<input>_resized.<ext>` |
-| `--mode`       | string | Resize mode: `crop`, `fit` | `crop`                  |
+| `-o, --output` | string | Output file path | `<input>_resized.<ext>` |
+| `--mode` | string | Resize mode: `crop`, `fit` | `crop` |
 
 ### Examples
 
@@ -323,14 +323,14 @@ gimage scale [input] [factor] [flags]
 
 ### Arguments
 
-| Argument | Type   | Description                   | Required |
+| Argument | Type | Description | Required |
 | -------- | ------ | ----------------------------- | -------- |
-| `input`  | string | Input image file path         | Yes      |
-| `factor` | float  | Scale factor (e.g., 0.5, 2.0) | Yes      |
+| `input` | string | Input image file path | Yes |
+| `factor` | float | Scale factor (e.g., 0.5, 2.0) | Yes |
 
 ### Flags
 
-| Flag           | Type   | Description      | Default                |
+| Flag | Type | Description | Default |
 | -------------- | ------ | ---------------- | ---------------------- |
 | `-o, --output` | string | Output file path | `<input>_scaled.<ext>` |
 
@@ -375,17 +375,17 @@ gimage crop [input] [x] [y] [width] [height] [flags]
 
 ### Arguments
 
-| Argument | Type   | Description           | Required |
+| Argument | Type | Description | Required |
 | -------- | ------ | --------------------- | -------- |
-| `input`  | string | Input image file path | Yes      |
-| `x`      | int    | Starting X coordinate | Yes      |
-| `y`      | int    | Starting Y coordinate | Yes      |
-| `width`  | int    | Crop width in pixels  | Yes      |
-| `height` | int    | Crop height in pixels | Yes      |
+| `input` | string | Input image file path | Yes |
+| `x` | int | Starting X coordinate | Yes |
+| `y` | int | Starting Y coordinate | Yes |
+| `width` | int | Crop width in pixels | Yes |
+| `height` | int | Crop height in pixels | Yes |
 
 ### Flags
 
-| Flag           | Type   | Description      | Default                 |
+| Flag | Type | Description | Default |
 | -------------- | ------ | ---------------- | ----------------------- |
 | `-o, --output` | string | Output file path | `<input>_cropped.<ext>` |
 
@@ -429,16 +429,16 @@ gimage compress [input] [flags]
 
 ### Arguments
 
-| Argument | Type   | Description           | Required |
+| Argument | Type | Description | Required |
 | -------- | ------ | --------------------- | -------- |
-| `input`  | string | Input image file path | Yes      |
+| `input` | string | Input image file path | Yes |
 
 ### Flags
 
-| Flag           | Type   | Description                 | Default                    |
+| Flag | Type | Description | Default |
 | -------------- | ------ | --------------------------- | -------------------------- |
-| `--quality`    | int    | Compression quality (1-100) | `90`                       |
-| `-o, --output` | string | Output file path            | `<input>_compressed.<ext>` |
+| `--quality` | int | Compression quality (1-100) | `90` |
+| `-o, --output` | string | Output file path | `<input>_compressed.<ext>` |
 
 ### Examples
 
@@ -462,13 +462,13 @@ gimage compress large.png --quality 75 --output small.png
 
 ### Quality Guidelines
 
-| Quality | Use Case                 | File Size |
+| Quality | Use Case | File Size |
 | ------- | ------------------------ | --------- |
-| 95-100  | Professional photography | Largest   |
-| 85-94   | High-quality web images  | Large     |
-| 75-84   | Standard web images      | Medium    |
-| 60-74   | Thumbnails, previews     | Small     |
-| 1-59    | Maximum compression      | Smallest  |
+| 95-100 | Professional photography | Largest |
+| 85-94 | High-quality web images | Large |
+| 75-84 | Standard web images | Medium |
+| 60-74 | Thumbnails, previews | Small |
+| 1-59 | Maximum compression | Smallest |
 
 ### Notes
 
@@ -491,27 +491,27 @@ gimage convert [input] [format] [flags]
 
 ### Arguments
 
-| Argument | Type   | Description           | Required |
+| Argument | Type | Description | Required |
 | -------- | ------ | --------------------- | -------- |
-| `input`  | string | Input image file path | Yes      |
-| `format` | string | Target format         | Yes      |
+| `input` | string | Input image file path | Yes |
+| `format` | string | Target format | Yes |
 
 ### Flags
 
-| Flag           | Type   | Description      | Default            |
+| Flag | Type | Description | Default |
 | -------------- | ------ | ---------------- | ------------------ |
 | `-o, --output` | string | Output file path | `<input>.<format>` |
 
 ### Supported Formats
 
-| Format   | Extension       | Description                     |
+| Format | Extension | Description |
 | -------- | --------------- | ------------------------------- |
-| PNG      | `.png`          | Lossless, supports transparency |
-| JPEG/JPG | `.jpg`, `.jpeg` | Lossy, best for photos          |
-| WebP     | `.webp`         | Modern, efficient               |
-| GIF      | `.gif`          | Animated images                 |
-| TIFF     | `.tiff`, `.tif` | Professional/archival           |
-| BMP      | `.bmp`          | Uncompressed                    |
+| PNG | `.png` | Lossless, supports transparency |
+| JPEG/JPG | `.jpg`, `.jpeg` | Lossy, best for photos |
+| WebP | `.webp` | Modern, efficient |
+| GIF | `.gif` | Animated images |
+| TIFF | `.tiff`, `.tif` | Professional/archival |
+| BMP | `.bmp` | Uncompressed |
 
 ### Examples
 
@@ -548,23 +548,23 @@ gimage convert input.png webp --output optimized.webp
 
 1. **MCP Server** (for AI assistants like Claude Desktop):
 
-   - `batch_resize` - Concurrent image resizing
-   - `batch_compress` - Concurrent compression
-   - `batch_convert` - Concurrent format conversion
-   - See [serve](#serve) command and [MCP documentation](mcp.md)
+ - `batch_resize` - Concurrent image resizing
+ - `batch_compress` - Concurrent compression
+ - `batch_convert` - Concurrent format conversion
+ - See [serve](#serve) command and [MCP documentation](mcp.md)
 
 2. **Shell Scripts** (for CLI users):
 
-   ```bash
-   # Resize all JPG files using find + xargs
-   find photos/ -name "*.jpg" | xargs -P 4 -I {} gimage resize --input {} --width 800 --height 600
+ ```bash
+ # Resize all JPG files using find + xargs
+ find photos/ -name "*.jpg" | xargs -P 4 -I {} gimage resize --input {} --width 800 --height 600
 
-   # Compress all images in parallel
-   find photos/ -name "*.jpg" -o -name "*.png" | xargs -P 4 -I {} gimage compress --input {} --quality 85
+ # Compress all images in parallel
+ find photos/ -name "*.jpg" -o -name "*.png" | xargs -P 4 -I {} gimage compress --input {} --quality 85
 
-   # Convert all PNG to WebP
-   find photos/ -name "*.png" | xargs -P 4 -I {} sh -c 'gimage convert --input "$1" --format webp --output "${1%.png}.webp"' _ {}
-   ```
+ # Convert all PNG to WebP
+ find photos/ -name "*.png" | xargs -P 4 -I {} sh -c 'gimage convert --input "$1" --format webp --output "${1%.png}.webp"' _ {}
+ ```
 
 ---
 
@@ -599,9 +599,9 @@ gimage auth setup <provider>
 
 #### Arguments
 
-| Argument   | Description          | Examples                                                               |
+| Argument | Description | Examples |
 | ---------- | -------------------- | ---------------------------------------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `grok`              |
+| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `grok` |
 
 #### Examples
 
@@ -639,17 +639,17 @@ gimage auth test <provider>
 
 #### Arguments
 
-| Argument   | Description          | Examples                                      |
+| Argument | Description | Examples |
 | ---------- | -------------------- | --------------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `vertex/flash-3.1`, `grok`          |
+| `provider` | Provider ID or alias | `gemini`, `vertex/flash-3.1`, `grok` |
 
 #### Flags
 
-| Flag         | Description                                  | Default |
+| Flag | Description | Default |
 | ------------ | -------------------------------------------- | ------- |
-| `--all`      | Test all configured providers                | `false` |
+| `--all` | Test all configured providers | `false` |
 | `--generate` | Actually generate a test image (costs money) | `false` |
-| `--verbose`  | Show detailed test output                    | `false` |
+| `--verbose` | Show detailed test output | `false` |
 
 #### Examples
 
@@ -693,11 +693,11 @@ gimage auth list [flags]
 
 #### Flags
 
-| Flag           | Description                             | Default |
+| Flag | Description | Default |
 | -------------- | --------------------------------------- | ------- |
-| `--configured` | Show only configured providers          | `false` |
-| `--missing`    | Show only providers missing credentials | `false` |
-| `--detailed`   | Show detailed credential requirements   | `false` |
+| `--configured` | Show only configured providers | `false` |
+| `--missing` | Show only providers missing credentials | `false` |
+| `--detailed` | Show detailed credential requirements | `false` |
 
 #### Examples
 
@@ -754,13 +754,13 @@ gimage auth status
 **Credential Priority Hierarchy:**
 
 ```
-1. CLI Flags       (highest priority)
-   ↓
+1. CLI Flags (highest priority)
+ ↓
 2. Environment Variables
-   ↓
+ ↓
 3. Config File (~/.gimage/config.md)
-   ↓
-4. Defaults        (lowest priority)
+ ↓
+4. Defaults (lowest priority)
 ```
 
 #### Example Output
@@ -768,18 +768,18 @@ gimage auth status
 ```bash
 $ gimage auth status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Authentication Status
+ Authentication Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Credential Priority: CLI Flags > Environment Variables > Config File > Defaults
 
 ✓ Gemini API (Configured)
-  • Environment: GEMINI_API_KEY = AIza***cVVI
+ • Environment: GEMINI_API_KEY = AIza***cVVI
 
 ✓ Vertex AI (Configured)
-  • Config file: vertex_api_key = AIza***xYzW (Express Mode)
-  • Config file: vertex_project = my-gcp-project
-  • Environment: VERTEX_LOCATION = global
+ • Config file: vertex_api_key = AIza***xYzW (Express Mode)
+ • Config file: vertex_project = my-gcp-project
+ • Environment: VERTEX_LOCATION = global
 ```
 
 ---
@@ -806,7 +806,7 @@ The server communicates over stdio using JSON-RPC protocol.
 
 ### Flags
 
-| Flag        | Description                       | Default |
+| Flag | Description | Default |
 | ----------- | --------------------------------- | ------- |
 | `--verbose` | Enable detailed logging to stderr | `false` |
 
@@ -820,12 +820,12 @@ The server communicates over stdio using JSON-RPC protocol.
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "gimage",
-      "args": ["serve"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "gimage",
+ "args": ["serve"]
+ }
+ }
 }
 ```
 
@@ -833,12 +833,12 @@ The server communicates over stdio using JSON-RPC protocol.
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "npx",
-      "args": ["-y", "@apresai/gimage-mcp"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "npx",
+ "args": ["-y", "@apresai/gimage-mcp"]
+ }
+ }
 }
 ```
 
@@ -846,18 +846,18 @@ The server communicates over stdio using JSON-RPC protocol.
 
 The MCP server exposes 10 tools:
 
-| Tool             | Purpose                                  |
+| Tool | Purpose |
 | ---------------- | ---------------------------------------- |
-| `generate_image` | AI image generation from text            |
-| `resize_image`   | Resize to specific dimensions            |
-| `scale_image`    | Scale by factor (preserves aspect ratio) |
-| `crop_image`     | Crop to specific region                  |
-| `compress_image` | Reduce file size                         |
-| `convert_image`  | Convert between formats                  |
-| `batch_resize`   | Resize multiple images concurrently      |
-| `batch_compress` | Compress multiple images concurrently    |
-| `batch_convert`  | Convert multiple images concurrently     |
-| `list_models`    | List available AI models with pricing    |
+| `generate_image` | AI image generation from text |
+| `resize_image` | Resize to specific dimensions |
+| `scale_image` | Scale by factor (preserves aspect ratio) |
+| `crop_image` | Crop to specific region |
+| `compress_image` | Reduce file size |
+| `convert_image` | Convert between formats |
+| `batch_resize` | Resize multiple images concurrently |
+| `batch_compress` | Compress multiple images concurrently |
+| `batch_convert` | Convert multiple images concurrently |
+| `list_models` | List available AI models with pricing |
 
 ### Examples
 
@@ -886,34 +886,34 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | gimage serve
 
 1. **Verify gimage is in PATH:**
 
-   ```bash
-   which gimage
-   gimage --version
-   ```
+ ```bash
+ which gimage
+ gimage --version
+ ```
 
 2. **Test credentials:**
 
-   ```bash
-   gimage auth status
-   gimage auth test gemini
-   ```
+ ```bash
+ gimage auth status
+ gimage auth test gemini
+ ```
 
 3. **Test image generation works:**
 
-   ```bash
-   gimage generate "test image"
-   ```
+ ```bash
+ gimage generate "test image"
+ ```
 
 4. **Check Claude Desktop logs:**
 
-   - macOS: `~/Library/Logs/Claude/`
-   - Linux: `~/.config/Claude/logs/`
+ - macOS: `~/Library/Logs/Claude/`
+ - Linux: `~/.config/Claude/logs/`
 
 5. **Test serve command directly:**
-   ```bash
-   gimage serve --verbose
-   # Press Ctrl+C to stop
-   ```
+ ```bash
+ gimage serve --verbose
+ # Press Ctrl+C to stop
+ ```
 
 For more details, see [MCP documentation](mcp.md) and [docs/MCP_USAGE.md](docs/MCP_USAGE.md).
 
@@ -944,11 +944,11 @@ Launches an 8-step interactive menu for image generation:
 3. **Choose Size** - Select image dimensions
 4. **Select Style** - Pick style (photorealistic, artistic, anime, or none)
 5. **Advanced Options** - Configure optional parameters:
-   - Seed (for reproducibility)
-   - Aspect ratio (Gemini 3 Pro: Auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
-   - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
-   - Output format (Vertex AI: Auto, PNG, JPEG, WebP)
-   - Count (batch generation, max varies by provider)
+ - Seed (for reproducibility)
+ - Aspect ratio (Gemini 3 Pro: Auto, 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3)
+ - Native resolution (Gemini 3 Pro: Default, 1K, 2K, 4K)
+ - Output format (Vertex AI: Auto, PNG, JPEG, WebP)
+ - Count (batch generation, max varies by provider)
 6. **Set Output Path** - Specify where to save the image
 7. **Review & Confirm** - Review all settings before generation
 8. **Generate** - Create your image
@@ -1076,16 +1076,16 @@ gimage completion fish > ~/.config/fish/completions/gimage.fish
 
 These environment variables can be used to configure gimage:
 
-| Variable                         | Description                          | Example             |
+| Variable | Description | Example |
 | -------------------------------- | ------------------------------------ | ------------------- |
-| `GEMINI_API_KEY`                 | Gemini API key                       | `AIzaSy...`         |
-| `VERTEX_API_KEY`                 | Vertex AI Express Mode key           | `AIzaSy...`         |
-| `VERTEX_PROJECT`                 | Vertex AI project ID                 | `my-gcp-project`    |
-| `VERTEX_LOCATION`                | Vertex AI location                   | `global`       |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Service account file path            | `/path/to/key.json` |
-| `GROK_API_KEY`                   | xAI Grok API key                     | `xai-5zM...`        |
-| `GIMAGE_CONFIG`                  | Custom config file path              | `~/my-config.md`    |
-| `GIMAGE_LOG_LEVEL`               | Log level (debug, info, warn, error) | `debug`             |
+| `GEMINI_API_KEY` | Gemini API key | `AIzaSy...` |
+| `VERTEX_API_KEY` | Vertex AI Express Mode key | `AIzaSy...` |
+| `VERTEX_PROJECT` | Vertex AI project ID | `my-gcp-project` |
+| `VERTEX_LOCATION` | Vertex AI location | `global` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Service account file path | `/path/to/key.json` |
+| `GROK_API_KEY` | xAI Grok API key | `xai-5zM...` |
+| `GIMAGE_CONFIG` | Custom config file path | `~/my-config.md` |
+| `GIMAGE_LOG_LEVEL` | Log level (debug, info, warn, error) | `debug` |
 
 ### Priority Order
 
@@ -1098,12 +1098,12 @@ These environment variables can be used to configure gimage:
 
 ## Exit Codes
 
-| Code | Meaning                  |
+| Code | Meaning |
 | ---- | ------------------------ |
-| 0    | Success                  |
-| 1    | General error            |
-| 2    | Command-line usage error |
-| 130  | Interrupted (Ctrl+C)     |
+| 0 | Success |
+| 1 | General error |
+| 2 | Command-line usage error |
+| 130 | Interrupted (Ctrl+C) |
 
 ---
 
@@ -1135,11 +1135,11 @@ Compress and convert using shell scripts:
 ```bash
 # Using a simple loop
 for file in photos/*.jpg; do
-  gimage convert --input "$file" --format webp
+ gimage convert --input "$file" --format webp
 done
 
 for file in photos/*.webp; do
-  gimage compress --input "$file" --quality 85
+ gimage compress --input "$file" --quality 85
 done
 
 # Or use MCP server batch_convert and batch_compress tools with Claude
@@ -1214,7 +1214,7 @@ for file in web/*.jpg; do gimage convert --input "$file" --format webp --output 
 ```bash
 # Generate multiple variations
 for i in {1..5}; do
-  gimage generate "abstract landscape" --seed $i --output "art-$i.png"
+ gimage generate "abstract landscape" --seed $i --output "art-$i.png"
 done
 
 # Generate different styles

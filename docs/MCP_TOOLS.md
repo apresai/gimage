@@ -27,21 +27,21 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 ### Parameters
 
-| Parameter       | Type    | Required | Default                      | Description                                                                                    |
+| Parameter | Type | Required | Default | Description |
 | --------------- | ------- | -------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `prompt`        | string  | Yes      | -                            | Text description of the image to generate                                                      |
-| `output`        | string  | No       | Auto-generated               | Output file path                                                                               |
-| `size`          | string  | No       | "1024x1024"                  | Image dimensions                                                                               |
-| `model`         | string  | No       | "gemini-3-pro-image"         | AI model to use                                                                                |
-| `image_size`    | string  | No       | -                            | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
-| `aspect_ratio`  | string  | No       | -                            | Aspect ratio. Gemini 3+: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5". Grok Imagine also: "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto" |
-| `style`         | string  | No       | -                            | Image style (photorealistic, artistic, anime)                                                  |
-| `seed`          | integer | No       | -                            | Random seed for reproducibility                                                                |
-| `count`         | integer | No       | 1                            | Number of images to generate (1-10; Grok returns N exactly, Gemini family is best-effort)      |
-| `output_format` | string  | No       | -                            | Output format for Vertex AI: "png", "jpeg", or "webp"                                          |
-| `thinking`      | string  | No       | -                            | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
-| `grounding`     | boolean | No       | `false`                      | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
-| `input_images`  | array of strings | No | -                            | Local file paths to reference images for editing/composition. PNG/JPEG/WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits. |
+| `prompt` | string | Yes | - | Text description of the image to generate |
+| `output` | string | No | Auto-generated | Output file path |
+| `size` | string | No | "1024x1024" | Image dimensions |
+| `model` | string | No | "gemini-3-pro-image" | AI model to use |
+| `image_size` | string | No | - | Native resolution for Gemini 3+ (Pro/3.1 Flash): "1K", "2K", or "4K"; also Grok Imagine / Quality: "1K" or "2K" only |
+| `aspect_ratio` | string | No | - | Aspect ratio. Gemini 3+: "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5". Grok Imagine also: "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto" |
+| `style` | string | No | - | Image style (photorealistic, artistic, anime) |
+| `seed` | integer | No | - | Random seed for reproducibility |
+| `count` | integer | No | 1 | Number of images to generate (1-10; Grok returns N exactly, Gemini family is best-effort) |
+| `output_format` | string | No | - | Output format for Vertex AI: "png", "jpeg", or "webp" |
+| `thinking` | string | No | - | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
+| `grounding` | boolean | No | `false` | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
+| `input_images` | array of strings | No | - | Local file paths to reference images for editing/composition. PNG/JPEG/WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits. |
 
 ### Supported Sizes
 
@@ -74,23 +74,23 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 - **grok-imagine-image** (fast and affordable, $0.02/image, supports aspect ratio and image-size)
 - **grok-imagine-image-quality** (quality tier, $0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro` retired by xAI 2026-05-15)
-  - Note: Grok models do not support size, style, or seed parameters (reported as warnings if passed)
-  - Grok Imagine models support `aspect_ratio` and `image_size` (1K or 2K) parameters
+ - Note: Grok models do not support size, style, or seed parameters (reported as warnings if passed)
+ - Grok Imagine models support `aspect_ratio` (14 values including `auto`), `image_size` (1K or 2K), and `input_images` (max 3; routes to `/images/edits`)
 
 ### Returns
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/generated_1.png",
-  "saved_paths": [
-    "/absolute/path/to/generated_1.png",
-    "/absolute/path/to/generated_2.png"
-  ],
-  "count": 2,
-  "size": "1024x1024",
-  "model": "gemini-3-pro-image",
-  "prompt": "a sunset over mountains"
+ "success": true,
+ "output_path": "/absolute/path/to/generated_1.png",
+ "saved_paths": [
+ "/absolute/path/to/generated_1.png",
+ "/absolute/path/to/generated_2.png"
+ ],
+ "count": 2,
+ "size": "1024x1024",
+ "model": "gemini-3-pro-image",
+ "prompt": "a sunset over mountains"
 }
 ```
 
@@ -196,21 +196,21 @@ Resizes an image to target width and height using high-quality Lanczos resamplin
 
 ### Parameters
 
-| Parameter | Type    | Required | Default | Description                                                                                                                                 |
+| Parameter | Type | Required | Default | Description |
 | --------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `input`   | string  | Yes      | -       | Input image file path                                                                                                                       |
-| `width`   | integer | Yes      | -       | Target width in pixels (minimum: 1)                                                                                                         |
-| `height`  | integer | Yes      | -       | Target height in pixels (minimum: 1)                                                                                                        |
-| `mode`    | string  | No       | "crop"  | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), or "stretch" (force exact dimensions)                                        |
-| `output`  | string  | No       | auto    | Output file path (default: auto-generated)                                                                                                  |
+| `input` | string | Yes | - | Input image file path |
+| `width` | integer | Yes | - | Target width in pixels (minimum: 1) |
+| `height` | integer | Yes | - | Target height in pixels (minimum: 1) |
+| `mode` | string | No | "crop" | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), or "stretch" (force exact dimensions) |
+| `output` | string | No | auto | Output file path (default: auto-generated) |
 
 ### Resize Modes Explained
 
-| Mode    | Aspect Ratio | Output Size              | Use Case                       |
+| Mode | Aspect Ratio | Output Size | Use Case |
 | ------- | ------------ | ------------------------ | ------------------------------ |
-| crop    | Preserved    | Exact target dimensions  | Thumbnails, avatars, cards     |
-| fit     | Preserved    | Fits within target       | Galleries, constrained layouts |
-| stretch | Not preserved| Exact target dimensions  | Exact sizing, backgrounds      |
+| crop | Preserved | Exact target dimensions | Thumbnails, avatars, cards |
+| fit | Preserved | Fits within target | Galleries, constrained layouts |
+| stretch | Not preserved| Exact target dimensions | Exact sizing, backgrounds |
 
 **Example with 200x100 image (2:1 ratio) resized to 100x100 target:**
 - `crop`: 100x100 (scales height to 100, crops width to fit)
@@ -221,11 +221,11 @@ Resizes an image to target width and height using high-quality Lanczos resamplin
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/photo_resized.jpg",
-  "original_size": "3000x2000",
-  "new_size": "800x600",
-  "mode": "crop"
+ "success": true,
+ "output_path": "/absolute/path/to/photo_resized.jpg",
+ "original_size": "3000x2000",
+ "new_size": "800x600",
+ "mode": "crop"
 }
 ```
 
@@ -249,11 +249,11 @@ Scales an image proportionally by a multiplication factor. Use this when you wan
 
 ### Parameters
 
-| Parameter | Type   | Required | Description                                |
+| Parameter | Type | Required | Description |
 | --------- | ------ | -------- | ------------------------------------------ |
-| `input`   | string | Yes      | Input image file path                      |
-| `factor`  | number | Yes      | Scale factor (0.1 to 10.0)                 |
-| `output`  | string | No       | Output file path (default: auto-generated) |
+| `input` | string | Yes | Input image file path |
+| `factor` | number | Yes | Scale factor (0.1 to 10.0) |
+| `output` | string | No | Output file path (default: auto-generated) |
 
 ### Scale Factor Examples
 
@@ -266,11 +266,11 @@ Scales an image proportionally by a multiplication factor. Use this when you wan
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/photo_scaled.jpg",
-  "scale_factor": 0.5,
-  "original_size": "2000x1500",
-  "new_size": "1000x750"
+ "success": true,
+ "output_path": "/absolute/path/to/photo_scaled.jpg",
+ "scale_factor": 0.5,
+ "original_size": "2000x1500",
+ "new_size": "1000x750"
 }
 ```
 
@@ -294,23 +294,23 @@ Extracts a rectangular region from an image. Specify the top-left corner coordin
 
 ### Parameters
 
-| Parameter | Type    | Required | Description                                     |
+| Parameter | Type | Required | Description |
 | --------- | ------- | -------- | ----------------------------------------------- |
-| `input`   | string  | Yes      | Input image file path                           |
-| `x`       | integer | Yes      | X coordinate of top-left corner (0 = left edge) |
-| `y`       | integer | Yes      | Y coordinate of top-left corner (0 = top edge)  |
-| `width`   | integer | Yes      | Width of crop region in pixels (minimum: 1)     |
-| `height`  | integer | Yes      | Height of crop region in pixels (minimum: 1)    |
-| `output`  | string  | No       | Output file path (default: auto-generated)      |
+| `input` | string | Yes | Input image file path |
+| `x` | integer | Yes | X coordinate of top-left corner (0 = left edge) |
+| `y` | integer | Yes | Y coordinate of top-left corner (0 = top edge) |
+| `width` | integer | Yes | Width of crop region in pixels (minimum: 1) |
+| `height` | integer | Yes | Height of crop region in pixels (minimum: 1) |
+| `output` | string | No | Output file path (default: auto-generated) |
 
 ### Returns
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/photo_cropped.jpg",
-  "crop_region": "(100,100,800,600)",
-  "crop_size": "800x600"
+ "success": true,
+ "output_path": "/absolute/path/to/photo_cropped.jpg",
+ "crop_region": "(100,100,800,600)",
+ "crop_size": "800x600"
 }
 ```
 
@@ -333,11 +333,11 @@ Reduces image file size while maintaining visual quality. Quality ranges from 1 
 
 ### Parameters
 
-| Parameter | Type    | Required | Default        | Description                 |
+| Parameter | Type | Required | Default | Description |
 | --------- | ------- | -------- | -------------- | --------------------------- |
-| `input`   | string  | Yes      | -              | Input image file path       |
-| `quality` | integer | No       | 90             | Compression quality (1-100) |
-| `output`  | string  | No       | Auto-generated | Output file path            |
+| `input` | string | Yes | - | Input image file path |
+| `quality` | integer | No | 90 | Compression quality (1-100) |
+| `output` | string | No | Auto-generated | Output file path |
 
 ### Recommended Quality Settings
 
@@ -351,16 +351,16 @@ Reduces image file size while maintaining visual quality. Quality ranges from 1 
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/photo_compressed.jpg",
-  "quality": 85,
-  "original_size_bytes": 2500000,
-  "compressed_size_bytes": 450000,
-  "compression_ratio": "0.18",
-  "savings_bytes": 2050000,
-  "savings_percent": "82.0%",
-  "original_size_human": "2.4 MB",
-  "compressed_size_human": "439.5 KB"
+ "success": true,
+ "output_path": "/absolute/path/to/photo_compressed.jpg",
+ "quality": 85,
+ "original_size_bytes": 2500000,
+ "compressed_size_bytes": 450000,
+ "compression_ratio": "0.18",
+ "savings_bytes": 2050000,
+ "savings_percent": "82.0%",
+ "original_size_human": "2.4 MB",
+ "compressed_size_human": "439.5 KB"
 }
 ```
 
@@ -384,11 +384,11 @@ Converts images between PNG, JPG/JPEG, WebP, GIF, TIFF, and BMP formats. Useful 
 
 ### Parameters
 
-| Parameter | Type   | Required | Description                                                   |
+| Parameter | Type | Required | Description |
 | --------- | ------ | -------- | ------------------------------------------------------------- |
-| `input`   | string | Yes      | Input image file path                                         |
-| `format`  | string | Yes      | Target format (png, jpg, jpeg, webp, gif, tiff, bmp)          |
-| `output`  | string | No       | Output file path (default: auto-generated with new extension) |
+| `input` | string | Yes | Input image file path |
+| `format` | string | Yes | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
+| `output` | string | No | Output file path (default: auto-generated with new extension) |
 
 ### Supported Formats
 
@@ -403,12 +403,12 @@ Converts images between PNG, JPG/JPEG, WebP, GIF, TIFF, and BMP formats. Useful 
 
 ```json
 {
-  "success": true,
-  "output_path": "/absolute/path/to/image.webp",
-  "original_format": "png",
-  "new_format": "webp",
-  "original_size": "1.2 MB",
-  "new_size": "245.3 KB"
+ "success": true,
+ "output_path": "/absolute/path/to/image.webp",
+ "original_format": "png",
+ "new_format": "webp",
+ "original_size": "1.2 MB",
+ "new_size": "245.3 KB"
 }
 ```
 
@@ -432,28 +432,28 @@ Processes all image files (PNG, JPG, WebP, GIF, TIFF, BMP) in a directory and re
 
 ### Parameters
 
-| Parameter    | Type    | Required | Default   | Description                                                             |
+| Parameter | Type | Required | Default | Description |
 | ------------ | ------- | -------- | --------- | ----------------------------------------------------------------------- |
-| `input_dir`  | string  | Yes      | -         | Input directory containing images                                       |
-| `width`      | integer | Yes      | -         | Target width in pixels (minimum: 1)                                     |
-| `height`     | integer | Yes      | -         | Target height in pixels (minimum: 1)                                    |
-| `mode`       | string  | No       | "crop"    | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), "stretch" |
-| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist)                             |
-| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)                                       |
+| `input_dir` | string | Yes | - | Input directory containing images |
+| `width` | integer | Yes | - | Target width in pixels (minimum: 1) |
+| `height` | integer | Yes | - | Target height in pixels (minimum: 1) |
+| `mode` | string | No | "crop" | Resize mode: "crop" (fill & crop), "fit" (fit within bounds), "stretch" |
+| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
+| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
 
 ### Returns
 
 ```json
 {
-  "success": true,
-  "processed": 45,
-  "failed": 2,
-  "total": 47,
-  "output_dir": "/absolute/path/to/output",
-  "errors": [
-    "corrupted.jpg: failed to decode image",
-    "locked.png: permission denied"
-  ]
+ "success": true,
+ "processed": 45,
+ "failed": 2,
+ "total": 47,
+ "output_dir": "/absolute/path/to/output",
+ "errors": [
+ "corrupted.jpg: failed to decode image",
+ "locked.png: permission denied"
+ ]
 }
 ```
 
@@ -477,26 +477,26 @@ Processes all image files in a directory with specified quality setting to reduc
 
 ### Parameters
 
-| Parameter    | Type    | Required | Default   | Description                                 |
+| Parameter | Type | Required | Default | Description |
 | ------------ | ------- | -------- | --------- | ------------------------------------------- |
-| `input_dir`  | string  | Yes      | -         | Input directory containing images           |
-| `quality`    | integer | No       | 85        | Compression quality (1-100)                 |
-| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist) |
-| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)           |
+| `input_dir` | string | Yes | - | Input directory containing images |
+| `quality` | integer | No | 85 | Compression quality (1-100) |
+| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
+| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
 
 ### Returns
 
 ```json
 {
-  "success": true,
-  "processed": 50,
-  "failed": 0,
-  "total": 50,
-  "output_dir": "/absolute/path/to/compressed",
-  "total_original_size": "125.5 MB",
-  "total_new_size": "28.3 MB",
-  "total_savings": "97.2 MB",
-  "savings_percent": "77.5%"
+ "success": true,
+ "processed": 50,
+ "failed": 0,
+ "total": 50,
+ "output_dir": "/absolute/path/to/compressed",
+ "total_original_size": "125.5 MB",
+ "total_new_size": "28.3 MB",
+ "total_savings": "97.2 MB",
+ "savings_percent": "77.5%"
 }
 ```
 
@@ -519,22 +519,22 @@ Converts all image files in a directory to a specified format. Useful for conver
 
 ### Parameters
 
-| Parameter    | Type    | Required | Default   | Description                                          |
+| Parameter | Type | Required | Default | Description |
 | ------------ | ------- | -------- | --------- | ---------------------------------------------------- |
-| `input_dir`  | string  | Yes      | -         | Input directory containing images                    |
-| `format`     | string  | Yes      | -         | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
-| `output_dir` | string  | Yes      | -         | Output directory (created if doesn't exist)          |
-| `workers`    | integer | No       | CPU cores | Number of parallel workers (1-16)                    |
+| `input_dir` | string | Yes | - | Input directory containing images |
+| `format` | string | Yes | - | Target format (png, jpg, jpeg, webp, gif, tiff, bmp) |
+| `output_dir` | string | Yes | - | Output directory (created if doesn't exist) |
+| `workers` | integer | No | CPU cores | Number of parallel workers (1-16) |
 
 ### Returns
 
 ```json
 {
-  "success": true,
-  "processed": 30,
-  "failed": 0,
-  "total": 30,
-  "output_dir": "/absolute/path/to/webp-images"
+ "success": true,
+ "processed": 30,
+ "failed": 0,
+ "total": 30,
+ "output_dir": "/absolute/path/to/webp-images"
 }
 ```
 
@@ -563,28 +563,28 @@ None
 
 ```json
 {
-  "providers": [
-    {
-      "provider_id": "gemini/pro-3",
-      "name": "Gemini 3 Pro (via Gemini API)",
-      "api": "gemini",
-      "model_id": "gemini-3-pro-image",
-      "available": true,
-      "pricing_summary": "$0.1340/image",
-      "supports_styles": true,
-      "supports_seed": true,
-      "supports_image_size": true,
-      "supports_aspect_ratio": true,
-      "supports_thinking": true,
-      "supports_grounding": true,
-      "supports_input_images": true,
-      "supports_output_format": false,
-      "supports_multiple_images": true
-    }
-    // ... more providers
-  ],
-  "total": 9,
-  "configured": 1
+ "providers": [
+ {
+ "provider_id": "gemini/pro-3",
+ "name": "Gemini 3 Pro (via Gemini API)",
+ "api": "gemini",
+ "model_id": "gemini-3-pro-image",
+ "available": true,
+ "pricing_summary": "$0.1340/image",
+ "supports_styles": true,
+ "supports_seed": true,
+ "supports_image_size": true,
+ "supports_aspect_ratio": true,
+ "supports_thinking": true,
+ "supports_grounding": true,
+ "supports_input_images": true,
+ "supports_output_format": false,
+ "supports_multiple_images": true
+ }
+ // ... more providers
+ ],
+ "total": 9,
+ "configured": 1
 }
 ```
 
@@ -604,10 +604,10 @@ All tools return errors in a consistent format:
 
 ```json
 {
-  "error": {
-    "code": -32603,
-    "message": "Tool execution failed: file not found: /path/to/missing.jpg"
-  }
+ "error": {
+ "code": -32603,
+ "message": "Tool execution failed: file not found: /path/to/missing.jpg"
+ }
 }
 ```
 
@@ -621,9 +621,9 @@ All tools return errors in a consistent format:
 
 Error messages are designed to be clear and actionable:
 
-- ✅ "Failed to open image: file not found: /path/to/photo.jpg"
-- ✅ "Crop region (100,100,2000,1500) extends beyond image bounds (1000x800)"
-- ✅ "Quality must be between 1 and 100, got: 150"
+- ✓ "Failed to open image: file not found: /path/to/photo.jpg"
+- ✓ "Crop region (100,100,2000,1500) extends beyond image bounds (1000x800)"
+- ✓ "Quality must be between 1 and 100, got: 150"
 
 ---
 
@@ -634,16 +634,16 @@ Error messages are designed to be clear and actionable:
 - **Fast**: resize, scale, crop, convert (< 1 second for typical images)
 - **Medium**: compress (1-3 seconds depending on size and quality)
 - **Slow**: generate (5-30 seconds depending on model and size)
-  - Gemini 2.5 Flash: ~5-10 seconds
-  - Gemini 3.1 Flash via Vertex (vertex-flash): ~10-20 seconds
+ - Gemini 2.5 Flash: ~5-10 seconds
+ - Gemini 3.1 Flash via Vertex (vertex-flash): ~10-20 seconds
 
 ### Batch Operations
 
 - Uses parallel workers (default: number of CPU cores)
 - Processing 100 images:
-  - Resize: ~10-30 seconds (4 workers)
-  - Compress: ~20-60 seconds (4 workers)
-  - Convert: ~15-45 seconds (4 workers)
+ - Resize: ~10-30 seconds (4 workers)
+ - Compress: ~20-60 seconds (4 workers)
+ - Convert: ~15-45 seconds (4 workers)
 
 ### Provider-Specific Parameters
 
@@ -679,13 +679,13 @@ Different providers support different advanced parameters:
 2. Increase workers for faster batch processing (up to 16)
 3. Use smaller images when possible
 4. For generation:
-   - Use **Gemini 2.5 Flash** for affordable generation ($0.039/image)
-   - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
-   - Use **vertex-flash** for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image, medium thinking default)
-   - Use **vertex-flash-fast** for the same Vertex backend with minimal thinking default
-   - Use **vertex-flash-ultra** for the same Vertex backend with high thinking default
-   - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
-   - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
+ - Use **Gemini 2.5 Flash** for affordable generation ($0.039/image)
+ - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
+ - Use **vertex-flash** for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image, medium thinking default)
+ - Use **vertex-flash-fast** for the same Vertex backend with minimal thinking default
+ - Use **vertex-flash-ultra** for the same Vertex backend with high thinking default
+ - Use **Grok Imagine** for fast, affordable generation ($0.02/image)
+ - Use **Grok Imagine Quality** for higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---

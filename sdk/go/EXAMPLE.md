@@ -65,9 +65,9 @@ func main() {
 	// Example 2: Generate image with Gemini
 	fmt.Println("2. Generating image with Gemini...")
 	genResp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
-		Prompt:         "a sunset over mountains with vibrant colors",
-		Model:          stringPtr("gemini-2.5-flash-image"),
-		Size:           stringPtr("1024x1024"),
+		Prompt: "a sunset over mountains with vibrant colors",
+		Model: stringPtr("gemini-2.5-flash-image"),
+		Size: stringPtr("1024x1024"),
 		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("base64")),
 	})
 	if err != nil {
@@ -77,11 +77,11 @@ func main() {
 
 	if genResp.StatusCode == 200 {
 		var result struct {
-			Image      string `json:"image"`
-			Width      int    `json:"width"`
-			Height     int    `json:"height"`
-			Format     string `json:"format"`
-			SizeBytes  int    `json:"size_bytes"`
+			Image string `json:"image"`
+			Width int `json:"width"`
+			Height int `json:"height"`
+			Format string `json:"format"`
+			SizeBytes int `json:"size_bytes"`
 		}
 
 		body, _ := io.ReadAll(genResp.Body)
@@ -90,9 +90,9 @@ func main() {
 		}
 
 		fmt.Printf("✓ Image generated!\n")
-		fmt.Printf("  Size: %dx%d\n", result.Width, result.Height)
-		fmt.Printf("  Format: %s\n", result.Format)
-		fmt.Printf("  Size: %d bytes\n", result.SizeBytes)
+		fmt.Printf(" Size: %dx%d\n", result.Width, result.Height)
+		fmt.Printf(" Format: %s\n", result.Format)
+		fmt.Printf(" Size: %d bytes\n", result.SizeBytes)
 
 		// Save to file
 		imageData, err := base64.StdEncoding.DecodeString(result.Image)
@@ -105,16 +105,16 @@ func main() {
 			log.Fatalf("Failed to save image: %v", err)
 		}
 
-		fmt.Printf("  Saved to: %s\n\n", filename)
+		fmt.Printf(" Saved to: %s\n\n", filename)
 	}
 
 	// Example 3: Generate with S3 URL response (for large images)
 	fmt.Println("3. Generating large image with S3 URL...")
 	s3Resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
-		Prompt:         "futuristic city with flying cars, ultra detailed",
-		Model:          stringPtr("gemini-2.5-flash-image"),
-		Size:           stringPtr("1024x1024"),
-		Style:          (*gimage.ImageStyle)(stringPtr("photorealistic")),
+		Prompt: "futuristic city with flying cars, ultra detailed",
+		Model: stringPtr("gemini-2.5-flash-image"),
+		Size: stringPtr("1024x1024"),
+		Style: (*gimage.ImageStyle)(stringPtr("photorealistic")),
 		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("s3_url")),
 	})
 	if err != nil {
@@ -124,12 +124,12 @@ func main() {
 
 	if s3Resp.StatusCode == 200 {
 		var result struct {
-			S3URL        string `json:"s3_url"`
-			S3Key        string `json:"s3_key"`
-			Width        int    `json:"width"`
-			Height       int    `json:"height"`
-			Format       string `json:"format"`
-			ExpiresIn    int    `json:"expires_in"`
+			S3URL string `json:"s3_url"`
+			S3Key string `json:"s3_key"`
+			Width int `json:"width"`
+			Height int `json:"height"`
+			Format string `json:"format"`
+			ExpiresIn int `json:"expires_in"`
 		}
 
 		body, _ := io.ReadAll(s3Resp.Body)
@@ -138,32 +138,32 @@ func main() {
 		}
 
 		fmt.Printf("✓ Image uploaded to S3!\n")
-		fmt.Printf("  URL: %s\n", result.S3URL)
-		fmt.Printf("  Expires in: %d seconds\n", result.ExpiresIn)
-		fmt.Printf("  Size: %dx%d\n\n", result.Width, result.Height)
+		fmt.Printf(" URL: %s\n", result.S3URL)
+		fmt.Printf(" Expires in: %d seconds\n", result.ExpiresIn)
+		fmt.Printf(" Size: %dx%d\n\n", result.Width, result.Height)
 	}
 
 	// Example 4: Gemini 3+ compositional editing with reference images + thinking
 	fmt.Println("4. Compositional editing with Gemini 3.1 Flash...")
 	thinkingLevel := gimage.GenerateRequestThinkingLevelLow
 	composeResp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
-		Prompt:        "place this character on a beach at golden hour, cinematic lighting",
-		Model:         stringPtr("gemini-3.1-flash-image"),
-		ImageSize:     stringPtr("2K"),
-		AspectRatio:   stringPtr("16:9"),
+		Prompt: "place this character on a beach at golden hour, cinematic lighting",
+		Model: stringPtr("gemini-3.1-flash-image"),
+		ImageSize: stringPtr("2K"),
+		AspectRatio: stringPtr("16:9"),
 		// InputImages on the wire are local paths the server reads; for the
-		// HTTP API surface this field is expected as a string slice — see
+		// HTTP API surface this field is expected as a string slice - see
 		// the OpenAPI spec for the deployment-specific convention.
-		InputImages:   &[]string{"/path/to/character.png"},
+		InputImages: &[]string{"/path/to/character.png"},
 		ThinkingLevel: &thinkingLevel,
-		Grounding:     boolPtr(false), // enable for current/real-world references
+		Grounding: boolPtr(false), // enable for current/real-world references
 	})
 	if err != nil {
 		log.Fatalf("Compositional edit failed: %v", err)
 	}
 	defer composeResp.Body.Close()
 	if composeResp.StatusCode == 200 {
-		fmt.Println("✓ Compositional edit complete (Gemini 3+ exclusive — silently ignored on other providers)")
+		fmt.Println("✓ Compositional edit complete (Gemini 3+ exclusive - silently ignored on other providers)")
 	}
 
 	fmt.Println("✓ All examples completed successfully!")
@@ -196,16 +196,16 @@ go run example.go
 
 2. Generating image with Gemini...
 ✓ Image generated!
-  Size: 1024x1024
-  Format: png
-  Size: 524288 bytes
-  Saved to: generated-sunset.png
+ Size: 1024x1024
+ Format: png
+ Size: 524288 bytes
+ Saved to: generated-sunset.png
 
 3. Generating large image with S3 URL...
 ✓ Image uploaded to S3!
-  URL: https://gimage-storage-production.s3.amazonaws.com/images/1234567890-abc.png?X-Amz-...
-  Expires in: 3600 seconds
-  Size: 1024x1024
+ URL: https://gimage-storage-production.s3.amazonaws.com/images/1234567890-abc.png?X-Amz-...
+ Expires in: 3600 seconds
+ Size: 1024x1024
 
 ✓ All examples completed successfully!
 ```
@@ -216,8 +216,8 @@ You can configure API keys using environment variables instead of hardcoding:
 
 ```bash
 export GIMAGE_API_KEY="your-api-key"
-export GEMINI_API_KEY="your-gemini-key"  # For AI generation
-export VERTEX_API_KEY="your-vertex-key"  # For Vertex AI
+export GEMINI_API_KEY="your-gemini-key" # For AI generation
+export VERTEX_API_KEY="your-vertex-key" # For Vertex AI
 ```
 
 ## Error Handling

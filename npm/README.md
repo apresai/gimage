@@ -24,12 +24,12 @@ Add to your MCP configuration
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "npx",
-      "args": ["-y", "@apresai/gimage-mcp"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "npx",
+ "args": ["-y", "@apresai/gimage-mcp"]
+ }
+ }
 }
 ```
 

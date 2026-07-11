@@ -73,12 +73,12 @@ Edit your Claude Desktop MCP configuration file:
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "npx",
-      "args": ["-y", "@apresai/gimage-mcp"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "npx",
+ "args": ["-y", "@apresai/gimage-mcp"]
+ }
+ }
 }
 ```
 
@@ -86,12 +86,12 @@ Edit your Claude Desktop MCP configuration file:
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "gimage",
-      "args": ["serve"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "gimage",
+ "args": ["serve"]
+ }
+ }
 }
 ```
 
@@ -131,14 +131,14 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **In-prompt exclusions**: State what to exclude directly in the prompt text
 - **Reproducible results**: Use seeds for consistent generation
 - **Advanced controls**:
-  - Aspect ratio (Gemini 3 Pro: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
-  - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
-  - Output format (Vertex AI: PNG, JPEG, WebP)
-  - Batch generation (max count varies by provider)
-- **Gemini 3+ exclusives** (ignored by other providers):
-  - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
-  - `grounding` (bool): enables Google Search grounding (billed per search query)
-  - `input_images` (array of file paths): reference images for editing/composition. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses xAI `/images/edits`.
+ - Aspect ratio (Gemini 3+: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3; Grok also: 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
+ - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
+ - Output format (Vertex AI: PNG, JPEG, WebP)
+ - Batch generation (max count varies by provider; Grok returns N exactly up to 10)
+ - Reference-image editing via `input_images` (Grok max 3 via `/images/edits`; Gemini caps 3/11/14 by model)
+- **Gemini 3+ exclusives** (`thinking`, `grounding`; ignored by other providers):
+ - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
+ - `grounding` (bool): enables Google Search grounding (billed per search query)
 
 **Example Prompts:**
 
@@ -152,11 +152,12 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 "Generate a portrait in WebP format for web optimization"
 "Drop this product on a marble counter under soft studio light" (with input_images=["product.png"])
 "Place this character in this environment, cinematic lighting" (with input_images=["character.png","scene.jpg"])
+"Render this photo as a pencil sketch" (with model="grok-imagine-image-quality", input_images=["photo.png"])
 "Generate an infographic showing Q3 revenue with sharp text" (with thinking="high", image_size="4K")
 "Generate the official Nintendo Switch 2 console" (with grounding=true)
 ```
 
-### 🖼️ Image Processing
+### <img src="icons/image.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="icons/image-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Image Processing
 
 #### Resize
 
@@ -219,7 +220,7 @@ Change image format (PNG, JPG, WebP, GIF, TIFF, BMP).
 "Change all images to WebP for better web performance"
 ```
 
-### ⚡ Batch Operations
+### <img src="icons/bolt.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="icons/bolt-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Batch Operations
 
 Process multiple images concurrently for efficient workflows.
 
@@ -326,34 +327,34 @@ Claude will use `generate_image` followed by `convert_image` to produce an optim
 
 1. **Verify gimage is installed**
 
-   ```bash
-   which gimage
-   ```
+ ```bash
+ which gimage
+ ```
 
-   Should show the path to gimage binary.
+ Should show the path to gimage binary.
 
 2. **Test manual startup**
 
-   ```bash
-   gimage serve
-   ```
+ ```bash
+ gimage serve
+ ```
 
-   Should start without errors. Press Ctrl+C to stop.
+ Should start without errors. Press Ctrl+C to stop.
 
 3. **Check Claude Desktop configuration**
 
-   - Verify JSON syntax is correct
-   - Ensure file path matches your system
-   - Check for typos in command/args
+ - Verify JSON syntax is correct
+ - Ensure file path matches your system
+ - Check for typos in command/args
 
 4. **Restart Claude Desktop**
 
-   - Quit completely (not just close window)
-   - Reopen application
+ - Quit completely (not just close window)
+ - Reopen application
 
 5. **Check Claude logs**
-   - macOS: `~/Library/Logs/Claude/`
-   - Look for error messages related to gimage
+ - macOS: `~/Library/Logs/Claude/`
+ - Look for error messages related to gimage
 
 ### Image Generation Fails
 
@@ -363,47 +364,47 @@ Claude will use `generate_image` followed by `convert_image` to produce an optim
 
 1. **Check authentication status**
 
-   ```bash
-   gimage auth status
-   ```
+ ```bash
+ gimage auth status
+ ```
 
-   This shows which credentials are configured and their sources.
+ This shows which credentials are configured and their sources.
 
 2. **Verify API key is configured**
 
-   ```bash
-   # Use interactive setup
-   gimage auth setup
+ ```bash
+ # Use interactive setup
+ gimage auth setup
 
-   # OR set environment variable (recommended)
-   export GEMINI_API_KEY="your-api-key-here"
-   ```
+ # OR set environment variable (recommended)
+ export GEMINI_API_KEY="your-api-key-here"
+ ```
 
 3. **Test credentials**
 
-   ```bash
-   gimage auth test
-   ```
+ ```bash
+ gimage auth test
+ ```
 
-   This makes real API calls to verify your credentials work.
+ This makes real API calls to verify your credentials work.
 
 4. **Test generation manually**
 
-   ```bash
-   gimage generate "test image"
-   ```
+ ```bash
+ gimage generate "test image"
+ ```
 
-   If this works, MCP server should work too.
+ If this works, MCP server should work too.
 
 5. **Check API key validity**
 
-   - Ensure key hasn't expired
-   - Verify it's correctly copied (no extra spaces)
-   - Get a new key if needed: https://aistudio.google.com/app/apikey
+ - Ensure key hasn't expired
+ - Verify it's correctly copied (no extra spaces)
+ - Get a new key if needed: https://aistudio.google.com/app/apikey
 
 6. **Verify internet connection**
-   - Gemini API requires internet access
-   - Check firewall settings
+ - Gemini API requires internet access
+ - Check firewall settings
 
 ### Permission Errors
 
@@ -413,20 +414,20 @@ Claude will use `generate_image` followed by `convert_image` to produce an optim
 
 1. **Check file permissions**
 
-   ```bash
-   ls -la /path/to/image.jpg
-   ```
+ ```bash
+ ls -la /path/to/image.jpg
+ ```
 
 2. **Ensure write access to output directory**
 
-   ```bash
-   mkdir -p output-folder
-   chmod 755 output-folder
-   ```
+ ```bash
+ mkdir -p output-folder
+ chmod 755 output-folder
+ ```
 
 3. **Use absolute paths**
-   Instead of: `photo.jpg`
-   Use: `/Users/yourname/photos/photo.jpg`
+ Instead of: `photo.jpg`
+ Use: `/Users/yourname/photos/photo.jpg`
 
 ### Batch Operations Slow
 
@@ -435,13 +436,13 @@ Claude will use `generate_image` followed by `convert_image` to produce an optim
 **Solutions**:
 
 1. **Increase workers**
-   "Process all images in photos/ using 8 workers for faster processing"
+ "Process all images in photos/ using 8 workers for faster processing"
 
 2. **Process in smaller batches**
-   Split large directories into smaller chunks
+ Split large directories into smaller chunks
 
 3. **Check disk space**
-   Ensure sufficient space for output files
+ Ensure sufficient space for output files
 
 ---
 
@@ -526,58 +527,58 @@ Claude can chain multiple operations:
 
 1. **Be specific** - Detailed prompts produce better results
 
-   - ✅ "A photorealistic sunset over mountain peaks with orange and purple sky, reflection in a calm lake"
-   - ❌ "Sunset"
+ - ✓ "A photorealistic sunset over mountain peaks with orange and purple sky, reflection in a calm lake"
+ - ✗ "Sunset"
 
 2. **Use style keywords** - Specify the artistic style
 
-   - "photorealistic", "artistic", "anime", "painting", "sketch", etc.
+ - "photorealistic", "artistic", "anime", "painting", "sketch", etc.
 
 3. **State exclusions in the prompt** - Include what you don't want directly in the prompt text (e.g. "no text, no people")
 
-   - "Generate a forest scene with no people, no buildings, no modern objects"
+ - "Generate a forest scene with no people, no buildings, no modern objects"
 
 4. **Try different models** - Each has strengths
 
-   - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
-   - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
-   - vertex-flash: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
-   - vertex-flash-fast: same Vertex-backed Gemini model with minimal thinking default
-   - vertex-flash-ultra: same Vertex-backed Gemini model with high thinking default
-   - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
-   - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
+ - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
+ - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
+ - vertex-flash: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+ - vertex-flash-fast: same Vertex-backed Gemini model with minimal thinking default
+ - vertex-flash-ultra: same Vertex-backed Gemini model with high thinking default
+ - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
+ - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
 
 5. **Use provider-specific features**:
 
-   - Gemini 3 Pro: Aspect ratio (16:9 for landscapes) and native resolution (4K for detail)
-   - Vertex AI: Output format (WebP for web optimization)
-   - Grok: Aspect ratio and resolution controls
+ - Gemini 3 Pro: Aspect ratio (16:9 for landscapes) and native resolution (4K for detail)
+ - Vertex AI: Output format (WebP for web optimization)
+ - Grok: Aspect ratio and resolution controls
 
 6. **Batch generation** - Use count parameter for variations
-   - "Generate 3 variations of..." instead of calling multiple times
-   - Faster and more efficient than sequential generation
+ - "Generate 3 variations of..." instead of calling multiple times
+ - Faster and more efficient than sequential generation
 
 ### Image Processing
 
 1. **Know your target** - Understand final use case
 
-   - Web: 1920x1080 or smaller, WebP format, 85% quality
-   - Print: Larger sizes, PNG/TIFF, 95-100% quality
-   - Mobile: 750x1334, 80% quality
+ - Web: 1920x1080 or smaller, WebP format, 85% quality
+ - Print: Larger sizes, PNG/TIFF, 95-100% quality
+ - Mobile: 750x1334, 80% quality
 
 2. **Batch similar operations** - More efficient
 
-   - Process all images in a folder at once
-   - Use consistent settings across related images
+ - Process all images in a folder at once
+ - Use consistent settings across related images
 
 3. **Preserve originals** - Always work on copies
 
-   - Use explicit output paths
-   - Create separate directories for processed images
+ - Use explicit output paths
+ - Create separate directories for processed images
 
 4. **Check results** - Verify quality meets needs
-   - View processed images before deleting originals
-   - Adjust quality settings if needed
+ - View processed images before deleting originals
+ - Adjust quality settings if needed
 
 ---
 

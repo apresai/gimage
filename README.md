@@ -2,7 +2,7 @@
 
 **Gimage** is a powerful tool for generating AI images and processing them with ease. Built with pure Go for maximum portability.
 
-## 🚀 Three Ways to Use Gimage
+## <img src="docs/icons/rocket.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/rocket-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Three Ways to Use Gimage
 
 ### 1. Command-Line Tool (CLI)
 
@@ -18,7 +18,7 @@ Production-ready serverless REST API for web applications and remote processing.
 
 ## What Can You Do with Gimage?
 
-### 🎨 AI Image Generation
+### <img src="docs/icons/spark.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/spark-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, or xAI Grok
 - Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 2.5 Flash ($0.039/image), Gemini 3.1 Flash via Vertex (standard/fast/ultra), Grok Imagine ($0.02-$0.07/image)
@@ -27,7 +27,7 @@ Production-ready serverless REST API for web applications and remote processing.
 - Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+ / Grok), aspect ratio (Grok 14 values), reference-image editing (Gemini, Vertex, Grok)
 - Batch generation: create multiple images at once
 
-### 🛠️ Image Processing
+### <img src="docs/icons/tools.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/tools-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Image Processing
 
 - **Resize** - Change image dimensions while preserving aspect ratio (crop or fit)
 - **Scale** - Scale images by factor (2x, 0.5x, etc.)
@@ -35,13 +35,13 @@ Production-ready serverless REST API for web applications and remote processing.
 - **Compress** - Reduce file size while maintaining quality
 - **Convert** - Transform between formats (PNG, JPG, WebP, GIF, TIFF, BMP)
 
-### ⚡ Batch Processing (MCP Server Only)
+### <img src="docs/icons/bolt.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/bolt-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Batch Processing (MCP Server Only)
 
 - Process multiple images concurrently via MCP server
 - Optimized for AI assistants (Claude Desktop)
 - CLI users: use shell scripts or `find` + `xargs`
 
-### 🔌 Integration Options
+### <img src="docs/icons/plug.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/plug-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Integration Options
 
 - **Claude Desktop**: Run as MCP server
 - **Web Applications**: REST API via AWS Lambda
@@ -66,24 +66,17 @@ brew upgrade apresai/tap/gimage
 
 #### Manual Installation
 
-Download the latest release for your platform:
+Prefer Homebrew when you can. Otherwise download the archive for your platform from the [latest release](https://github.com/apresai/gimage/releases/latest), extract it, and put `gimage` on your `PATH`:
 
 ```bash
-# macOS (Intel)
-curl -L https://github.com/apresai/gimage/releases/latest/download/gimage-darwin-amd64 -o gimage
-chmod +x gimage
-sudo mv gimage /usr/local/bin/
-
-# macOS (Apple Silicon)
-curl -L https://github.com/apresai/gimage/releases/latest/download/gimage-darwin-arm64 -o gimage
-chmod +x gimage
-sudo mv gimage /usr/local/bin/
-
-# Linux
-curl -L https://github.com/apresai/gimage/releases/latest/download/gimage-linux-amd64 -o gimage
+# Example: macOS Apple Silicon (asset names include the version, e.g. gimage_1.2.150_Darwin_arm64.tar.gz)
+gh release download --repo apresai/gimage --pattern '*Darwin_arm64.tar.gz'
+tar -xzf gimage_*_Darwin_arm64.tar.gz
 chmod +x gimage
 sudo mv gimage /usr/local/bin/
 ```
+
+Other common patterns: `*Darwin_x86_64.tar.gz`, `*Linux_x86_64.tar.gz`, `*Linux_arm64.tar.gz`, `*Windows_x86_64.tar.gz`. Archives also include `gimage-deploy` on supported platforms.
 
 ### 2. Setup Authentication
 
@@ -154,15 +147,15 @@ gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
 
 # Compositional editing with reference images (Gemini, Vertex, or Grok)
 gimage generate "place this product on a marble counter, soft light" \
-  --model gemini-3.1-flash --input-image product.png
+ --model gemini-3.1-flash --input-image product.png
 
 # Grok image edit via xAI /images/edits (max 3 reference images)
 gimage generate "render this as a pencil sketch with detailed shading" \
-  --model grok-quality --input-image photo.png --image-size 2K
+ --model grok-quality --input-image photo.png --image-size 2K
 
-# Combine multiple references (character + scene) — caps: Grok=3, Gemini 2.5=3, 3 Pro=11, 3.1 Flash=14
+# Combine multiple references (character + scene) - caps: Grok=3, Gemini 2.5=3, 3 Pro=11, 3.1 Flash=14
 gimage generate "this character in this environment, cinematic" \
-  --model gemini-3-pro --input-image character.png --input-image scene.jpg
+ --model gemini-3-pro --input-image character.png --input-image scene.jpg
 
 # Higher reasoning for complex layouts/text (Gemini 3+)
 gimage generate "infographic 'Q3 +18%'" --model gemini-3-pro --image-size 4K --thinking high
@@ -186,7 +179,7 @@ gimage convert --input sunset.png --format webp
 # cwebp -q 85 -mt -sharp_yuv -preset photo sunset.png -o sunset.webp
 ```
 
-> **Tip: Always convert to WebP** — AI-generated PNGs are typically 1-3 MB. Converting to WebP at quality 85 reduces file size by 90%+ with no visible quality loss. Use `gimage convert --format webp` or `cwebp -q 85 -mt -sharp_yuv -preset photo` for best results.
+> **Tip: Always convert to WebP** - AI-generated PNGs are typically 1-3 MB. Converting to WebP at quality 85 reduces file size by 90%+ with no visible quality loss. Use `gimage convert --format webp` or `cwebp -q 85 -mt -sharp_yuv -preset photo` for best results.
 
 ### Image Processing
 
@@ -264,7 +257,7 @@ Format (markdown with `**key**: value`):
 ```markdown
 # Gimage Configuration
 
-⚠️ SECURITY WARNING ⚠️
+SECURITY WARNING
 This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 
 **gemini_api_key**: your-gemini-key
@@ -312,7 +305,7 @@ export GROK_API_KEY="xai-your-key"
 **Check credential conflicts**:
 
 ```bash
-gimage auth status  # Shows which credentials are active and their sources
+gimage auth status # Shows which credentials are active and their sources
 ```
 
 ## Available Models
@@ -321,22 +314,22 @@ gimage auth status  # Shows which credentials are active and their sources
 
 - **`gemini-3-pro-image`** (default)
 
-  - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
-  - Native 4K resolution, sharp text rendering
-  - Best for: Professional work, text-heavy images, diagrams
+ - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
+ - Native 4K resolution, sharp text rendering
+ - Best for: Professional work, text-heavy images, diagrams
 
 - **`gemini-3.1-flash-image`** (4K flash)
 
-  - Pricing tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
-  - Improved text rendering vs Flash 2.5
-  - Best for: High-quality images at flash speed
+ - Pricing tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
+ - Improved text rendering vs Flash 2.5
+ - Best for: High-quality images at flash speed
 
 - **`gemini-2.5-flash-image`** (affordable, recommended for beginners)
 
-  - Pricing: $0.039/image
-  - Resolution: up to 1024x1024 (also supports 1024x1792, 1792x1024)
-  - Fast generation (~2-3 seconds)
-  - Best for: Quick iterations, development, testing
+ - Pricing: $0.039/image
+ - Resolution: up to 1024x1024 (also supports 1024x1792, 1792x1024)
+ - Fast generation (~2-3 seconds)
+ - Best for: Quick iterations, development, testing
 
 ### Vertex AI (Google Cloud) - Paid
 
@@ -344,45 +337,45 @@ All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateC
 
 - **`vertex-flash`** (provider alias: `vertex/flash-3.1`)
 
-  - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Medium thinking by default
-  - Best for: Vertex-authenticated Gemini image workflows
+ - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Medium thinking by default
+ - Best for: Vertex-authenticated Gemini image workflows
 
 - **`vertex-flash-fast`** (provider alias: `vertex/flash-3.1-fast`)
 
-  - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - Minimal thinking by default for faster generation
-  - Best for: Quick iterations, batch processing
+ - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Minimal thinking by default for faster generation
+ - Best for: Quick iterations, batch processing
 
 - **`vertex-flash-ultra`** (provider alias: `vertex/flash-3.1-ultra`)
 
-  - Pricing: resolution-tiered ($0.045-$0.151/image)
-  - High thinking by default for best quality
-  - Best for: Print-ready, marketing materials
+ - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - High thinking by default for best quality
+ - Best for: Print-ready, marketing materials
 
 
 ### xAI Grok - Paid
 
 - **`grok-imagine-image`** (default Grok model, fast and affordable)
 
-  - Pricing: $0.02/image
-  - Supports aspect ratio (14 values: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
-  - Supports image editing via `--input-image` (up to 3 reference images)
-  - Best for: Quick iterations, affordable image generation
+ - Pricing: $0.02/image
+ - Supports aspect ratio (14 values: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
+ - Supports image editing via `--input-image` (up to 3 reference images)
+ - Best for: Quick iterations, affordable image generation
 
 - **`grok-imagine-image-quality`** (quality tier, replaces deprecated `-pro` retired by xAI 2026-05-15)
 
-  - Pricing: $0.05/image at 1K, $0.07/image at 2K
-  - Supports aspect ratio, resolution (`1k`, `2k`), and `--input-image` editing (max 3)
-  - Best for: Higher quality creative images
-  - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here
+ - Pricing: $0.05/image at 1K, $0.07/image at 2K
+ - Supports aspect ratio, resolution (`1k`, `2k`), and `--input-image` editing (max 3)
+ - Best for: Higher quality creative images
+ - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here
 
 **View all models with live pricing:**
 
 ```bash
 gimage generate --list-models
 # or
-gimage auth list  # Shows configured providers
+gimage auth list # Shows configured providers
 ```
 
 ## Image Formats Supported
@@ -476,7 +469,7 @@ There are two ways to install gimage for use with Claude Desktop. Choose based o
 
 ```bash
 brew install apresai/tap/gimage
-gimage --version  # Verify installation
+gimage --version # Verify installation
 ```
 
 **Step 2: Configure Claude Desktop MCP**
@@ -485,21 +478,21 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "gimage",
-      "args": ["serve"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "gimage",
+ "args": ["serve"]
+ }
+ }
 }
 ```
 
 **Why this method?**
 
-- ✅ Single installation serves both CLI and MCP
-- ✅ Easy updates: `brew upgrade apresai/tap/gimage`
-- ✅ Directly calls the `gimage` binary in your PATH
-- ✅ Smaller total footprint (one binary)
+- ✓ Single installation serves both CLI and MCP
+- ✓ Easy updates: `brew upgrade apresai/tap/gimage`
+- ✓ Directly calls the `gimage` binary in your PATH
+- ✓ Smaller total footprint (one binary)
 
 #### Method 2: npm Package (Cross-platform alternative)
 
@@ -521,22 +514,22 @@ Edit your Claude Desktop config file:
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "npx",
-      "args": ["-y", "@apresai/gimage-mcp"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "npx",
+ "args": ["-y", "@apresai/gimage-mcp"]
+ }
+ }
 }
 ```
 
 **Why this method?**
 
-- ✅ Works on Windows (Homebrew method doesn't)
-- ✅ npm-based workflow (familiar to Node.js users)
-- ✅ `npx` automatically downloads/runs the correct version
-- ⚠️ Note: npm installs gimage ONLY for MCP use (hidden in npm global directory)
-- ⚠️ If you want CLI access too, you'll need to install via Homebrew separately
+- ✓ Works on Windows (Homebrew method doesn't)
+- ✓ npm-based workflow (familiar to Node.js users)
+- ✓ `npx` automatically downloads/runs the correct version
+- ! Note: npm installs gimage ONLY for MCP use (hidden in npm global directory)
+- ! If you want CLI access too, you'll need to install via Homebrew separately
 
 **Configuration difference explained:**
 
@@ -595,18 +588,18 @@ After installation and authentication, restart Claude Desktop. You can then use 
 
 The MCP server exposes 10 tools for AI assistants:
 
-| Tool             | Purpose                                 |
+| Tool | Purpose |
 | ---------------- | --------------------------------------- |
-| `generate_image` | AI image generation from text           |
-| `resize_image`   | Resize to specific dimensions           |
-| `scale_image`    | Scale by factor (maintain aspect ratio) |
-| `crop_image`     | Crop to specific region                 |
-| `compress_image` | Reduce file size with quality control   |
-| `convert_image`  | Convert between formats                 |
-| `batch_resize`   | Resize multiple images concurrently     |
-| `batch_compress` | Compress multiple images                |
-| `batch_convert`  | Convert multiple images to new format   |
-| `list_models`    | List available AI models                |
+| `generate_image` | AI image generation from text |
+| `resize_image` | Resize to specific dimensions |
+| `scale_image` | Scale by factor (maintain aspect ratio) |
+| `crop_image` | Crop to specific region |
+| `compress_image` | Reduce file size with quality control |
+| `convert_image` | Convert between formats |
+| `batch_resize` | Resize multiple images concurrently |
+| `batch_compress` | Compress multiple images |
+| `batch_convert` | Convert multiple images to new format |
+| `list_models` | List available AI models |
 
 ### Troubleshooting MCP Server
 
@@ -614,41 +607,41 @@ If the MCP server isn't working in Claude Desktop:
 
 1. **Verify gimage is installed and in PATH:**
 
-   ```bash
-   which gimage
-   gimage --version
-   ```
+ ```bash
+ which gimage
+ gimage --version
+ ```
 
 2. **Test the serve command directly:**
 
-   ```bash
-   gimage serve --verbose
-   ```
+ ```bash
+ gimage serve --verbose
+ ```
 
-   This will show detailed logging to stderr. Press Ctrl+C to stop.
+ This will show detailed logging to stderr. Press Ctrl+C to stop.
 
 3. **Verify API credentials are configured:**
 
-   ```bash
-   gimage auth status  # Check all configured credentials
-   ```
+ ```bash
+ gimage auth status # Check all configured credentials
+ ```
 
 4. **Test image generation works outside MCP:**
 
-   ```bash
-   gimage generate "test image"
-   ```
+ ```bash
+ gimage generate "test image"
+ ```
 
 5. **Check Claude Desktop logs** for error messages:
 
-   - **macOS**: `~/Library/Logs/Claude/`
-   - **Linux**: `~/.config/Claude/logs/`
+ - **macOS**: `~/Library/Logs/Claude/`
+ - **Linux**: `~/.config/Claude/logs/`
 
 6. **Ensure config file exists and has correct permissions:**
-   ```bash
-   ls -la ~/.gimage/config.md
-   ```
-   Should be readable (permissions: `-rw-------` or `-rw-r--r--`)
+ ```bash
+ ls -la ~/.gimage/config.md
+ ```
+ Should be readable (permissions: `-rw-------` or `-rw-r--r--`)
 
 ### Environment Variables
 
@@ -734,27 +727,27 @@ import gimage "github.com/apresai/gimage-go-sdk"
 
 // Create client with API key authentication
 client, _ := gimage.NewClient(
-    "https://your-api.execute-api.us-east-1.amazonaws.com/production",
-    gimage.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-        req.Header.Set("x-api-key", "your-api-key")
-        return nil
-    }),
+ "https://your-api.execute-api.us-east-1.amazonaws.com/production",
+ gimage.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+ req.Header.Set("x-api-key", "your-api-key")
+ return nil
+ }),
 )
 
 // Generate image
 resp, _ := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
-    Prompt: "sunset over mountains",
-    Model:  stringPtr("gemini-2.5-flash-image"),
-    Size:   stringPtr("1024x1024"),
+ Prompt: "sunset over mountains",
+ Model: stringPtr("gemini-2.5-flash-image"),
+ Size: stringPtr("1024x1024"),
 })
 ```
 
 ### Features
 
-- ✅ **Type-safe**: All types generated from OpenAPI spec
-- ✅ **Auto-complete**: Full IDE support with godoc
-- ✅ **API Gateway ready**: Built-in API key authentication support
-- ✅ **Standard Go modules**: Independent versioning with semantic versioning
+- ✓ **Type-safe**: All types generated from OpenAPI spec
+- ✓ **Auto-complete**: Full IDE support with godoc
+- ✓ **API Gateway ready**: Built-in API key authentication support
+- ✓ **Standard Go modules**: Independent versioning with semantic versioning
 
 ### Documentation
 
@@ -791,12 +784,12 @@ make package-lambda
 # Deploy using gimage-deploy (from sibling directory)
 cd ../gimage-deploy
 ./bin/gimage-deploy deploy \
-  --id production \
-  --stage production \
-  --region us-east-1 \
-  --lambda-code ../gimage/bin/lambda.zip \
-  --memory 512 \
-  --timeout 30
+ --id production \
+ --stage production \
+ --region us-east-1 \
+ --lambda-code ../gimage/bin/lambda.zip \
+ --memory 512 \
+ --timeout 30
 
 # Create API key
 ./bin/gimage-deploy keys create --name prod-key --deployment production
@@ -822,18 +815,18 @@ See the `gimage-deploy` directory for the deployment management tool.
 
 All operations available via REST API:
 
-| Endpoint        | Method | Purpose                                  |
+| Endpoint | Method | Purpose |
 | --------------- | ------ | ---------------------------------------- |
-| `/generate`     | POST   | AI image generation                      |
-| `/resize`       | POST   | Resize to dimensions                     |
-| `/scale`        | POST   | Scale by factor                          |
-| `/crop`         | POST   | Crop region                              |
-| `/compress`     | POST   | Compress with quality                    |
-| `/convert`      | POST   | Convert format                           |
-| `/batch`        | POST   | Process multiple images                  |
-| `/health`       | GET    | Health check                             |
-| `/docs`         | GET    | **Interactive Swagger UI documentation** |
-| `/openapi.yaml` | GET    | OpenAPI specification                    |
+| `/generate` | POST | AI image generation |
+| `/resize` | POST | Resize to dimensions |
+| `/scale` | POST | Scale by factor |
+| `/crop` | POST | Crop region |
+| `/compress` | POST | Compress with quality |
+| `/convert` | POST | Convert format |
+| `/batch` | POST | Process multiple images |
+| `/health` | GET | Health check |
+| `/docs` | GET | **Interactive Swagger UI documentation** |
+| `/openapi.yaml` | GET | OpenAPI specification |
 
 **Try the API**: After deployment, visit `https://your-api-url/prod/docs` for interactive documentation!
 
@@ -843,13 +836,13 @@ All operations available via REST API:
 
 ```typescript
 const response = await fetch("https://your-api-url/generate", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    prompt: "a sunset over mountains",
-    size: "1024x1024",
-    response_format: "s3_url",
-  }),
+ method: "POST",
+ headers: { "Content-Type": "application/json" },
+ body: JSON.stringify({
+ prompt: "a sunset over mountains",
+ size: "1024x1024",
+ response_format: "s3_url",
+ }),
 });
 
 const result = await response.json();
@@ -862,9 +855,9 @@ console.log("Image URL:", result.s3_url);
 import requests
 
 response = requests.post('https://your-api-url/resize', json={
-    'image': base64_image,
-    'width': 800,
-    'height': 600
+ 'image': base64_image,
+ 'width': 800,
+ 'height': 600
 })
 
 result = response.json()
@@ -876,8 +869,8 @@ print(f"Resized: {result['width']}x{result['height']}")
 ```go
 client := gimage.NewClient("https://your-api-url", apiKey)
 result, err := client.GenerateImage(gimage.GenerateRequest{
-    Prompt: "beautiful landscape",
-    Size:   "1024x1024",
+ Prompt: "beautiful landscape",
+ Size: "1024x1024",
 })
 ```
 
@@ -890,9 +883,9 @@ result, err := client.GenerateImage(gimage.GenerateRequest{
 
 ```
 Client Request → API Gateway → Lambda (Go/ARM64) → {S3, Gemini, Vertex AI, Grok}
-                                ↓
-                         Small: base64 response
-                         Large: S3 presigned URL
+ ↓
+ Small: base64 response
+ Large: S3 presigned URL
 ```
 
 **Runtime**: AWS Lambda provided.al2023 (Amazon Linux 2023)
@@ -972,4 +965,4 @@ Built with:
 
 ---
 
-**Made with ❤️ for developers, designers, and AI enthusiasts**
+**Built for developers, designers, and AI enthusiasts**

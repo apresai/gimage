@@ -1,12 +1,12 @@
 # Gimage MCP Server
 
-**Version**: 1.2.99+ (see CHANGELOG.md for current version)
+**Version**: see [CHANGELOG.md](CHANGELOG.md) / latest GitHub release
 **Runtime**: Go 1.26+
 **Protocol**: Model Context Protocol (stdio transport)
 
 ---
 
-## 🎯 Overview
+## <img src="docs/icons/target.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/target-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Overview
 
 The Gimage MCP server enables AI assistants (like Claude and ChatGPT) to perform AI-powered image generation and processing operations directly through the Model Context Protocol.
 
@@ -19,20 +19,20 @@ The Gimage MCP server enables AI assistants (like Claude and ChatGPT) to perform
 
 ---
 
-## 🏗️ Architecture
+## <img src="docs/icons/layers.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/layers-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Architecture
 
 The MCP server uses **stdio transport** for communication, making it compatible with Claude Desktop and other MCP-aware clients.
 
 ```mermaid
 graph TD
-    A[AI Assistant] <-->|JSON-RPC over stdio| B[Gimage MCP Server]
-    B <--> C[Tool Registry]
-    C --> D[image_generate]
-    C --> E[Image Processing]
-    C --> F[Batch Operations]
-    D --> G[Gemini/Vertex/Grok]
-    E --> H[internal/imaging]
-    F --> H
+ A[AI Assistant] <-->|JSON-RPC over stdio| B[Gimage MCP Server]
+ B <--> C[Tool Registry]
+ C --> D[image_generate]
+ C --> E[Image Processing]
+ C --> F[Batch Operations]
+ D --> G[Gemini/Vertex/Grok]
+ E --> H[internal/imaging]
+ F --> H
 ```
 
 - **Input/Output**: JSON-RPC 2.0 messages via stdin/stdout.
@@ -41,13 +41,13 @@ graph TD
 
 ---
 
-## 🛠️ MCP Tools
+## <img src="docs/icons/tools.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/tools-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> MCP Tools
 
 The server exposes 10 tools covering all gimage operations. For a complete parameter reference, see [docs/MCP_TOOLS.md](docs/MCP_TOOLS.md).
 
 ### 1. Image Generation
 
-- `generate_image`: Generate AI images from text prompts. Supports `input_images` for reference-image editing (Grok max 3 via `/images/edits`; Gemini Nano Banana compositional editing — up to 3/11/14 depending on model). Gemini 3+ also supports `thinking` (reasoning depth: `minimal|low|medium|high`) and `grounding` (Google Search grounding for current/real references).
+- `generate_image`: Generate AI images from text prompts. Supports `input_images` for reference-image editing (Grok max 3 via `/images/edits`; Gemini Nano Banana compositional editing - up to 3/11/14 depending on model). Gemini 3+ also supports `thinking` (reasoning depth: `minimal|low|medium|high`) and `grounding` (Google Search grounding for current/real references).
 - `list_models`: List available providers, models, and pricing.
 
 ### 2. Single Image Processing
@@ -66,7 +66,7 @@ The server exposes 10 tools covering all gimage operations. For a complete param
 
 ---
 
-## 🚀 Installation & Setup
+## <img src="docs/icons/rocket.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/rocket-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Installation & Setup
 
 For detailed installation instructions for Claude Desktop, see [README.md#installation-methods](README.md#installation-methods) or [docs/MCP_USAGE.md](docs/MCP_USAGE.md).
 
@@ -81,18 +81,18 @@ Then add to your Claude Desktop config:
 
 ```json
 {
-  "mcpServers": {
-    "gimage": {
-      "command": "gimage",
-      "args": ["serve"]
-    }
-  }
+ "mcpServers": {
+ "gimage": {
+ "command": "gimage",
+ "args": ["serve"]
+ }
+ }
 }
 ```
 
 ---
 
-## 📄 Documentation Links
+## <img src="docs/icons/doc.svg#gh-light-mode-only" width="18" height="18" alt="" /><img src="docs/icons/doc-dark.svg#gh-dark-mode-only" width="18" height="18" alt="" /> Documentation Links
 
 - [**Usage Guide**](docs/MCP_USAGE.md): Complete setup and configuration guide.
 - [**Tool Reference**](docs/MCP_TOOLS.md): Detailed parameter schemas and return types.

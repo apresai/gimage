@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Changed
+- User docs polish: monochrome theme-aware icons (light/dark), removed em dashes, fixed broken manual binary download URLs, synced Grok editing/aspect-ratio docs
 
 ## [1.2.150] - 2026-07-11
 
