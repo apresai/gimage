@@ -148,28 +148,3 @@ func (s *MCPServer) handleNotification(ctx context.Context, req *JSONRPCRequest)
 		Msg("Notification received (no response sent)")
 	// No response is sent for notifications
 }
-
-// NotifyToolsListChanged sends a notification to the client that the tool list has changed
-// This is used when tools are dynamically added or removed during runtime
-func (s *MCPServer) NotifyToolsListChanged() error {
-	logger := observability.Logger(context.Background())
-
-	notification := map[string]interface{}{
-		"jsonrpc": "2.0",
-		"method":  NotificationToolsListChanged,
-	}
-
-	notificationBytes, err := json.Marshal(notification)
-	if err != nil {
-		logger.Error().
-			Err(err).
-			Msg("Failed to marshal tools/list_changed notification")
-		return fmt.Errorf("failed to marshal notification: %w", err)
-	}
-
-	logger.Debug().
-		Msg("Sending tools/list_changed notification")
-
-	fmt.Fprintln(s.stdout, string(notificationBytes))
-	return nil
-}

@@ -145,7 +145,6 @@ type GenerateFlowModel struct {
 	// Provider retry state
 	retryProviders          []providerOption
 	selectedRetryProvider   int
-	customProviderInput     textinput.Model
 	showCustomProviderInput bool
 	lastGenerationError     string
 	providerRetryInput      textinput.Model
@@ -1457,49 +1456,6 @@ func (m *GenerateFlowModel) renderProviderGrid() string {
 	}
 
 	return strings.Join(rows, "\n")
-}
-
-// Helper function to resolve custom model names
-func resolveCustomModelName(input string) (string, error) {
-	registry := generate.GetProviderRegistry()
-
-	// Try to resolve as provider ID or alias
-	provider, err := registry.ResolveProvider(input)
-	if err == nil {
-		return provider.ModelID, nil
-	}
-
-	// Try alias resolution
-	if resolvedName := generate.ResolveModelName(input); resolvedName != input {
-		if provider, err := registry.ResolveProvider(resolvedName); err == nil {
-			return provider.ModelID, nil
-		}
-	}
-
-	return "", fmt.Errorf("unknown model: %s", input)
-}
-
-// buildCLICommand builds the equivalent CLI command for logging and reproducibility
-func (m *GenerateFlowModel) buildCLICommand(prompt string, model string, size string, style string, output string) string {
-	// Quote the prompt properly for shell
-	quotedPrompt := strings.ReplaceAll(prompt, "\"", "\\\"")
-
-	// Build command
-	cmdParts := []string{
-		fmt.Sprintf("gimage generate \"%s\"", quotedPrompt),
-		fmt.Sprintf("--model %s", model),
-		fmt.Sprintf("--size %s", size),
-	}
-
-	// Add style if not "None"
-	if style != "" {
-		cmdParts = append(cmdParts, fmt.Sprintf("--style %s", style))
-	}
-
-	// Add output path
-	cmdParts = append(cmdParts, fmt.Sprintf("--output %s", output))
-
-	return strings.Join(cmdParts, " \\\n  ")
 }
 
 // HeaderStyle for table headers

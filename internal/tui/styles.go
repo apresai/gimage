@@ -94,18 +94,6 @@ var (
 			Padding(0, 1)
 )
 
-// ASCII Art for the logo
-const LogoASCII = `
-   _____ _
-  / ____(_)
- | |  __ _ _ __ ___   __ _  __ _  ___
- | | |_ | | '_ ' _ \ / _' |/ _' |/ _ \
- | |__| | | | | | | | (_| | (_| |  __/
-  \_____|_|_| |_| |_|\__,_|\__, |\___|
-                            __/ |
-                           |___/
-`
-
 // SmallerLogoASCII for compact spaces
 const SmallerLogoASCII = `
    ___ _
@@ -118,36 +106,6 @@ const SmallerLogoASCII = `
 // SpinnerFrames for loading animations
 var SpinnerFrames = []string{
 	"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏",
-}
-
-// ProgressBarStyle creates a styled progress bar
-func ProgressBarStyle(percent float64, width int) string {
-	filledWidth := int(float64(width) * (percent / 100.0))
-	if filledWidth > width {
-		filledWidth = width
-	}
-	if filledWidth < 0 {
-		filledWidth = 0
-	}
-
-	filled := lipgloss.NewStyle().
-		Foreground(ColorSuccess).
-		Render(string(repeatRune('█', filledWidth)))
-
-	empty := lipgloss.NewStyle().
-		Foreground(ColorMuted).
-		Render(string(repeatRune('░', width-filledWidth)))
-
-	return filled + empty
-}
-
-// repeatRune creates a string of repeated runes
-func repeatRune(r rune, count int) []rune {
-	result := make([]rune, count)
-	for i := range result {
-		result[i] = r
-	}
-	return result
 }
 
 // FormatKeyValue formats a key-value pair with styling

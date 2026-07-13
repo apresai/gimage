@@ -1,21 +1,10 @@
 package generate
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
 )
-
-// APISizeConstraints defines dimension constraints for a specific AI provider
-type APISizeConstraints struct {
-	MinWidth    int
-	MaxWidth    int
-	MinHeight   int
-	MaxHeight   int
-	MultipleOf  int
-	FixedRatios []string // e.g., ["1:1", "16:9", "4:3"]
-}
 
 // Common provider constraints
 var (
@@ -29,60 +18,6 @@ var (
 		"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto",
 	}
 )
-
-// NormalizeDimensions adjusts dimensions to meet API constraints using a "closest match" strategy
-func NormalizeDimensions(width, height int, constraints APISizeConstraints) (int, int) {
-	// 1. Clamp to Min/Max
-	if constraints.MinWidth > 0 && width < constraints.MinWidth {
-		width = constraints.MinWidth
-	}
-	if constraints.MaxWidth > 0 && width > constraints.MaxWidth {
-		width = constraints.MaxWidth
-	}
-	if constraints.MinHeight > 0 && height < constraints.MinHeight {
-		height = constraints.MinHeight
-	}
-	if constraints.MaxHeight > 0 && height > constraints.MaxHeight {
-		height = constraints.MaxHeight
-	}
-
-	// 2. Round to closest MultipleOf
-	if constraints.MultipleOf > 0 {
-		width = roundToMultiple(width, constraints.MultipleOf)
-		height = roundToMultiple(height, constraints.MultipleOf)
-
-		// Re-clamp in case rounding pushed it out of bounds
-		if constraints.MaxWidth > 0 && width > constraints.MaxWidth {
-			width = width - constraints.MultipleOf
-		}
-		if constraints.MaxHeight > 0 && height > constraints.MaxHeight {
-			height = height - constraints.MultipleOf
-		}
-		if constraints.MinWidth > 0 && width < constraints.MinWidth {
-			width = width + constraints.MultipleOf
-		}
-		if constraints.MinHeight > 0 && height < constraints.MinHeight {
-			height = height + constraints.MultipleOf
-		}
-	}
-
-	return width, height
-}
-
-// roundToMultiple rounds n to the nearest multiple of m
-func roundToMultiple(n, m int) int {
-	if m <= 0 {
-		return n
-	}
-	remainder := n % m
-	if remainder == 0 {
-		return n
-	}
-	if remainder >= m/2 {
-		return n + (m - remainder)
-	}
-	return n - remainder
-}
 
 // ParseSizeString converts "WIDTHxHEIGHT" to (int, int) with defaults
 func ParseSizeString(size string) (int, int) {
@@ -155,9 +90,4 @@ func InferAspectRatio(width, height int, supportedRatios []string) string {
 	}
 
 	return closest.name
-}
-
-// FormatInternalSize converts dimensions back to "WIDTHxHEIGHT" string
-func FormatInternalSize(width, height int) string {
-	return fmt.Sprintf("%dx%d", width, height)
 }

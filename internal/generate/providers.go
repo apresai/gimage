@@ -909,25 +909,6 @@ func DetectAPIFromModel(modelName string) (string, error) {
 	return provider.API, nil
 }
 
-// ValidateModelForAPI validates that a model is compatible with an API (for backward compatibility)
-func ValidateModelForAPI(modelName, api string) error {
-	if modelName == "" {
-		return nil // No validation needed for default
-	}
-
-	registry := GetProviderRegistry()
-	provider, err := registry.ResolveProvider(modelName)
-	if err != nil {
-		return fmt.Errorf("unknown model: %s", modelName)
-	}
-
-	if provider.API != api {
-		return fmt.Errorf("model %s is not available on %s API (only on %s)", modelName, api, provider.API)
-	}
-
-	return nil
-}
-
 // ============================================================================
 // Shared Pricing Helpers
 // ============================================================================
@@ -979,27 +960,6 @@ func GetProviderPricing(provider *Provider, imageSize, dimensions, style string)
 	info.Display = fmt.Sprintf("$%.4f/image", info.Cost)
 	info.IsExpensive = info.Cost > 0.05
 	return info
-}
-
-// parseDimensionsForCost parses "WIDTHxHEIGHT" string for cost calculation
-func parseDimensionsForCost(size string) (int, int) {
-	if size == "" {
-		return 1024, 1024
-	}
-	parts := strings.Split(size, "x")
-	if len(parts) != 2 {
-		return 1024, 1024
-	}
-	var width, height int
-	fmt.Sscanf(parts[0], "%d", &width)
-	fmt.Sscanf(parts[1], "%d", &height)
-	if width <= 0 {
-		width = 1024
-	}
-	if height <= 0 {
-		height = 1024
-	}
-	return width, height
 }
 
 // ImageSizeLabel returns a human-readable label for the image size

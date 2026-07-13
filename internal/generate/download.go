@@ -154,51 +154,6 @@ func GenerateOutputPath(format string) string {
 	return filepath.Join(defaultOutputDir, filename)
 }
 
-// GenerateOutputPathWithPrefix generates an output path with a custom prefix
-func GenerateOutputPathWithPrefix(prefix, format string) string {
-	if prefix == "" {
-		prefix = defaultOutputPrefix
-	}
-
-	timestamp := time.Now().Format("20060102_150405")
-	format = normalizeFormat(format)
-
-	filename := fmt.Sprintf("%s_%s.%s", prefix, timestamp, format)
-
-	return filepath.Join(defaultOutputDir, filename)
-}
-
-// GenerateOutputPathInDir generates an output path in a specific directory
-func GenerateOutputPathInDir(dir, format string) string {
-	if dir == "" {
-		dir = defaultOutputDir
-	}
-
-	timestamp := time.Now().Format("20060102_150405")
-	format = normalizeFormat(format)
-
-	filename := fmt.Sprintf("%s_%s.%s", defaultOutputPrefix, timestamp, format)
-
-	return filepath.Join(dir, filename)
-}
-
-// GenerateOutputPathCustom generates an output path with full customization
-func GenerateOutputPathCustom(dir, prefix, format string) string {
-	if dir == "" {
-		dir = defaultOutputDir
-	}
-	if prefix == "" {
-		prefix = defaultOutputPrefix
-	}
-
-	timestamp := time.Now().Format("20060102_150405")
-	format = normalizeFormat(format)
-
-	filename := fmt.Sprintf("%s_%s.%s", prefix, timestamp, format)
-
-	return filepath.Join(dir, filename)
-}
-
 // normalizeFormat removes leading dots and converts to lowercase
 // Also normalizes format variations (jpg/jpeg, tif/tiff) for comparison
 func normalizeFormat(format string) string {
@@ -225,38 +180,6 @@ func normalizeFormat(format string) string {
 	}
 }
 
-// ValidateOutputPath checks if an output path is valid and writable
-func ValidateOutputPath(path string) error {
-	if path == "" {
-		return fmt.Errorf("output path cannot be empty")
-	}
-
-	// Check if parent directory exists or can be created
-	dir := filepath.Dir(path)
-	if dir != "." && dir != "/" {
-		info, err := os.Stat(dir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				// Try to create the directory
-				if err := os.MkdirAll(dir, defaultDirPerms); err != nil {
-					return fmt.Errorf("cannot create directory %s: %w", dir, err)
-				}
-			} else {
-				return fmt.Errorf("cannot access directory %s: %w", dir, err)
-			}
-		} else if !info.IsDir() {
-			return fmt.Errorf("%s is not a directory", dir)
-		}
-	}
-
-	// Check if file already exists
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("file already exists: %s", path)
-	}
-
-	return nil
-}
-
 // GetImageDimensions reads an image file and returns its dimensions
 func GetImageDimensions(path string) (width, height int, err error) {
 	file, err := os.Open(path)
@@ -281,55 +204,6 @@ func GetImageDimensionsFromBytes(data []byte) (width, height int, err error) {
 		return 0, 0, fmt.Errorf("failed to decode image config: %w", err)
 	}
 	return config.Width, config.Height, nil
-}
-
-// EnsureOutputDir ensures the output directory exists
-func EnsureOutputDir(dir string) error {
-	if dir == "" || dir == "." || dir == "/" {
-		return nil
-	}
-
-	if err := os.MkdirAll(dir, defaultDirPerms); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
-	}
-
-	return nil
-}
-
-// FileExists checks if a file exists at the given path
-func FileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-// GenerateUniqueOutputPath generates a unique output path, incrementing if file exists
-func GenerateUniqueOutputPath(format string) string {
-	basePath := GenerateOutputPath(format)
-
-	// If file doesn't exist, return as-is
-	if !FileExists(basePath) {
-		return basePath
-	}
-
-	// Extract components
-	dir := filepath.Dir(basePath)
-	ext := filepath.Ext(basePath)
-	nameWithoutExt := basePath[:len(basePath)-len(ext)]
-
-	// Try adding numbers until we find a unique name
-	for i := 1; i < 1000; i++ {
-		newPath := fmt.Sprintf("%s_%d%s", nameWithoutExt, i, ext)
-		if !FileExists(newPath) {
-			return newPath
-		}
-	}
-
-	// Fallback: add timestamp with milliseconds
-	timestamp := time.Now().Format("20060102_150405.000")
-	format = normalizeFormat(format)
-	filename := fmt.Sprintf("%s_%s.%s", defaultOutputPrefix, timestamp, format)
-
-	return filepath.Join(dir, filename)
 }
 
 // downloadImage downloads an image from a URL and returns the raw bytes

@@ -22,7 +22,7 @@ import (
 //   - factor 1.0 = same size (no change)
 //   - factor 2.0 = 200% size (double)
 //
-// Progress reporting can be provided via context using progress.WithReporter.
+// Progress reporting can be provided via context using progress.FromContext.
 //
 // Returns error if:
 //   - context is cancelled

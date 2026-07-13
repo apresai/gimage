@@ -1,4 +1,4 @@
-.PHONY: build build-all test test-coverage install clean lint benchmark info help build-lambda package-lambda deploy-lambda clean-lambda lambda-logs release release-local update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
+.PHONY: build build-all test test-coverage install clean lint benchmark info help build-lambda package-lambda clean-lambda lambda-logs release release-local update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
 
 # Binary name
 BINARY_NAME=gimage
@@ -50,7 +50,6 @@ help:
 	@echo "☁️  Lambda Commands:"
 	@echo "  build-lambda     - Build Lambda function for AWS ARM64"
 	@echo "  package-lambda   - Package Lambda function for deployment"
-	@echo "  deploy-lambda    - Deploy Lambda function using CDK"
 	@echo "  clean-lambda     - Remove Lambda build artifacts"
 	@echo "  lambda-logs      - Tail Lambda function logs"
 	@echo ""
@@ -298,17 +297,6 @@ package-lambda: build-lambda
 	@echo "Packaging Lambda function..."
 	@cd $(BUILD_DIR)/lambda && zip -q -r ../lambda.zip bootstrap
 	@echo "Lambda package created: $(BUILD_DIR)/lambda.zip ($(shell du -h $(BUILD_DIR)/lambda.zip 2>/dev/null | cut -f1))"
-
-## deploy-lambda: Deploy Lambda function using CDK
-deploy-lambda: package-lambda
-	@echo "Deploying Lambda function with CDK..."
-	@if [ -d "infrastructure/cdk" ]; then \
-		cd infrastructure/cdk && npm install && npm run build && npm run deploy; \
-	else \
-		echo "Error: infrastructure/cdk directory not found"; \
-		echo "Please create CDK infrastructure first (see lambda.md)"; \
-		exit 1; \
-	fi
 
 ## clean-lambda: Clean Lambda build artifacts
 clean-lambda:

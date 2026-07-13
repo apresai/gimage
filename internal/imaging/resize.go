@@ -19,7 +19,7 @@ import (
 //   - width: target width in pixels
 //   - height: target height in pixels
 //
-// Progress reporting can be provided via context using progress.WithReporter.
+// Progress reporting can be provided via context using progress.FromContext.
 //
 // Returns error if:
 //   - context is cancelled
@@ -112,7 +112,7 @@ func ResizeFill(ctx context.Context, inputPath, outputPath string, width, height
 // its original aspect ratio. The resulting image may be smaller than the specified
 // dimensions in one or both directions.
 //
-// Progress reporting can be provided via context using progress.WithReporter.
+// Progress reporting can be provided via context using progress.FromContext.
 func ResizeFit(ctx context.Context, inputPath, outputPath string, width, height int) error {
 	reporter := progress.FromContext(ctx)
 	reporter.Start(ctx, fmt.Sprintf("Resizing image to fit %dx%d", width, height))

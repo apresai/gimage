@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"io"
 	"os"
 	"time"
 
@@ -87,9 +86,4 @@ func Logger(ctx context.Context) zerolog.Logger {
 func LoggerWithComponent(ctx context.Context, component string) zerolog.Logger {
 	logger := Logger(ctx)
 	return logger.With().Str("component", component).Logger()
-}
-
-// SetGlobalLogger allows updating the global logger (useful for testing)
-func SetGlobalLogger(w io.Writer) {
-	log.Logger = zerolog.New(w).With().Timestamp().Logger()
 }
