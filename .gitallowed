@@ -7,14 +7,11 @@ VERTEX_API_KEY
 VERTEX_PROJECT
 VERTEX_LOCATION
 
-# Masked xAI Grok key placeholders used in documentation examples (not real keys).
-# Bare-prefix form so each allowance also matches its own line in this file.
-xai-5zM
-xai-your-key
-# Fake xAI Grok keys used as test fixtures in internal/config/config_test.go.
-xai-grok-key
-xai-test-grok-key
-xai-key-present
+# No xAI allowances needed: the git-secrets pattern is xai-[A-Za-z0-9]{20,}, and a real
+# key is the prefix plus 80 alphanumerics, so the doc placeholders and test fixtures here
+# (xai-5zM..., xai-your-key, xai-grok-key, xai-test-grok-key-123, xai-key-present) no
+# longer match. Do not reintroduce a loose xai-[a-zA-Z0-9_-]+ pattern.
+
 # Fake Google API-key placeholders used as test fixtures in internal/config/auth_test.go (not real keys).
 AIzaSyABCDEFGH
 AIzaSy_ABCDEFGH
