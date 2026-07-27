@@ -72,12 +72,3 @@ func (s *MCPServer) GetPrompt(name string, arguments map[string]string) (string,
 
 	return result, nil
 }
-
-// GetAllPrompts returns all registered prompts
-func (s *MCPServer) GetAllPrompts() []Prompt {
-	prompts := make([]Prompt, 0, len(s.prompts))
-	for _, prompt := range s.prompts {
-		prompts = append(prompts, prompt)
-	}
-	return prompts
-}

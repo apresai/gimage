@@ -88,40 +88,6 @@ func TestLogger_LogLevels(t *testing.T) {
 	assert.Contains(t, content, "ERROR: error msg")
 }
 
-func TestLogger_LogCommandStart(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-
-	logger.LogCommandStart("generate", []string{"--model", "flash"})
-
-	content := readLog(t, logPath)
-	assert.Contains(t, content, "COMMAND START: gimage generate")
-	assert.Contains(t, content, "--model")
-}
-
-func TestLogger_LogCommandComplete_Success(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-
-	logger.LogCommandComplete("generate", true, 5*time.Second, "")
-
-	content := readLog(t, logPath)
-	assert.Contains(t, content, "COMMAND COMPLETE")
-	assert.Contains(t, content, "SUCCESS")
-	assert.Contains(t, content, "5s")
-}
-
-func TestLogger_LogCommandComplete_Failure(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-
-	logger.LogCommandComplete("generate", false, 1*time.Second, "api error")
-
-	content := readLog(t, logPath)
-	assert.Contains(t, content, "FAILED")
-	assert.Contains(t, content, "api error")
-}
-
 func TestLogger_LogGenerateStart(t *testing.T) {
 	logger, logPath := newTestLogger(t)
 	defer logger.Close()
@@ -171,28 +137,6 @@ func TestLogger_LogAuthStatus(t *testing.T) {
 	assert.Contains(t, content, "AUTH STATUS: vertex = NOT CONFIGURED")
 }
 
-func TestLogger_LogAPICall(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-
-	logger.LogAPICall("gemini", "flash", "https://api.example.com", 200, "")
-
-	content := readLog(t, logPath)
-	assert.Contains(t, content, "API CALL: gemini")
-	assert.Contains(t, content, "status=200")
-}
-
-func TestLogger_LogAPICall_WithError(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-
-	logger.LogAPICall("grok", "grok-imagine-image", "https://api.example.com", 500, "internal error")
-
-	content := readLog(t, logPath)
-	assert.Contains(t, content, "API CALL: grok")
-	assert.Contains(t, content, "internal error")
-}
-
 func TestLogger_LogErrorContext(t *testing.T) {
 	logger, logPath := newTestLogger(t)
 	defer logger.Close()
@@ -219,12 +163,6 @@ func TestLogger_Close_NilLogFile(t *testing.T) {
 	logger := &Logger{enabled: false, logFile: nil}
 	err := logger.Close()
 	assert.NoError(t, err)
-}
-
-func TestLogger_GetLogPath(t *testing.T) {
-	logger, logPath := newTestLogger(t)
-	defer logger.Close()
-	assert.Equal(t, logPath, logger.GetLogPath())
 }
 
 func TestLogger_IsEnabled(t *testing.T) {
@@ -273,12 +211,9 @@ func TestLogger_Disabled_Methods_NoOp(t *testing.T) {
 	logger.LogWarn("msg")
 	logger.LogError("msg")
 	logger.LogStartup()
-	logger.LogCommandStart("cmd", nil)
-	logger.LogCommandComplete("cmd", true, time.Second, "")
 	logger.LogGenerateStart("p", "m", "a", "s", "st", "o")
 	logger.LogGenerateComplete(true, "o", 0, time.Second, "")
 	logger.LogGenerateCommand("cmd")
 	logger.LogAuthStatus("api", true, "d")
-	logger.LogAPICall("api", "m", "e", 200, "")
 	logger.LogErrorContext("ctx", nil, nil)
 }

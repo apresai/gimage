@@ -27,7 +27,7 @@ import (
 // Note: Compression is most effective for JPEG images. PNG images will be saved
 // with the same visual quality regardless of the quality parameter.
 //
-// Progress reporting can be provided via context using progress.WithReporter.
+// Progress reporting can be provided via context using progress.FromContext.
 //
 // Returns error if:
 //   - context is cancelled

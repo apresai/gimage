@@ -2,7 +2,6 @@ package lambdahandler
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/aws/aws-lambda-go/events"
 )

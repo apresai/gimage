@@ -156,12 +156,6 @@ func (fp *FilePicker) Refresh() error {
 	return nil
 }
 
-// GetFiles returns the list of files in the current directory.
-// Call Refresh() first to ensure the list is up to date.
-func (fp *FilePicker) GetFiles() []FileInfo {
-	return fp.files
-}
-
 // GetDirectory returns the current directory path.
 func (fp *FilePicker) GetDirectory() string {
 	return fp.directory
@@ -243,23 +237,4 @@ func (fp *FilePicker) ListFiles() []string {
 		lines[i] = fmt.Sprintf("%s (%s)", file.Name, FormatImageInfo(file))
 	}
 	return lines
-}
-
-// GoUp moves to the parent directory.
-// Returns error if already at root or can't access parent.
-func (fp *FilePicker) GoUp() error {
-	parent := filepath.Dir(fp.directory)
-	if parent == fp.directory {
-		return fmt.Errorf("already at root directory")
-	}
-	return fp.SetDirectory(parent)
-}
-
-// GoHome moves to the user's home directory.
-func (fp *FilePicker) GoHome() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return fp.SetDirectory(home)
 }

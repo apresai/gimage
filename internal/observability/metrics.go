@@ -4,18 +4,16 @@ import (
 	"context"
 	"sync"
 	"time"
-
-	"github.com/rs/zerolog"
 )
 
 // ToolMetrics tracks invocation metrics for MCP tools
 type ToolMetrics struct {
-	mu                sync.RWMutex
-	toolInvocations   map[string]*ToolStats
-	totalInvocations  int64
-	totalSuccesses    int64
-	totalFailures     int64
-	totalLatencyMs    int64
+	mu               sync.RWMutex
+	toolInvocations  map[string]*ToolStats
+	totalInvocations int64
+	totalSuccesses   int64
+	totalFailures    int64
+	totalLatencyMs   int64
 }
 
 // ToolStats holds statistics for a single tool
@@ -102,95 +100,42 @@ func (m *ToolMetrics) RecordToolInvocation(ctx context.Context, toolName string,
 	}
 }
 
-// GetToolStats returns statistics for a specific tool
-func (m *ToolMetrics) GetToolStats(toolName string) *ToolStats {
+// LogSummary writes aggregate and per-tool metrics to the log. The MCP server
+// calls this on shutdown so a session's tool usage is diagnosable from logs
+// alone, without reproducing the session.
+//
+// Logged at Info rather than Debug: metrics nobody sees by default are the same
+// as no metrics. Volume is bounded by the number of distinct tools invoked.
+func (m *ToolMetrics) LogSummary(ctx context.Context) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	if stats, exists := m.toolInvocations[toolName]; exists {
-		// Return a copy to avoid race conditions
-		statsCopy := *stats
-		return &statsCopy
-	}
-	return nil
-}
-
-// GetAllStats returns statistics for all tools
-func (m *ToolMetrics) GetAllStats() map[string]*ToolStats {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	// Return a copy of the map
-	result := make(map[string]*ToolStats, len(m.toolInvocations))
-	for name, stats := range m.toolInvocations {
-		statsCopy := *stats
-		result[name] = &statsCopy
-	}
-	return result
-}
-
-// GetSummary returns overall metrics summary
-func (m *ToolMetrics) GetSummary() map[string]interface{} {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	avgLatencyMs := int64(0)
-	if m.totalInvocations > 0 {
-		avgLatencyMs = m.totalLatencyMs / m.totalInvocations
+	if m.totalInvocations == 0 {
+		return
 	}
 
-	successRate := float64(0)
-	if m.totalInvocations > 0 {
-		successRate = float64(m.totalSuccesses) / float64(m.totalInvocations) * 100
-	}
-
-	return map[string]interface{}{
-		"total_invocations": m.totalInvocations,
-		"total_successes":   m.totalSuccesses,
-		"total_failures":    m.totalFailures,
-		"success_rate_pct":  successRate,
-		"avg_latency_ms":    avgLatencyMs,
-		"tools_count":       len(m.toolInvocations),
-	}
-}
-
-// LogSummary logs a summary of all metrics
-func (m *ToolMetrics) LogSummary(logger zerolog.Logger) {
-	summary := m.GetSummary()
+	logger := Logger(ctx).With().Str("component", "metrics").Logger()
 
 	logger.Info().
-		Int64("total_invocations", summary["total_invocations"].(int64)).
-		Int64("total_successes", summary["total_successes"].(int64)).
-		Int64("total_failures", summary["total_failures"].(int64)).
-		Float64("success_rate_pct", summary["success_rate_pct"].(float64)).
-		Int64("avg_latency_ms", summary["avg_latency_ms"].(int64)).
-		Int("tools_count", summary["tools_count"].(int)).
+		Int64("total_invocations", m.totalInvocations).
+		Int64("total_successes", m.totalSuccesses).
+		Int64("total_failures", m.totalFailures).
+		Float64("success_rate_pct", float64(m.totalSuccesses)/float64(m.totalInvocations)*100).
+		Int64("avg_latency_ms", m.totalLatencyMs/m.totalInvocations).
+		Int("tools_count", len(m.toolInvocations)).
 		Msg("Metrics summary")
 
-	// Log per-tool stats
-	allStats := m.GetAllStats()
-	for _, stats := range allStats {
-		logger.Debug().
+	for _, stats := range m.toolInvocations {
+		logger.Info().
 			Str("tool", stats.Name).
 			Int64("invocations", stats.Invocations).
 			Int64("successes", stats.Successes).
 			Int64("failures", stats.Failures).
+			Int64("total_latency_ms", stats.TotalLatency.Milliseconds()).
 			Int64("avg_latency_ms", stats.AvgLatency.Milliseconds()).
 			Int64("min_latency_ms", stats.MinLatency.Milliseconds()).
 			Int64("max_latency_ms", stats.MaxLatency.Milliseconds()).
 			Time("last_invoked", stats.LastInvoked).
 			Msg("Tool metrics")
 	}
-}
-
-// Reset clears all metrics (useful for testing)
-func (m *ToolMetrics) Reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.toolInvocations = make(map[string]*ToolStats)
-	m.totalInvocations = 0
-	m.totalSuccesses = 0
-	m.totalFailures = 0
-	m.totalLatencyMs = 0
 }

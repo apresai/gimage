@@ -1,0 +1,16 @@
+# Vulnerability scan exceptions for `make scan`.
+#
+# Only advisories with NO available fix belong here. An advisory that has a
+# fixed version gets the upgrade, not an entry in this file. Each entry states
+# why it cannot be actioned so the exception is reviewable rather than assumed.
+
+[[IgnoredVulns]]
+id = "GHSA-q7pp-wcgr-pffx"
+reason = """
+github.com/disintegration/imaging 1.6.2 — no fixed version exists. Upstream is
+unmaintained (last release 2019) and OSV lists the fixed version as "--". This
+is the core image-processing library the project is built on, and CLAUDE.md
+commits to pure Go with zero C dependencies, which rules out the usual
+alternative (bimg/libvips). Revisit if a fix ships or a pure-Go replacement
+becomes viable.
+"""

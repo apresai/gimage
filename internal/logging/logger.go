@@ -144,34 +144,6 @@ func (l *Logger) LogStartup() {
 	l.Log(INFO, "==========================================")
 }
 
-// LogCommandStart logs the start of a CLI command
-func (l *Logger) LogCommandStart(commandName string, args []string) {
-	if !l.enabled {
-		return
-	}
-
-	l.Log(INFO, "COMMAND START: gimage %s %v", commandName, args)
-}
-
-// LogCommandComplete logs completion of a CLI command
-func (l *Logger) LogCommandComplete(commandName string, success bool, duration time.Duration, errMsg string) {
-	if !l.enabled {
-		return
-	}
-
-	status := "SUCCESS"
-	if !success {
-		status = "FAILED"
-	}
-
-	msg := fmt.Sprintf("COMMAND COMPLETE: gimage %s [%s] duration=%s", commandName, status, duration.String())
-	if errMsg != "" {
-		msg += fmt.Sprintf(" error=%q", errMsg)
-	}
-
-	l.Log(INFO, "%s", msg)
-}
-
 // LogGenerateStart logs the start of image generation
 func (l *Logger) LogGenerateStart(prompt string, model string, apiName string, size string, style string, outputPath string) {
 	if !l.enabled {
@@ -234,21 +206,6 @@ func (l *Logger) LogAuthStatus(api string, hasAuth bool, details string) {
 	l.Log(INFO, "AUTH STATUS: %s = %s (%s)", api, status, details)
 }
 
-// LogAPICall logs an API call
-func (l *Logger) LogAPICall(apiName string, modelName string, endpoint string, status int, errMsg string) {
-	if !l.enabled {
-		return
-	}
-
-	msg := fmt.Sprintf("API CALL: %s (model=%s, endpoint=%s, status=%d", apiName, modelName, endpoint, status)
-	if errMsg != "" {
-		msg += fmt.Sprintf(", error=%q", errMsg)
-	}
-	msg += ")"
-
-	l.Log(INFO, "%s", msg)
-}
-
 // LogError logs a detailed error with context
 func (l *Logger) LogErrorContext(context string, err error, details map[string]string) {
 	if !l.enabled {
@@ -280,11 +237,6 @@ func (l *Logger) Close() error {
 	defer l.mu.Unlock()
 
 	return l.logFile.Close()
-}
-
-// GetLogPath returns the path to the log file
-func (l *Logger) GetLogPath() string {
-	return l.logPath
 }
 
 // IsEnabled returns whether logging is enabled

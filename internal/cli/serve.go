@@ -11,6 +11,7 @@ import (
 	"github.com/apresai/gimage/internal/generate"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/mcp/tools"
+	"github.com/apresai/gimage/internal/observability"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -247,6 +248,10 @@ For more information: https://github.com/apresai/gimage`,
 			fmt.Fprintln(os.Stderr, "")
 			fmt.Fprintln(os.Stderr, "[gimage-mcp] 🎧 Ready for requests...")
 		}
+
+		// Emit tool metrics on the way out, including the error path, so a
+		// session's usage and latencies survive in the log after shutdown.
+		defer observability.GetMetrics().LogSummary(ctx)
 
 		// Start server
 		if err := server.Start(ctx); err != nil && err != context.Canceled {

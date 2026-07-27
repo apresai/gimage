@@ -26,9 +26,3 @@ type GeneratedImage struct {
 	Height   int
 	Metadata map[string]string
 }
-
-// GeneratedImages represents multiple generated images from a single request
-type GeneratedImages struct {
-	Images   []*GeneratedImage
-	Metadata map[string]string
-}

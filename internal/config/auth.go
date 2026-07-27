@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
 )
 
 // ValidateGeminiAPIKey validates the format of a Gemini API key
@@ -65,122 +64,8 @@ func GetGeminiAPIKey(flagKey string) (string, error) {
 	return "", fmt.Errorf("Gemini API key not found. Please set it via:\n" +
 		"  1. Command flag: --api-key YOUR_KEY\n" +
 		"  2. Environment variable: export GEMINI_API_KEY=YOUR_KEY\n" +
-		"  3. Config file: gimage config set gemini_api_key YOUR_KEY\n" +
+		"  3. Auth setup: gimage auth setup gemini\n" +
 		"Get your API key at: https://ai.google.dev/")
-}
-
-// ValidateVertexCredentials validates Vertex AI credentials and configuration
-func ValidateVertexCredentials(project, location string) error {
-	if project == "" {
-		return fmt.Errorf("Vertex AI project ID is empty")
-	}
-
-	if location == "" {
-		return fmt.Errorf("Vertex AI location is empty")
-	}
-
-	// Validate project ID format (lowercase letters, numbers, hyphens)
-	projectPattern := regexp.MustCompile(`^[a-z][a-z0-9-]*[a-z0-9]$`)
-	if !projectPattern.MatchString(project) {
-		return fmt.Errorf("invalid Vertex AI project ID format: %s (must start with lowercase letter, contain only lowercase letters, numbers, and hyphens)", project)
-	}
-
-	// Validate location format (e.g., us-central1, europe-west1)
-	validLocations := map[string]bool{
-		"us-central1":     true,
-		"us-east1":        true,
-		"us-west1":        true,
-		"europe-west1":    true,
-		"europe-west4":    true,
-		"asia-southeast1": true,
-		"asia-northeast1": true,
-	}
-
-	if !validLocations[location] {
-		return fmt.Errorf("unsupported Vertex AI location: %s (supported: us-central1, us-east1, us-west1, europe-west1, europe-west4, asia-southeast1, asia-northeast1)", location)
-	}
-
-	// Check for GOOGLE_APPLICATION_CREDENTIALS environment variable
-	credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if credPath == "" {
-		return fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS environment variable not set.\n" +
-			"Please set it to the path of your service account JSON file:\n" +
-			"  export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json\n" +
-			"Learn more: https://cloud.google.com/docs/authentication/getting-started")
-	}
-
-	// Verify the credentials file exists
-	if _, err := os.Stat(credPath); os.IsNotExist(err) {
-		return fmt.Errorf("credentials file not found at %s", credPath)
-	}
-
-	// Verify the file is readable
-	file, err := os.Open(credPath)
-	if err != nil {
-		return fmt.Errorf("cannot read credentials file at %s: %w", credPath, err)
-	}
-	file.Close()
-
-	return nil
-}
-
-// GetVertexCredentials retrieves Vertex AI credentials from multiple sources
-// Priority order: flag parameters > environment variables > config file
-func GetVertexCredentials(flagProject, flagLocation string) (project, location string, err error) {
-	// 1. Check command-line flags (highest priority)
-	if flagProject != "" {
-		project = flagProject
-	}
-	if flagLocation != "" {
-		location = flagLocation
-	}
-
-	// 2. Check environment variables
-	if project == "" {
-		if envProject := os.Getenv("VERTEX_PROJECT"); envProject != "" {
-			project = envProject
-		}
-	}
-	if location == "" {
-		if envLocation := os.Getenv("VERTEX_LOCATION"); envLocation != "" {
-			location = envLocation
-		}
-	}
-
-	// 3. Load from config file
-	if project == "" || location == "" {
-		cfg, loadErr := LoadConfig()
-		if loadErr != nil {
-			return "", "", fmt.Errorf("failed to load config: %w", loadErr)
-		}
-
-		if project == "" && cfg.VertexProject != "" {
-			project = cfg.VertexProject
-		}
-		if location == "" && cfg.VertexLocation != "" {
-			location = cfg.VertexLocation
-		}
-	}
-
-	// Check if we have both required values
-	if project == "" {
-		return "", "", fmt.Errorf("Vertex AI project ID not found. Please set it via:\n" +
-			"  1. Command flag: --project YOUR_PROJECT_ID\n" +
-			"  2. Environment variable: export VERTEX_PROJECT=YOUR_PROJECT_ID\n" +
-			"  3. Config file: gimage config set vertex_project YOUR_PROJECT_ID")
-	}
-
-	if location == "" {
-		// Use default if not specified
-		location = "us-central1"
-	}
-
-	// Validate credentials
-	if err := ValidateVertexCredentials(project, location); err != nil {
-		return "", "", err
-	}
-
-	return project, location, nil
 }
 
 // GetVertexAPIKey retrieves the Vertex AI API key from multiple sources
@@ -290,22 +175,6 @@ func GetGrokAPIKey(flagKey string) (string, error) {
 	// No API key found
 	return "", fmt.Errorf("Grok API key not found. Please set it via:\n" +
 		"  1. Environment variable: export GROK_API_KEY=YOUR_KEY\n" +
-		"  2. Config file: gimage config set grok_api_key YOUR_KEY\n" +
+		"  2. Auth setup: gimage auth setup grok\n" +
 		"Get your API key at: https://console.x.ai")
-}
-
-// SanitizeAPIKey returns a sanitized version of an API key for safe logging
-// Shows only the first 4 and last 4 characters
-func SanitizeAPIKey(key string) string {
-	if key == "" {
-		return "<empty>"
-	}
-
-	if len(key) <= 8 {
-		return strings.Repeat("*", len(key))
-	}
-
-	// Calculate the number of asterisks needed (total length - 8 chars shown)
-	numAsterisks := len(key) - 8
-	return key[:4] + strings.Repeat("*", numAsterisks) + key[len(key)-4:]
 }

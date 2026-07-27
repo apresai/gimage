@@ -128,16 +128,6 @@ func LookupPricing(modelID string) (PricingEntry, bool) {
 	return entry, ok
 }
 
-// AuditAllPricing returns every pricing entry. Used by TestModelPricingRegistry
-// to verify coverage and by future audit commands.
-func AuditAllPricing() []PricingEntry {
-	out := make([]PricingEntry, 0, len(ModelPricing))
-	for _, e := range ModelPricing {
-		out = append(out, e)
-	}
-	return out
-}
-
 // flatPrice returns a Calculate function for a flat per-image price.
 func flatPrice(price float64) func(string, string, string) float64 {
 	return func(_, _, _ string) float64 { return price }

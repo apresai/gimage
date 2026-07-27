@@ -188,7 +188,7 @@ convert_image(input="~/Desktop/resized1.png", format="webp", output="~/Desktop/w
 convert_image(input="~/Desktop/resized2.png", format="webp", output="~/Desktop/web2.webp")
 convert_image(input="~/Desktop/resized3.png", format="webp", output="~/Desktop/web3.webp")
 
-TIP: You can also use batch_process_images for multiple files at once!`,
+TIP: You can also use batch_resize, batch_compress, or batch_convert for multiple files at once!`,
 	})
 
 	// 6. Troubleshooting - Help with common errors

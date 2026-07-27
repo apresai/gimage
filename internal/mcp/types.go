@@ -34,11 +34,6 @@ const (
 	MethodGetPrompt     = "prompts/get"
 )
 
-// MCP Protocol Notifications
-const (
-	NotificationToolsListChanged = "notifications/tools/list_changed"
-)
-
 // MCP Protocol Version
 const ProtocolVersion = "2024-11-05"
 

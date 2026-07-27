@@ -235,18 +235,20 @@ func TestFilePickerRefresh(t *testing.T) {
 		t.Errorf("Expected 2 files with filter, got %d", fp.Count())
 	}
 
-	// Verify file info
-	files := fp.GetFiles()
-	if len(files) != 2 {
-		t.Fatalf("Expected 2 files in list, got %d", len(files))
-	}
-
 	// Files should be sorted by name
-	if files[0].Name != "test2.png" {
-		t.Errorf("Expected first file to be test2.png, got %s", files[0].Name)
+	file0, err := fp.GetFile(0)
+	if err != nil {
+		t.Fatalf("GetFile(0) failed: %v", err)
 	}
-	if files[1].Name != "test3.jpg" {
-		t.Errorf("Expected second file to be test3.jpg, got %s", files[1].Name)
+	file1, err := fp.GetFile(1)
+	if err != nil {
+		t.Fatalf("GetFile(1) failed: %v", err)
+	}
+	if file0.Name != "test2.png" {
+		t.Errorf("Expected first file to be test2.png, got %s", file0.Name)
+	}
+	if file1.Name != "test3.jpg" {
+		t.Errorf("Expected second file to be test3.jpg, got %s", file1.Name)
 	}
 }
 
@@ -283,29 +285,6 @@ func TestFilePickerGetFile(t *testing.T) {
 		if err == nil {
 			t.Errorf("GetFile(%d) should return error for out of bounds index", idx)
 		}
-	}
-}
-
-func TestFilePickerGoUp(t *testing.T) {
-	tmpDir := t.TempDir()
-	subDir := filepath.Join(tmpDir, "subdir")
-	if err := os.Mkdir(subDir, 0755); err != nil {
-		t.Fatalf("Failed to create subdirectory: %v", err)
-	}
-
-	fp, err := NewFilePicker(subDir)
-	if err != nil {
-		t.Fatalf("Failed to create FilePicker: %v", err)
-	}
-
-	// Go up should succeed
-	if err := fp.GoUp(); err != nil {
-		t.Errorf("GoUp() returned error: %v", err)
-	}
-
-	// Directory should now be parent
-	if fp.GetDirectory() != tmpDir {
-		t.Errorf("Expected directory %s, got %s", tmpDir, fp.GetDirectory())
 	}
 }
 

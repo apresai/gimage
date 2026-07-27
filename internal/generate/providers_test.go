@@ -268,35 +268,6 @@ func TestDetectAPIFromModel(t *testing.T) {
 	}
 }
 
-func TestValidateModelForAPI(t *testing.T) {
-	tests := []struct {
-		name    string
-		model   string
-		api     string
-		wantErr bool
-	}{
-		{"empty model no validation", "", "gemini", false},
-		{"gemini model on gemini api", "gemini-2.5-flash-image", "gemini", false},
-		{"gemini model on vertex api mismatch", "gemini-2.5-flash-image", "vertex", true},
-		{"vertex-flash on vertex api", "vertex-flash", "vertex", false},
-		{"retired imagen-4 errors", "imagen-4", "vertex", true},
-		{"retired nova-canvas errors", "nova-canvas", "bedrock", true},
-		{"grok on grok api", "grok", "grok", false},
-		{"unknown model", "totally-unknown-xyz", "gemini", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateModelForAPI(tt.model, tt.api)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestMigratedVertexProviderCapabilities(t *testing.T) {
 	reg := GetProviderRegistry()
 	for _, providerID := range []string{"vertex/flash-3.1", "vertex/flash-3.1-fast", "vertex/flash-3.1-ultra"} {

@@ -297,20 +297,6 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 	return nil, fmt.Errorf("unsupported model %q for Vertex AI: only Gemini models are supported", modelName)
 }
 
-// ValidateCredentials checks if the Vertex AI credentials are valid
-func (c *VertexUnifiedClient) ValidateCredentials() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Try to list models as a lightweight validation
-	_, err := c.client.Models.List(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("credential validation failed: %w", err)
-	}
-
-	return nil
-}
-
 // Close closes the Vertex AI client
 func (c *VertexUnifiedClient) Close() error {
 	// The unified genai.Client doesn't have a Close method

@@ -263,38 +263,3 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 		})
 	}
 }
-
-func TestIsVertexModel(t *testing.T) {
-	tests := []struct {
-		model    string
-		expected bool
-	}{
-		// vertex-flash aliases and vertex/flash-3.1* provider IDs are Vertex.
-		{"vertex-flash", true},
-		{"vertex-flash-fast", true},
-		{"vertex-flash-ultra", true},
-		{"vertex/flash-3.1", true},
-		{"vertex/flash-3.1-fast", true},
-		{"vertex/flash-3.1-ultra", true},
-		// Retired Imagen names are no longer Vertex models.
-		{"imagen-4", false},
-		{"imagen-4-fast", false},
-		{"imagen-4-ultra", false},
-		{"imagen-4.0-fast-generate-001", false},
-		// Bare Gemini model IDs are not treated as Vertex.
-		{"gemini-3.1-flash-image", false},
-		{"gemini-2.5-flash-image", false},
-		{"gemini-2.0-flash-preview-image-generation", false},
-		{"unknown-model", false},
-		{"", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.model, func(t *testing.T) {
-			result := isVertexModel(tt.model)
-			if result != tt.expected {
-				t.Errorf("isVertexModel(%s) = %v, want %v", tt.model, result, tt.expected)
-			}
-		})
-	}
-}

@@ -69,7 +69,7 @@ func ConvertImageData(data []byte, targetFormat string) ([]byte, error) {
 //   - outputPath: path to save converted image
 //
 // The output format is determined by the file extension of outputPath.
-// Progress reporting can be provided via context using progress.WithReporter.
+// Progress reporting can be provided via context using progress.FromContext.
 func ConvertImageFile(ctx context.Context, inputPath, outputPath string) error {
 	reporter := progress.FromContext(ctx)
 	targetFormat := ExtractFormatFromPath(outputPath)

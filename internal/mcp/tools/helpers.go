@@ -7,9 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/apresai/gimage/internal/generate"
 	gimaging "github.com/apresai/gimage/internal/imaging"
 	"github.com/disintegration/imaging"
 )
@@ -19,12 +17,6 @@ func generateOutputPath(input, suffix string) string {
 	ext := filepath.Ext(input)
 	base := strings.TrimSuffix(filepath.Base(input), ext)
 	return fmt.Sprintf("%s_%s%s", base, suffix, ext)
-}
-
-// generateTimestampedPath creates a path with timestamp
-func generateTimestampedPath(prefix, ext string) string {
-	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s_%d.%s", prefix, timestamp, ext)
 }
 
 // getImageDimensions returns the width and height of an image
@@ -194,36 +186,6 @@ func saveImage(img image.Image, path string) error {
 
 	// For other formats, use imaging.Save
 	return imaging.Save(img, path)
-}
-
-// isVertexModel checks if a model is a Vertex AI model
-func isVertexModel(model string) bool {
-	// Match the user-facing vertex-flash aliases and the vertex/flash-3.1*
-	// provider IDs (Gemini 3.1 Flash via Vertex). Bare Gemini model IDs are
-	// intentionally not treated as Vertex here because the same ID can be used
-	// through the Gemini API; callers should prefer provider resolution when
-	// backend identity matters.
-	vertexModels := []string{
-		"vertex-flash",
-		"vertex-flash-fast",
-		"vertex-flash-ultra",
-		"vertex/flash-3.1",
-		"vertex/flash-3.1-fast",
-		"vertex/flash-3.1-ultra",
-	}
-	for _, vm := range vertexModels {
-		if model == vm {
-			return true
-		}
-	}
-	return false
-}
-
-// isGrokModel checks if a model is an xAI Grok model. Delegates to the
-// provider registry so this list never drifts from providerAliases.
-func isGrokModel(model string) bool {
-	api, err := generate.DetectAPIFromModel(model)
-	return err == nil && api == "grok"
 }
 
 // formatBytes formats bytes as human-readable string
