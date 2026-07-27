@@ -1,4 +1,4 @@
-.PHONY: build build-all test test-coverage install clean lint benchmark info help build-lambda package-lambda clean-lambda lambda-logs release release-local update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
+.PHONY: build build-all test test-coverage install clean lint scan benchmark info help build-lambda package-lambda clean-lambda lambda-logs release release-local update-changelog sync-version version generate-sdk install-sdk-tools clean-sdk
 
 # Binary name
 BINARY_NAME=gimage
@@ -68,6 +68,7 @@ help:
 	@echo ""
 	@echo "🔍 Quality Commands:"
 	@echo "  lint             - Run linter"
+	@echo "  scan             - Scan dependencies for known CVEs"
 	@echo "  benchmark        - Run benchmarks"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -251,6 +252,29 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f coverage.out coverage.html coverage-report.html
 	@echo "Clean complete"
+
+## scan: Scan dependencies for known vulnerabilities (CVEs)
+##
+## --no-ignore is load-bearing, not an optimization. osv-scanner honors
+## .gitignore during its filesystem walk and says nothing about what it
+## skipped, so a gitignored lockfile is silently never scanned. This repo
+## gitignores package-lock.json (.gitignore:119), which is how a tar advisory
+## sat invisible while a plain `osv-scanner scan source -r .` reported the
+## npm ecosystem as clean. Do not drop this flag.
+##
+## Exit code gates the build: osv-scanner 2.4.0 exits 1 on an actionable
+## finding (verified against a known-vulnerable pin). It already exits 0 for
+## the unfixable disintegration/imaging advisory, so osv-scanner.toml is not
+## what makes this pass today. That file's job is to keep the advisory out of
+## the report output, with its reason recorded, so a real finding is not lost
+## in a line that is expected every run.
+scan:
+	@command -v osv-scanner > /dev/null || { \
+		echo "osv-scanner not installed. Install with: brew install osv-scanner"; \
+		exit 1; \
+	}
+	@echo "Scanning dependencies (including gitignored lockfiles)..."
+	@osv-scanner scan source -r --no-ignore --config osv-scanner.toml .
 
 ## lint: Run linter
 lint:
