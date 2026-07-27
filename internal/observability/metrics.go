@@ -99,3 +99,43 @@ func (m *ToolMetrics) RecordToolInvocation(ctx context.Context, toolName string,
 		logger.Warn().Msg("Tool invocation failed")
 	}
 }
+
+// LogSummary writes aggregate and per-tool metrics to the log. The MCP server
+// calls this on shutdown so a session's tool usage is diagnosable from logs
+// alone, without reproducing the session.
+//
+// Logged at Info rather than Debug: metrics nobody sees by default are the same
+// as no metrics. Volume is bounded by the number of distinct tools invoked.
+func (m *ToolMetrics) LogSummary(ctx context.Context) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if m.totalInvocations == 0 {
+		return
+	}
+
+	logger := Logger(ctx).With().Str("component", "metrics").Logger()
+
+	logger.Info().
+		Int64("total_invocations", m.totalInvocations).
+		Int64("total_successes", m.totalSuccesses).
+		Int64("total_failures", m.totalFailures).
+		Float64("success_rate_pct", float64(m.totalSuccesses)/float64(m.totalInvocations)*100).
+		Int64("avg_latency_ms", m.totalLatencyMs/m.totalInvocations).
+		Int("tools_count", len(m.toolInvocations)).
+		Msg("Metrics summary")
+
+	for _, stats := range m.toolInvocations {
+		logger.Info().
+			Str("tool", stats.Name).
+			Int64("invocations", stats.Invocations).
+			Int64("successes", stats.Successes).
+			Int64("failures", stats.Failures).
+			Int64("total_latency_ms", stats.TotalLatency.Milliseconds()).
+			Int64("avg_latency_ms", stats.AvgLatency.Milliseconds()).
+			Int64("min_latency_ms", stats.MinLatency.Milliseconds()).
+			Int64("max_latency_ms", stats.MaxLatency.Milliseconds()).
+			Time("last_invoked", stats.LastInvoked).
+			Msg("Tool metrics")
+	}
+}
