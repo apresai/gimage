@@ -255,26 +255,64 @@ clean:
 
 ## scan: Scan dependencies for known vulnerabilities (CVEs)
 ##
-## --no-ignore is load-bearing, not an optimization. osv-scanner honors
-## .gitignore during its filesystem walk and says nothing about what it
-## skipped, so a gitignored lockfile is silently never scanned. This repo
-## gitignores package-lock.json (.gitignore:119), which is how a tar advisory
-## sat invisible while a plain `osv-scanner scan source -r .` reported the
-## npm ecosystem as clean. Do not drop this flag.
+## Two passes, because one cannot cover this repo.
 ##
-## Exit code gates the build: osv-scanner 2.4.0 exits 1 on an actionable
-## finding (verified against a known-vulnerable pin). It already exits 0 for
-## the unfixable disintegration/imaging advisory, so osv-scanner.toml is not
-## what makes this pass today. That file's job is to keep the advisory out of
-## the report output, with its reason recorded, so a real finding is not lost
-## in a line that is expected every run.
+## Pass 1 walks tracked manifests. It CANNOT see gitignored lockfiles:
+## osv-scanner honors .gitignore during its walk and reports nothing about
+## what it skipped. This repo gitignores package-lock.json (.gitignore:119),
+## which is how a tar advisory sat invisible while a plain
+## `osv-scanner scan source -r .` reported the npm ecosystem as clean.
+##
+## Pass 2 covers those with explicit -L, discovering them via git rather than
+## a hardcoded list so a lockfile added later is picked up automatically.
+##
+## Why not just --no-ignore: it makes osv-scanner walk installed trees
+## (node_modules, Pods, DerivedData) and scan those instead of lockfiles. It
+## happens to be cheap in this repo today only because the sole npm dependency
+## is tar; on a repo with real installed trees it has been measured at 91s and
+## 843 false findings. -L is correct regardless of what is on disk.
+##
+## Constraints of osv-scanner 2.4.0 encoded below: -r and -L cannot be
+## combined (aborts the run), and one unextractable -L path aborts the whole
+## invocation, so each lockfile is scanned in its own call.
+##
+## Two shell details that are load-bearing, not style. Recipes run under
+## /bin/sh, where an unquoted expansion word-splits: `for f in $$list` turns
+## one path containing a space into several bogus paths, and since a bad -L
+## path aborts the run, that loses the whole scan rather than one file. Hence
+## `while IFS= read -r`, fed by REDIRECTION rather than a pipe, since a pipe
+## would run the loop in a subshell and discard rc.
+##
+## Exit code gates the build: 2.4.0 exits 1 on an actionable finding (verified
+## against a known-vulnerable pin). Documented no-fix-available advisories live
+## in osv-scanner.toml so real findings are not lost in expected noise.
+##
+## Expected on pass 2: "osv-scanner.toml has unused ignores". The config is
+## shared across passes and its current entry is a Go advisory, which cannot
+## match an npm lockfile. Passing --config to both passes anyway is deliberate,
+## so an npm exception added later actually takes effect.
 scan:
 	@command -v osv-scanner > /dev/null || { \
 		echo "osv-scanner not installed. Install with: brew install osv-scanner"; \
 		exit 1; \
 	}
-	@echo "Scanning dependencies (including gitignored lockfiles)..."
-	@osv-scanner scan source -r --no-ignore --config osv-scanner.toml .
+	@rc=0; \
+	echo "==> Scanning tracked manifests"; \
+	osv-scanner scan source -r --config osv-scanner.toml . || rc=$$?; \
+	list=$$(mktemp); \
+	git ls-files --others --ignored --exclude-standard 2>/dev/null \
+		| grep -E '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|uv\.lock|Gemfile\.lock|composer\.lock|pubspec\.lock|Package\.resolved)$$' \
+		| grep -v -E '(^|/)node_modules/' > "$$list" || true; \
+	if [ -s "$$list" ]; then \
+		while IFS= read -r f; do \
+			echo "==> Scanning gitignored lockfile: $$f"; \
+			osv-scanner scan source --config osv-scanner.toml -L "$$f" || rc=$$?; \
+		done < "$$list"; \
+	else \
+		echo "==> No gitignored lockfiles found"; \
+	fi; \
+	rm -f "$$list"; \
+	exit $$rc
 
 ## lint: Run linter
 lint:
