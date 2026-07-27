@@ -276,6 +276,13 @@ clean:
 ## combined (aborts the run), and one unextractable -L path aborts the whole
 ## invocation, so each lockfile is scanned in its own call.
 ##
+## Two shell details that are load-bearing, not style. Recipes run under
+## /bin/sh, where an unquoted expansion word-splits: `for f in $$list` turns
+## one path containing a space into several bogus paths, and since a bad -L
+## path aborts the run, that loses the whole scan rather than one file. Hence
+## `while IFS= read -r`, fed by REDIRECTION rather than a pipe, since a pipe
+## would run the loop in a subshell and discard rc.
+##
 ## Exit code gates the build: 2.4.0 exits 1 on an actionable finding (verified
 ## against a known-vulnerable pin). Documented no-fix-available advisories live
 ## in osv-scanner.toml so real findings are not lost in expected noise.
@@ -292,17 +299,19 @@ scan:
 	@rc=0; \
 	echo "==> Scanning tracked manifests"; \
 	osv-scanner scan source -r --config osv-scanner.toml . || rc=$$?; \
-	ignored=$$(git ls-files --others --ignored --exclude-standard 2>/dev/null \
+	list=$$(mktemp); \
+	git ls-files --others --ignored --exclude-standard 2>/dev/null \
 		| grep -E '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|uv\.lock|Gemfile\.lock|composer\.lock|pubspec\.lock|Package\.resolved)$$' \
-		| grep -v '/node_modules/' || true); \
-	if [ -n "$$ignored" ]; then \
-		for f in $$ignored; do \
+		| grep -v -E '(^|/)node_modules/' > "$$list" || true; \
+	if [ -s "$$list" ]; then \
+		while IFS= read -r f; do \
 			echo "==> Scanning gitignored lockfile: $$f"; \
 			osv-scanner scan source --config osv-scanner.toml -L "$$f" || rc=$$?; \
-		done; \
+		done < "$$list"; \
 	else \
 		echo "==> No gitignored lockfiles found"; \
 	fi; \
+	rm -f "$$list"; \
 	exit $$rc
 
 ## lint: Run linter
