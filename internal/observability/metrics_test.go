@@ -34,6 +34,11 @@ func TestGetMetrics(t *testing.T) {
 	m := GetMetrics()
 	require.NotNil(t, m)
 	assert.NotNil(t, m.toolInvocations)
+
+	// The MCP handler records against GetMetrics() and serve.go reports from
+	// GetMetrics(). If this stopped returning one shared instance, the shutdown
+	// summary would silently report an empty second instance.
+	assert.Same(t, m, GetMetrics(), "GetMetrics must return the same instance")
 }
 
 func TestRecordToolInvocation(t *testing.T) {

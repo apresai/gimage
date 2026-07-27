@@ -28,6 +28,7 @@ make install        # Install locally
 make test           # Run tests
 make test-coverage  # Run tests with coverage
 make lint           # Run linter
+make scan           # Scan dependencies for known CVEs
 make clean          # Clean artifacts
 make benchmark      # Run benchmarks
 
