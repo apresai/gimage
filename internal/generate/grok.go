@@ -158,12 +158,13 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 }
 
 // isHTTPSImageURL reports whether s is an absolute https URL xAI can fetch.
+// Scheme comparison is case-insensitive (RFC 3986 schemes are case-insensitive).
 func isHTTPSImageURL(s string) bool {
 	u, err := url.Parse(s)
 	if err != nil {
 		return false
 	}
-	return u.Scheme == "https" && u.Host != ""
+	return strings.EqualFold(u.Scheme, "https") && u.Host != ""
 }
 
 // attachGrokInputImages loads reference images into the request for /images/edits.

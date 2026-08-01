@@ -483,7 +483,7 @@ components:
           example: "s3_url"
         image_size:
           type: string
-          description: Native image resolution. Gemini 3+ / vertex-flash*: '1K', '2K', or '4K'. Grok Imagine / Quality: '1K' or '2K' only (maps to xAI resolution).
+          description: "Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution)."
           enum:
             - 1K
             - 2K
@@ -491,7 +491,7 @@ components:
           example: "2K"
         aspect_ratio:
           type: string
-          description: Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto.
+          description: "Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto."
           example: "16:9"
         thinking_level:
           type: string
@@ -511,7 +511,7 @@ components:
           type: array
           items:
             type: string
-          description: Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps - Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
+          description: "Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14."
           maxItems: 14
           example:
             - "/tmp/character.png"

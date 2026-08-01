@@ -244,10 +244,18 @@ func TestBuildGrokImageRequest_User(t *testing.T) {
 
 func TestIsHTTPSImageURL(t *testing.T) {
 	assert.True(t, isHTTPSImageURL("https://cdn.example.com/a.png"))
+	assert.True(t, isHTTPSImageURL("HTTPS://cdn.example.com/a.png"))
 	assert.False(t, isHTTPSImageURL("http://cdn.example.com/a.png"))
 	assert.False(t, isHTTPSImageURL("/tmp/photo.png"))
 	assert.False(t, isHTTPSImageURL("https://"))
 	assert.False(t, isHTTPSImageURL(""))
+}
+
+func TestBuildGrokImageRequest_EmptyUserOmitted(t *testing.T) {
+	req := buildGrokImageRequest("p", models.GenerateOptions{})
+	body, err := json.Marshal(req)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), `"user"`)
 }
 
 func TestMaxInputImagesForModel_Grok(t *testing.T) {
