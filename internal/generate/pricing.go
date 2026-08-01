@@ -104,8 +104,9 @@ var ModelPricing = map[string]PricingEntry{
 		Summary:        "$0.02/image (1K/2K)",
 		Representative: 0.02,
 		Calculate:      flatPrice(0.02),
-		Source:         "https://docs.x.ai/developers/pricing",
-		Verified:       "2026-06-21",
+		Source:         "https://x.ai/api (Imagine) + live cost_in_usd_ticks",
+		Verified:       "2026-08-01",
+		Note:           "Edits also bill media input (~$0.002/input image per x.ai/api). Output flat at 1K and 2K.",
 	},
 	"grok-imagine-image-quality": {
 		ModelID:        "grok-imagine-image-quality",
@@ -116,9 +117,9 @@ var ModelPricing = map[string]PricingEntry{
 			"": 0.05,
 		}),
 		DisplayContext: imageSizeSuffix,
-		Source:         "https://docs.x.ai/developers/pricing",
-		Verified:       "2026-06-21",
-		Note:           "Replaces grok-imagine-image-pro retired by xAI 2026-05-15",
+		Source:         "https://x.ai/api (Imagine) + live cost_in_usd_ticks",
+		Verified:       "2026-08-01",
+		Note:           "Live probe 2026-08-01: 1K=5e8 ticks ($0.05), 2K=7e8 ticks ($0.07). docs.x.ai/pricing lists flat $0.05; billing matches marketing tiers. Media input on edits ~$0.01/input image. xAI aliases grok-imagine-image-pro → this model.",
 	},
 }
 

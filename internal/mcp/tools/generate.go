@@ -81,16 +81,18 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"grok-imagine",
 						"grok-imagine-quality",
 						"grok-quality",
+						"grok-imagine-pro",
+						"grok-imagine-image-pro",
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'vertex-flash' (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution, medium thinking default), 'vertex-flash-fast' (same backend, minimal thinking default), 'vertex-flash-ultra' (same backend, high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 1K, $0.07 2K, replaces -pro retired 2026-05-15). Aliases automatically resolve to correct provider. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'vertex-flash' (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution, medium thinking default), 'vertex-flash-fast' (same backend, minimal thinking default), 'vertex-flash-ultra' (same backend, high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 at 1K, $0.07 at 2K; aliases grok-imagine-pro / grok-imagine-image-pro still resolve here per xAI). Aliases automatically resolve to correct provider. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
 					"default":     "gemini-3-pro-image",
 				},
 				"image_size": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"1K", "2K", "4K"},
-					"description": "Native image resolution for Gemini 3+ models (gemini-3-pro-image, gemini-3.1-flash-image). Supports '1K', '2K', or '4K' for native upscaling. Produces sharper text and diagrams at higher resolutions.",
+					"description": "Native image resolution. Gemini 3+ (gemini-3-pro-image, gemini-3.1-flash-image, vertex-flash*): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).",
 				},
 				"style": map[string]interface{}{
 					"type":        "string",
@@ -134,8 +136,12 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"input_images": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]interface{}{"type": "string"},
-					"description": "Optional local file paths to reference images for compositional editing. Accepted formats: PNG, JPEG, WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits; for multi-image Grok prompts you may reference <IMAGE_0>, <IMAGE_1>, etc.",
+					"description": "Optional reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs (passed through to xAI). Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits; multi-image Grok prompts may reference <IMAGE_0>, <IMAGE_1>, etc.",
 					"maxItems":    14,
+				},
+				"user": map[string]interface{}{
+					"type":        "string",
+					"description": "Optional end-user identifier for abuse monitoring (Grok/xAI only).",
 				},
 			},
 			"required": []string{"prompt"},
@@ -208,6 +214,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			thinkingLevel, _ := args["thinking"].(string)
 			grounding, _ := args["grounding"].(bool)
 			inputImages := coerceStringArray(args["input_images"])
+			userID, _ := args["user"].(string)
 			if thinkingLevel == "" {
 				thinkingLevel = defaultThinkingLevelForProvider(selectedProvider)
 			}
@@ -233,10 +240,11 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				Size:               size,
 				Style:              style,
 				Seed:               seed,
-				ImageSize:          imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash)
+				ImageSize:          imageSize,   // Native resolution for Gemini 3+ (Pro/3.1 Flash) and Grok 1K/2K
 				AspectRatio:        aspectRatio, // For Gemini 3+ and Grok Imagine
 				NumberOfImages:     count,
 				OutputFormat:       outputFormat,
+				User:               userID, // Grok/xAI optional end-user id
 				ThinkingLevel:      thinkingLevel,
 				WebSearchGrounding: grounding,
 				InputImages:        inputImages,

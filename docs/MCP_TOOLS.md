@@ -41,7 +41,8 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `output_format` | string | No | - | Output format for Vertex AI: "png", "jpeg", or "webp" |
 | `thinking` | string | No | - | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
 | `grounding` | boolean | No | `false` | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
-| `input_images` | array of strings | No | - | Local file paths to reference images for editing/composition. PNG/JPEG/WebP. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits. |
+| `input_images` | array of strings | No | - | Reference images for editing/composition. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits. |
+| `user` | string | No | - | Optional end-user identifier for abuse monitoring (Grok/xAI only). |
 
 ### Supported Sizes
 

@@ -149,9 +149,13 @@ gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
 gimage generate "place this product on a marble counter, soft light" \
  --model gemini-3.1-flash --input-image product.png
 
-# Grok image edit via xAI /images/edits (max 3 reference images)
+# Grok image edit via xAI /images/edits (max 3 reference images; local path or https:// URL)
 gimage generate "render this as a pencil sketch with detailed shading" \
  --model grok-quality --input-image photo.png --image-size 2K
+
+# Grok edit from a public HTTPS reference (passed through to xAI)
+gimage generate "make this neon cyberpunk" \
+ --model grok --input-image https://example.com/photo.png
 
 # Combine multiple references (character + scene) - caps: Grok=3, Gemini 2.5=3, 3 Pro=11, 3.1 Flash=14
 gimage generate "this character in this environment, cinematic" \
@@ -358,17 +362,18 @@ All three Vertex providers run `gemini-3.1-flash-image` via the Vertex generateC
 
 - **`grok-imagine-image`** (default Grok model, fast and affordable)
 
- - Pricing: $0.02/image
+ - Pricing: $0.02/image (1K and 2K; live-verified 2026-08-01)
  - Supports aspect ratio (14 values: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
- - Supports image editing via `--input-image` (up to 3 reference images)
+ - Supports image editing via `--input-image` (up to 3 refs: local path or https:// URL)
+ - Optional `--user` for xAI end-user abuse monitoring
  - Best for: Quick iterations, affordable image generation
 
-- **`grok-imagine-image-quality`** (quality tier, replaces deprecated `-pro` retired by xAI 2026-05-15)
+- **`grok-imagine-image-quality`** (quality tier)
 
- - Pricing: $0.05/image at 1K, $0.07/image at 2K
+ - Pricing: $0.05/image at 1K, $0.07/image at 2K (live-verified 2026-08-01)
  - Supports aspect ratio, resolution (`1k`, `2k`), and `--input-image` editing (max 3)
  - Best for: Higher quality creative images
- - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` automatically resolve here
+ - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` resolve here (xAI still lists them as aliases)
 
 **View all models with live pricing:**
 

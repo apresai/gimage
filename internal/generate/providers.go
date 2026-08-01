@@ -501,7 +501,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Grok Imagine Quality (via xAI)",
 		API:         "grok",
 		ModelID:     "grok-imagine-image-quality",
-		Description: "xAI quality tier ($0.05/image at 1K, $0.07 at 2K) — replaces deprecated grok-imagine-image-pro",
+		Description: "xAI quality tier ($0.05/image at 1K, $0.07 at 2K); aliases: grok-quality, grok-imagine-pro",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -774,8 +774,11 @@ var providerAliases = map[string]string{
 	"grok-quality":               "grok/grok-imagine-quality",
 	"grok-imagine-quality":       "grok/grok-imagine-quality",
 	"grok-imagine-image-quality": "grok/grok-imagine-quality",
-	"xai":                        "grok/grok-imagine",
-	"aurora":                     "grok/grok-imagine",
+	// xAI still aliases -pro → quality (verified live GET /v1/models 2026-08-01)
+	"grok-imagine-pro":       "grok/grok-imagine-quality",
+	"grok-imagine-image-pro": "grok/grok-imagine-quality",
+	"xai":                    "grok/grok-imagine",
+	"aurora":                 "grok/grok-imagine",
 }
 
 // retiredAliases are model names we used to accept but no longer run. They must
@@ -795,8 +798,6 @@ var retiredAliases = map[string]string{
 	"imagen-4.0-ultra-generate-001":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
 	"gemini-3-pro-image-preview":     `preview builds were discontinued; use "gemini-3-pro"`,
 	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash"`,
-	"grok-imagine-pro":               `xAI retired the -pro tier; use "grok-quality"`,
-	"grok-imagine-image-pro":         `xAI retired the -pro tier; use "grok-quality"`,
 	// AWS Bedrock Nova Canvas: removed (AWS end-of-life 2026-09-30); no Bedrock image model is offered.
 	"nova":                    `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
 	"nova-canvas":             `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,

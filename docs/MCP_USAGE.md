@@ -135,7 +135,7 @@ Generate stunning images from text descriptions using state-of-the-art AI models
  - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
  - Output format (Vertex AI: PNG, JPEG, WebP)
  - Batch generation (max count varies by provider; Grok returns N exactly up to 10)
- - Reference-image editing via `input_images` (Grok max 3 via `/images/edits`; Gemini caps 3/11/14 by model)
+ - Reference-image editing via `input_images` (Grok max 3 via `/images/edits`, local paths or https:// URLs; Gemini caps 3/11/14 by model, local paths)
 - **Gemini 3+ exclusives** (`thinking`, `grounding`; ignored by other providers):
  - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
  - `grounding` (bool): enables Google Search grounding (billed per search query)

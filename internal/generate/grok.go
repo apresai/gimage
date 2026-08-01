@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ type GrokImageRequest struct {
 	AspectRatio    string `json:"aspect_ratio,omitempty"`
 	// Resolution is the xAI native resolution: "1k" or "2k". Only honored by grok-imagine-* models.
 	Resolution string `json:"resolution,omitempty"`
+	// User is an optional end-user id for abuse monitoring (xAI REST field).
+	User string `json:"user,omitempty"`
 	// Image is used for single-image edits (mutually exclusive with Images).
 	Image *GrokImageSource `json:"image,omitempty"`
 	// Images is used for multi-reference edits (up to grokMaxInputImages). Reference as
@@ -128,6 +131,7 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 		Prompt:         enhancedPrompt,
 		N:              numImages,
 		ResponseFormat: "b64_json",
+		User:           options.User,
 	}
 
 	isImagine := isGrokImagineModel(request.Model)
@@ -153,8 +157,19 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 	return request
 }
 
-// attachGrokInputImages loads local reference images into the request for /images/edits.
-// One path uses the singular `image` field; two or more use `images` (max 3).
+// isHTTPSImageURL reports whether s is an absolute https URL xAI can fetch.
+func isHTTPSImageURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "https" && u.Host != ""
+}
+
+// attachGrokInputImages loads reference images into the request for /images/edits.
+// Each entry may be a local file path (encoded as a data URI) or a public https:// URL
+// (passed through to xAI without downloading). One entry uses the singular `image`
+// field; two or more use `images` (max 3).
 func attachGrokInputImages(request *GrokImageRequest, paths []string) error {
 	if len(paths) == 0 {
 		return nil
@@ -165,6 +180,20 @@ func attachGrokInputImages(request *GrokImageRequest, paths []string) error {
 
 	sources := make([]GrokImageSource, 0, len(paths))
 	for _, path := range paths {
+		if path == "" {
+			return fmt.Errorf("input image path is empty")
+		}
+		// Reject bare http://; xAI accepts public URLs and we require TLS.
+		if strings.HasPrefix(strings.ToLower(path), "http://") {
+			return fmt.Errorf("input image URL must use https:// (got %q)", path)
+		}
+		if isHTTPSImageURL(path) {
+			sources = append(sources, GrokImageSource{
+				URL:  path,
+				Type: "image_url",
+			})
+			continue
+		}
 		data, mimeType, err := readInputImageData(path)
 		if err != nil {
 			return fmt.Errorf("read input image %s: %w", path, err)
