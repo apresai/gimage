@@ -71,6 +71,16 @@ func TestReadInputImageAsInlineData_MissingFile(t *testing.T) {
 	}
 }
 
+func TestReadInputImageData_RemoteURLRejected(t *testing.T) {
+	_, _, err := readInputImageData("https://example.com/photo.png")
+	if err == nil {
+		t.Fatal("expected error for remote URL, got nil")
+	}
+	if !strings.Contains(err.Error(), "only supported for Grok") {
+		t.Errorf("expected Grok-only URL message, got: %v", err)
+	}
+}
+
 func TestReadInputImageAsInlineData_TooLarge(t *testing.T) {
 	// Sparse-allocate a file just over maxInputImageBytes (20 MB) — Truncate
 	// reserves logical size without writing actual bytes, so the test stays fast

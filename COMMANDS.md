@@ -77,7 +77,8 @@ gimage generate --prompt "your prompt" [flags]
 | `--aspect-ratio` | string | Aspect ratio. Gemini 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` | - |
 | `--thinking` | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | - |
 | `--grounding` | bool | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false` |
-| `--input-image` | string | Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | - |
+| `--input-image` | string | Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | - |
+| `--user` | string | Optional end-user identifier for abuse monitoring (Grok/xAI only). | - |
 
 ### Available Models
 
@@ -97,8 +98,8 @@ gimage generate --prompt "your prompt" [flags]
 
 **xAI Grok (Paid):**
 
-- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model); aspect ratio (14 values incl. `auto`); `--input-image` edits (max 3)
-- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (replaces deprecated `-pro` retired by xAI 2026-05-15); same aspect/edit support
+- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model); aspect ratio (14 values incl. `auto`); `--input-image` edits (max 3, local path or https:// URL)
+- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (aliases: `grok-quality`, `grok-imagine-pro`, `grok-imagine-image-pro`); same aspect/edit support
 
 ### Examples
 

@@ -584,6 +584,12 @@ func readInputImageAsInlineData(path string) (geminiPart, error) {
 }
 
 func readInputImageData(path string) ([]byte, string, error) {
+	// Remote URLs are Grok-only (passed through to xAI). Fail with a clear
+	// message instead of a confusing "no such file" from os.Stat.
+	lower := strings.ToLower(path)
+	if strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "http://") {
+		return nil, "", fmt.Errorf("remote URL input images are only supported for Grok (--model grok / grok-quality); got %q", path)
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, "", err

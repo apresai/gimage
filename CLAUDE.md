@@ -147,14 +147,14 @@ Map informal names to exact model IDs:
 | "vertex-flash-fast" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, minimal thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-ultra" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, high thinking default; tiered $0.045-$0.151/image |
 | "grok", "grok-imagine", "xai", "aurora" | `grok-imagine-image` | grok | Fast and affordable, $0.02/image (default) |
-| "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (alias), "grok-imagine-image-pro" (alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image at 1K, $0.07/image at 2K. Replaces `grok-imagine-image-pro` retired by xAI 2026-05-15 |
+| "grok-quality", "grok-imagine-quality", "grok-imagine-pro" (xAI alias), "grok-imagine-image-pro" (xAI alias) | `grok-imagine-image-quality` | grok | Quality tier, $0.05/image at 1K, $0.07/image at 2K (live-verified). xAI still aliases `-pro` names to quality. |
 
 **Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`. **Grok Imagine** and **Grok Imagine Quality** also accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
 
 **Grok Imagine** supports `aspect_ratio` with 14 values: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto`.
 
 **Reference image editing** via repeatable `--input-image` (PNG/JPEG/WebP, local paths only):
-- **Grok** (max 3): routes to `POST /v1/images/edits`. Multi-image prompts may reference `<IMAGE_0>`, `<IMAGE_1>`, etc.
+- **Grok** (max 3): routes to `POST /v1/images/edits`. Each `--input-image` may be a local path or a public `https://` URL (URLs are passed through to xAI; `http://` is rejected). Multi-image prompts may reference `<IMAGE_0>`, `<IMAGE_1>`, etc. Optional `--user` sends xAI's end-user abuse-monitoring field.
 - **Gemini / Vertex**: compositional editing (Nano Banana style). Caps — Gemini 2.5 Flash: 3, Gemini 3 Pro: 11 (docs: 6 objects + 5 characters), Gemini 3.1 Flash: 14 (10 objects + 4 characters). The API doesn't distinguish object vs character images in the payload, so gimage enforces a single combined total per model.
 
 **Gemini 3+ exclusive options** (silently ignored by Gemini 2.5 Flash and non-Gemini providers):
@@ -165,7 +165,7 @@ Map informal names to exact model IDs:
 
 **Always use exact model IDs from the mapping table.**
 
-**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `grok-imagine-pro`, `grok-imagine-image-pro`, `nova`, `nova-canvas`, `amazon.nova-canvas-v1:0`, `bedrock/nova-canvas` (Bedrock Nova Canvas retired, AWS end-of-life 2026-09-30). Passing any of these to `--model` or `--provider` returns an error with guidance.
+**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `nova`, `nova-canvas`, `amazon.nova-canvas-v1:0`, `bedrock/nova-canvas` (Bedrock Nova Canvas retired, AWS end-of-life 2026-09-30). Passing any of these to `--model` or `--provider` returns an error with guidance. Note: `grok-imagine-pro` / `grok-imagine-image-pro` are **not** retired errors; they resolve to `grok-imagine-image-quality` (matching xAI's live aliases).
 
 ### Post-Generation: WebP Conversion
 

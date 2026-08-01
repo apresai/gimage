@@ -193,6 +193,71 @@ func TestAttachGrokInputImages_TooMany(t *testing.T) {
 	assert.Contains(t, err.Error(), "at most 3")
 }
 
+func TestAttachGrokInputImages_HTTPSURL(t *testing.T) {
+	req := buildGrokImageRequest("edit me", models.GenerateOptions{Model: "grok-imagine-image"})
+	const remote = "https://docs.x.ai/assets/api-examples/images/style-realistic.png"
+	err := attachGrokInputImages(&req, []string{remote})
+	require.NoError(t, err)
+	require.NotNil(t, req.Image)
+	assert.Nil(t, req.Images)
+	assert.Equal(t, remote, req.Image.URL)
+	assert.Equal(t, "image_url", req.Image.Type)
+	assert.False(t, strings.HasPrefix(req.Image.URL, "data:"))
+
+	body, err := json.Marshal(req)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), remote)
+}
+
+func TestAttachGrokInputImages_HTTPRejected(t *testing.T) {
+	req := buildGrokImageRequest("x", models.GenerateOptions{})
+	err := attachGrokInputImages(&req, []string{"http://example.com/photo.png"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "https://")
+}
+
+func TestAttachGrokInputImages_MixedURLAndLocal(t *testing.T) {
+	fixture := filepath.Join("..", "..", "test", "fixtures", "test_image.png")
+	if _, err := os.Stat(fixture); err != nil {
+		t.Skipf("fixture not available: %v", err)
+	}
+	req := buildGrokImageRequest("compose", models.GenerateOptions{Model: "grok-imagine-image-quality"})
+	err := attachGrokInputImages(&req, []string{
+		"https://example.com/a.png",
+		fixture,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, req.Image)
+	require.Len(t, req.Images, 2)
+	assert.Equal(t, "https://example.com/a.png", req.Images[0].URL)
+	assert.True(t, strings.HasPrefix(req.Images[1].URL, "data:image/png;base64,"))
+}
+
+func TestBuildGrokImageRequest_User(t *testing.T) {
+	req := buildGrokImageRequest("p", models.GenerateOptions{User: "tenant-42"})
+	assert.Equal(t, "tenant-42", req.User)
+
+	body, err := json.Marshal(req)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), `"user":"tenant-42"`)
+}
+
+func TestIsHTTPSImageURL(t *testing.T) {
+	assert.True(t, isHTTPSImageURL("https://cdn.example.com/a.png"))
+	assert.True(t, isHTTPSImageURL("HTTPS://cdn.example.com/a.png"))
+	assert.False(t, isHTTPSImageURL("http://cdn.example.com/a.png"))
+	assert.False(t, isHTTPSImageURL("/tmp/photo.png"))
+	assert.False(t, isHTTPSImageURL("https://"))
+	assert.False(t, isHTTPSImageURL(""))
+}
+
+func TestBuildGrokImageRequest_EmptyUserOmitted(t *testing.T) {
+	req := buildGrokImageRequest("p", models.GenerateOptions{})
+	body, err := json.Marshal(req)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), `"user"`)
+}
+
 func TestMaxInputImagesForModel_Grok(t *testing.T) {
 	assert.Equal(t, grokMaxInputImages, maxInputImagesForModel("grok-imagine-image"))
 	assert.Equal(t, grokMaxInputImages, maxInputImagesForModel("grok-imagine-image-quality"))

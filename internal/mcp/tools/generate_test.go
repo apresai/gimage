@@ -86,7 +86,7 @@ func TestGenerateImageTool_InputSchema(t *testing.T) {
 	optionalProps := []string{
 		"output", "size", "model", "style", "seed",
 		"image_size", "aspect_ratio", "count", "output_format",
-		"thinking", "grounding", "input_images",
+		"thinking", "grounding", "input_images", "user",
 	}
 	for _, prop := range optionalProps {
 		if _, exists := properties[prop]; !exists {
@@ -174,7 +174,6 @@ func TestGenerateImageTool_ExplicitInvalidModelErrors(t *testing.T) {
 		errorMsg string
 	}{
 		{"retired imagen alias", "imagen-4", "retired"},
-		{"retired grok -pro alias", "grok-imagine-pro", "retired"},
 		{"retired preview alias", "gemini-3-pro-image-preview", "retired"},
 		{"unknown model", "totally-bogus-model-xyz", "no provider found"},
 	}

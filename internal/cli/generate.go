@@ -275,6 +275,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	thinkingLevel, _ := cmd.Flags().GetString("thinking")       // Gemini 3+ only
 	grounding, _ := cmd.Flags().GetBool("grounding")            // Gemini 3+ only
 	inputImages, _ := cmd.Flags().GetStringArray("input-image") // Reference images for compositional editing
+	userID, _ := cmd.Flags().GetString("user")                   // Optional end-user id (Grok/xAI abuse monitoring)
 	inputImages = sanitizeInputImagePaths(inputImages)
 
 	// Handle --list-providers flag
@@ -393,6 +394,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		NumberOfImages:     count,
 		OutputFormat:       outputFormat,
 		ResizeMode:         resizeMode,
+		User:               userID,
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
@@ -679,6 +681,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	grounding, _ := cmd.Flags().GetBool("grounding")
 	inputImages, _ := cmd.Flags().GetStringArray("input-image")
 	inputImages = sanitizeInputImagePaths(inputImages)
+	userID, _ := cmd.Flags().GetString("user")
 	if thinkingLevel == "" {
 		thinkingLevel = defaultThinkingLevelForProvider(provider)
 	}
@@ -691,6 +694,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		Seed:               seed,
 		NumberOfImages:     count,        // Number of images to generate (Grok exact up to 10)
 		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
+		User:               userID,       // Grok/xAI optional end-user id
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
@@ -1195,7 +1199,8 @@ func init() {
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
 	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Ignored for Gemini 2.5 Flash.")
 	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query).")
-	generateCmd.Flags().StringArray("input-image", []string{}, "Local path to a reference image for editing/composition. Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
+	generateCmd.Flags().StringArray("input-image", []string{}, "Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
+	generateCmd.Flags().String("user", "", "Optional end-user identifier for abuse monitoring (Grok/xAI only; sent as the API user field).")
 
 	// Bind to viper for config file support
 	viper.BindPFlag("generate.api", generateCmd.Flags().Lookup("api"))

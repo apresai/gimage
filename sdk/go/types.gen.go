@@ -236,16 +236,16 @@ type ErrorResponse struct {
 
 // GenerateRequest defines model for GenerateRequest.
 type GenerateRequest struct {
-	// AspectRatio Aspect ratio for Gemini 3 Pro (alternative to size). E.g., '1:1', '16:9', '9:16', '4:3', '3:4'
+	// AspectRatio Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto.
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
 
 	// Grounding Enable Google Search grounding for Gemini 3+ models. Billed per search query in addition to the per-image cost.
 	Grounding *bool `json:"grounding,omitempty"`
 
-	// ImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
+	// ImageSize Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).
 	ImageSize *GenerateRequestImageSize `json:"image_size,omitempty"`
 
-	// InputImages Local file paths to reference images for compositional editing (Nano Banana style). PNG/JPEG/WebP only. Per-model caps - Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
+	// InputImages Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
 	InputImages *[]string `json:"input_images,omitempty"`
 
 	// Model AI model to use for generation
@@ -268,9 +268,12 @@ type GenerateRequest struct {
 
 	// ThinkingLevel Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
 	ThinkingLevel *GenerateRequestThinkingLevel `json:"thinking_level,omitempty"`
+
+	// User Optional end-user identifier for abuse monitoring (Grok/xAI only).
+	User *string `json:"user,omitempty"`
 }
 
-// GenerateRequestImageSize Native image resolution for Gemini 3 Pro only. Supports '1K', '2K', or '4K' for native upscaling.
+// GenerateRequestImageSize Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).
 type GenerateRequestImageSize string
 
 // GenerateRequestModel AI model to use for generation
