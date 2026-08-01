@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -53,15 +54,17 @@ func main() {
 	printTestResult(generate, "(~$0.34 API costs)")
 	fmt.Println()
 
-	// Print generated images from all test runs
+	// Print generated images from all test runs (deduped absolute paths for click-to-open)
 	allImages := append(append(unit.GeneratedImages, cli.GeneratedImages...), generate.GeneratedImages...)
+	allImages = uniqueAbsolutePaths(allImages)
 	if len(allImages) > 0 {
 		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 		fmt.Printf("                         Generated Images (%d)\n", len(allImages))
 		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 		fmt.Println()
 		for _, img := range allImages {
-			fmt.Printf("  %s\n", img)
+			// Path alone on the line so terminals/IDEs make it clickable.
+			fmt.Println(img)
 		}
 		fmt.Println()
 	}
@@ -95,10 +98,11 @@ func parseTestLog(logPath, name string) TestResults {
 		// Extract generated image paths from test logs
 		if idx := strings.Index(line, "GENERATED_IMAGE:"); idx >= 0 {
 			imgPath := strings.TrimSpace(line[idx+len("GENERATED_IMAGE:"):])
-			// Strip trailing metadata like "(1234 bytes, png, 512x512)"
+			// Strip trailing metadata like "(1234 bytes, png, 512x512)" from older logs
 			if parenIdx := strings.Index(imgPath, " ("); parenIdx >= 0 {
 				imgPath = imgPath[:parenIdx]
 			}
+			imgPath = strings.TrimSpace(imgPath)
 			if imgPath != "" {
 				result.GeneratedImages = append(result.GeneratedImages, imgPath)
 			}
@@ -107,6 +111,28 @@ func parseTestLog(logPath, name string) TestResults {
 
 	result.Total = result.Passed + result.Failed
 	return result
+}
+
+// uniqueAbsolutePaths de-duplicates image paths and resolves them to absolute
+// form so the summary list is clickable in terminals and IDEs.
+func uniqueAbsolutePaths(paths []string) []string {
+	seen := make(map[string]struct{}, len(paths))
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if abs, err := filepath.Abs(p); err == nil {
+			p = abs
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	return out
 }
 
 func printTestResult(r TestResults, note string) {
