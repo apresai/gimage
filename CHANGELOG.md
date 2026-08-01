@@ -7,19 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Grok `--input-image` / MCP `input_images` accept public `https://` URLs (passed through to xAI; `http://` rejected)
-- Optional `--user` / MCP `user` for xAI end-user abuse monitoring on Grok requests
+(empty - ready for next release)
 
-### Fixed
-- Docs icons now use Camo-safe hardcoded stroke color (were invisible: theme fragments + CSS-in-SVG stripped by GitHub)
-- `grok-imagine-pro` / `grok-imagine-image-pro` resolve to quality again (match live xAI aliases; were incorrectly hard-errored as retired)
+## [1.2.161] - 2026-08-01
+
+### Added
+- Dependency audit CI: two-pass OSV vulnerability scanning with a blocked-packages deny list (`blocked-packages.txt`, `scripts/check-blocked-deps.sh`)
+- Monochrome SVG icon set under `docs/icons/` for GitHub-safe documentation rendering
 
 ### Changed
-- User docs polish: monochrome icons, removed em dashes, fixed broken manual install URLs, synced Grok editing docs
-- Bumped Go direct dependencies (AWS SDK v2, `genai`, and transitive stack) to latest
-- Re-verified Grok Imagine pricing from live `cost_in_usd_ticks` (2026-08-01): standard $0.02; quality $0.05 @1K / $0.07 @2K
-- OpenAPI / MCP copy: `image_size` and `input_images` document Grok capabilities
+- Aligned Grok integration with the current xAI Imagine image API and bumped dependencies (#19)
+- Polished user docs (README, COMMANDS, MCP guides, SDK docs) with mono icons and accuracy fixes
+- E2E tests now log absolute image paths for click-to-open (#20)
+
+### Fixed
+- Docs icons rendering invisible on GitHub
+- osv-scanner release asset URL (404) and OSV exit code 128 now treated as an empty result in deps-audit
+- Dependency scans now include gitignored lockfiles via explicit `-L` flags instead of `--no-ignore` (#15)
+
+### Removed
+- Verified dead code across generate, imaging, MCP, observability, progress, TUI, and tooling packages, including the `test-report` tool and legacy coverage scripts (#14)
+- Stale xAI allowances from `.gitallowed` (#13)
+
 
 ## [1.2.150] - 2026-07-11
 
