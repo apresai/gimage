@@ -39,19 +39,23 @@ func shouldTestProvider(provider string) bool {
 	return false
 }
 
-// e2eOutputDir returns the output directory for E2E test images
+// e2eOutputDir returns the absolute output directory for E2E test images.
+// Always absolute so logged paths are clickable in terminals/IDEs.
 func e2eOutputDir() string {
-	if dir := os.Getenv("GIMAGE_E2E_OUTPUT_DIR"); dir != "" {
-		return dir
+	dir := os.Getenv("GIMAGE_E2E_OUTPUT_DIR")
+	if dir == "" {
+		dir = filepath.Join("..", "..", "test", "output", "e2e")
 	}
-	absDir, err := filepath.Abs(filepath.Join("..", "..", "test", "output", "e2e"))
+	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		return filepath.Join("test", "output", "e2e")
+		return dir
 	}
 	return absDir
 }
 
-// saveAndLogImage saves generated image data to disk and logs the full path
+// saveAndLogImage saves generated image data to disk and logs a clickable full path.
+// The absolute path is printed alone after "GENERATED_IMAGE:" so terminals/IDEs can
+// link it; size metadata goes on the next line (trailing "(…)" breaks path detection).
 func saveAndLogImage(t *testing.T, img *models.GeneratedImage, provider string) {
 	t.Helper()
 
@@ -67,13 +71,22 @@ func saveAndLogImage(t *testing.T, img *models.GeneratedImage, provider string) 
 	}
 	filename := fmt.Sprintf("e2e_%s.%s", provider, ext)
 	fullPath := filepath.Join(outDir, filename)
+	if abs, err := filepath.Abs(fullPath); err == nil {
+		fullPath = abs
+	}
 
 	if err := os.WriteFile(fullPath, img.Data, 0644); err != nil {
 		t.Logf("Warning: could not save image to %s: %v", fullPath, err)
 		return
 	}
 
-	t.Logf("GENERATED_IMAGE: %s (%d bytes, %s, %dx%d)", fullPath, len(img.Data), img.Format, img.Width, img.Height)
+	// Bare absolute path after the label so terminals/IDEs link the full path.
+	// Do not append metadata on the same line; trailing "(…)" breaks click-to-open.
+	t.Logf("GENERATED_IMAGE: %s", fullPath)
+	t.Logf("  size: %d bytes, format=%s, dimensions=%dx%d", len(img.Data), img.Format, img.Width, img.Height)
+	// Stdout line with path as the only content after the label (no go test
+	// file:line prefix), so make/tee and Cursor can resolve a clean click target.
+	fmt.Printf("GENERATED_IMAGE: %s\n", fullPath)
 }
 
 func TestGeminiFlashE2E(t *testing.T) {
