@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(empty - ready for next release)
+
+## [1.2.163] - 2026-09-05
+
 ### Added
 - Gemini 3.1 Flash Lite Image (`gemini-3.1-flash-lite-image`, Nano Banana 2 Lite) via Gemini API and Vertex (`vertex-flash-lite`)
 - Grok Imagine Image 2.0 (`grok-imagine-image-2.0`) with `--quality low|medium|auto` and up to 5 reference images
