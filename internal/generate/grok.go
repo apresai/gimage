@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	grokBaseURL         = "https://api.x.ai/v1"
-	grokDefaultModel    = "grok-imagine-image"
-	grokMaxInputImages  = 3
-	grokGenerationsPath = "/images/generations"
-	grokEditsPath       = "/images/edits"
+	grokBaseURL                 = "https://api.x.ai/v1"
+	grokDefaultModel            = "grok-imagine-image-2.0"
+	grokMaxInputImages          = 3
+	grokImagine20MaxInputImages = 5
+	grokGenerationsPath         = "/images/generations"
+	grokEditsPath               = "/images/edits"
 )
 
 // GrokClient handles interactions with the xAI Grok API for image generation
@@ -49,6 +50,8 @@ type GrokImageRequest struct {
 	AspectRatio    string `json:"aspect_ratio,omitempty"`
 	// Resolution is the xAI native resolution: "1k" or "2k". Only honored by grok-imagine-* models.
 	Resolution string `json:"resolution,omitempty"`
+	// Quality is grok-imagine-image-2.0 only: "low", "medium", or "auto".
+	Quality string `json:"quality,omitempty"`
 	// User is an optional end-user id for abuse monitoring (xAI REST field).
 	User string `json:"user,omitempty"`
 	// Image is used for single-image edits (mutually exclusive with Images).
@@ -153,8 +156,30 @@ func buildGrokImageRequest(enhancedPrompt string, options models.GenerateOptions
 			fmt.Fprintf(os.Stderr, "warning: --image-size %q not supported on Grok (only 1K/2K); using xAI default\n", options.ImageSize)
 		}
 	}
+	if isGrokImagine20(request.Model) && options.Quality != "" {
+		q := strings.ToLower(options.Quality)
+		switch q {
+		case "low", "medium", "auto":
+			request.Quality = q
+		default:
+			fmt.Fprintf(os.Stderr, "warning: --quality %q not supported on Grok Imagine 2.0 (low|medium|auto); using xAI default\n", options.Quality)
+		}
+	}
 
 	return request
+}
+
+// isGrokImagine20 reports whether model is grok-imagine-image-2.0 (or an alias that resolves to it).
+func isGrokImagine20(model string) bool {
+	return strings.Contains(model, "grok-imagine-image-2.0") || strings.Contains(model, "grok-imagine-2.0")
+}
+
+// maxGrokInputImages returns the edits reference-image cap for a Grok model.
+func maxGrokInputImages(model string) int {
+	if isGrokImagine20(model) {
+		return grokImagine20MaxInputImages
+	}
+	return grokMaxInputImages
 }
 
 // isHTTPSImageURL reports whether s is an absolute https URL xAI can fetch.
@@ -170,13 +195,14 @@ func isHTTPSImageURL(s string) bool {
 // attachGrokInputImages loads reference images into the request for /images/edits.
 // Each entry may be a local file path (encoded as a data URI) or a public https:// URL
 // (passed through to xAI without downloading). One entry uses the singular `image`
-// field; two or more use `images` (max 3).
+// field; two or more use `images` (max 5 on 2.0, max 3 on older models).
 func attachGrokInputImages(request *GrokImageRequest, paths []string) error {
 	if len(paths) == 0 {
 		return nil
 	}
-	if len(paths) > grokMaxInputImages {
-		return fmt.Errorf("Grok Imagine supports at most %d input images, got %d", grokMaxInputImages, len(paths))
+	maxImages := maxGrokInputImages(request.Model)
+	if len(paths) > maxImages {
+		return fmt.Errorf("Grok Imagine supports at most %d input images, got %d", maxImages, len(paths))
 	}
 
 	sources := make([]GrokImageSource, 0, len(paths))

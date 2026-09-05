@@ -49,13 +49,13 @@ gimage auth test
 
 Gemini API pricing:
 
-- Gemini 2.5 Flash: $0.039/image (most affordable)
+- Gemini 3.1 Flash Lite: $0.034/image (most affordable, 1K only)
 - Gemini 3 Pro: $0.134/image (1K/2K), $0.24/image (4K)
 
 **For advanced users**:
 
 - **Vertex AI**: 3 authentication modes (Express/Service Account/ADC)
-- **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine $0.02/image, Quality $0.05-$0.07/image)
+- **xAI Grok**: `GROK_API_KEY` environment variable (Grok Imagine 2.0 $0.04/image; speed tier $0.02/image)
 
 See [Authentication Guide](../README.md#configuration) for complete details.
 
@@ -132,10 +132,10 @@ Generate stunning images from text descriptions using state-of-the-art AI models
 - **Reproducible results**: Use seeds for consistent generation
 - **Advanced controls**:
  - Aspect ratio (Gemini 3+: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3; Grok also: 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto)
- - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Grok Imagine / Quality: 1K/2K only)
+ - Native resolution (Gemini 3 Pro / 3.1 Flash: 1K/2K/4K; Flash Lite: 1K only; Grok Imagine: 1K/2K)
  - Output format (Vertex AI: PNG, JPEG, WebP)
  - Batch generation (max count varies by provider; Grok returns N exactly up to 10)
- - Reference-image editing via `input_images` (Grok max 3 via `/images/edits`, local paths or https:// URLs; Gemini caps 3/11/14 by model, local paths)
+ - Reference-image editing via `input_images` (Grok 2.0 max 5 via `/images/edits`, older Grok max 3, local paths or https:// URLs; Gemini caps 3/11/14 by model, local paths)
 - **Gemini 3+ exclusives** (`thinking`, `grounding`; ignored by other providers):
  - `thinking` (`minimal|low|medium|high`): reasoning depth before generation
  - `grounding` (bool): enables Google Search grounding (billed per search query)
@@ -472,20 +472,23 @@ export VERTEX_PROJECT="your-gcp-project"
 
 - `gemini-3-pro-image` (default, native 4K, sharp text, $0.134-$0.24/image)
 - `gemini-3.1-flash-image` (native 4K at flash speed, tiered pricing: $0.045-$0.151/image)
-- `gemini-2.5-flash-image` ($0.039/image, up to 1024x1024)
+- `gemini-3.1-flash-lite-image` (`flash` / `gemini-flash`, $0.034/image, 1K only)
+- `gemini-2.5-flash-image` (legacy, $0.039/image, up to 1024x1024)
 
-**Vertex AI Models** (Gemini 3.1 Flash via Vertex):
+**Vertex AI Models** (Gemini 3.1 Flash / Flash Lite via Vertex):
 
 - `vertex-flash` (`vertex/flash-3.1`, medium thinking default)
 - `vertex-flash-fast` (`vertex/flash-3.1-fast`, minimal thinking default)
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`, high thinking default)
-- Pricing follows Gemini 3.1 Flash tiers: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
+- `vertex-flash-lite` (`vertex/flash-3.1-lite`, Flash Lite, $0.034/image, 1K only)
+- Flash pricing is tiered $0.045-$0.151/image by resolution
 - Options unsupported by the chosen provider are reported in the response warning field and ignored.
 
 **xAI Grok Models**:
 
-- `grok-imagine-image` (fast, $0.02/image, supports aspect ratio and resolution)
-- `grok-imagine-image-quality` (quality tier, $0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro` retired by xAI 2026-05-15)
+- `grok-imagine-image-2.0` (current Quality Mode, $0.04/image; default `grok` alias; `quality` low|medium|auto)
+- `grok-imagine-image` (speed tier, $0.02/image; alias `grok-fast`)
+- `grok-imagine-image-quality` (previous quality tier, $0.05 at 1K, $0.07 at 2K; xAI `-pro` aliases still resolve here)
 
 **Examples**:
 
@@ -540,13 +543,14 @@ Claude can chain multiple operations:
 
 4. **Try different models** - Each has strengths
 
- - Gemini 2.5 Flash: $0.039/image, fast, great for quick iterations
+ - Gemini 3.1 Flash Lite: $0.034/image, 1K only, cheapest Gemini drafts
  - Gemini 3 Pro: Best for text, diagrams, native 4K, aspect ratio control
+ - vertex-flash-lite: Gemini 3.1 Flash Lite via Vertex, $0.034/image
  - vertex-flash: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
  - vertex-flash-fast: same Vertex-backed Gemini model with minimal thinking default
  - vertex-flash-ultra: same Vertex-backed Gemini model with high thinking default
- - Grok Imagine: Fast, affordable generation via xAI ($0.02/image)
- - Grok Imagine Quality: Higher quality xAI generation ($0.05 at 1K, $0.07 at 2K; replaces deprecated `-pro`)
+ - Grok Imagine 2.0: current xAI Quality Mode ($0.04/image)
+ - Grok Imagine (`grok-fast`): $0.02/image speed tier
 
 5. **Use provider-specific features**:
 

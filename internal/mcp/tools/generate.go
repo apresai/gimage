@@ -20,7 +20,7 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/flash-3.1-fast":
+	case "vertex/flash-3.1-fast", "vertex/flash-3.1-lite":
 		return "minimal"
 	case "vertex/flash-3.1":
 		return "medium"
@@ -69,13 +69,22 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"gemini-3.1-flash",
 						"gemini-3.1",
 						"3.1-flash",
+						"gemini-3.1-flash-lite-image",
+						"gemini-3.1-flash-lite",
+						"gemini-lite",
+						"3.1-flash-lite",
 						"vertex-flash",
 						"vertex-flash-fast",
 						"vertex-flash-ultra",
+						"vertex-flash-lite",
 						"gemini",
 						"flash",
 						"gemini-flash",
 						"grok",
+						"grok-imagine-image-2.0",
+						"grok-imagine-2.0",
+						"grok-2",
+						"grok-fast",
 						"grok-imagine-image",
 						"grok-imagine-image-quality",
 						"grok-imagine",
@@ -86,13 +95,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-flash' ($0.039/image, up to 1024x1024), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K with sharp text), 'vertex-flash' (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution, medium thinking default), 'vertex-flash-fast' (same backend, minimal thinking default), 'vertex-flash-ultra' (same backend, high thinking default), 'grok' ($0.02/image, xAI Grok Imagine), 'grok-imagine-quality' ($0.05 at 1K, $0.07 at 2K; aliases grok-imagine-pro / grok-imagine-image-pro still resolve here per xAI). Aliases automatically resolve to correct provider. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'flash' / 'gemini-flash' (Gemini 3.1 Flash Lite, $0.034/image, 1K only), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K), 'vertex-flash' / 'vertex-flash-lite', 'grok' (Grok Imagine 2.0, $0.04/image), 'grok-fast' ($0.02/image speed tier). Aliases automatically resolve. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
 					"default":     "gemini-3-pro-image",
 				},
 				"image_size": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"1K", "2K", "4K"},
-					"description": "Native image resolution. Gemini 3+ (gemini-3-pro-image, gemini-3.1-flash-image, vertex-flash*): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).",
+					"description": "Native image resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution).",
 				},
 				"style": map[string]interface{}{
 					"type":        "string",
@@ -107,9 +116,10 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 					"type": "string",
 					"enum": []string{
 						"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5",
-						"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto",
+						"21:9", "1:4", "4:1", "1:8", "8:1",
+						"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "5:2", "auto",
 					},
-					"description": "Aspect ratio. Gemini 3+: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 5:4, 4:5. Grok Imagine also supports 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto. Overrides size.",
+					"description": "Aspect ratio. Gemini 3+ adds 21:9 and ultra-wide 1:4/4:1/1:8/8:1. Grok Imagine also supports 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, and auto. Overrides size.",
 				},
 				"count": map[string]interface{}{
 					"type":        "integer",
@@ -126,17 +136,22 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"thinking": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"minimal", "low", "medium", "high"},
-					"description": "Reasoning depth for Gemini 3+ models. Higher = more planning before generation (slower, may improve layout/text). Ignored for Gemini 2.5 Flash and non-Gemini providers.",
+					"description": "Reasoning depth for Gemini 3+ models. Higher = more planning before generation (slower, may improve layout/text). Flash Lite accepts minimal|high only. Ignored for Gemini 2.5 Flash and non-Gemini providers.",
 				},
 				"grounding": map[string]interface{}{
 					"type":        "boolean",
-					"description": "Enable Google Search grounding for Gemini 3+ models. Lets the model pull real-time web context (logos, current events) before generating. Billed per search query in addition to the per-image cost.",
+					"description": "Enable Google Search grounding for Gemini 3+ models (not Flash Lite). Lets the model pull real-time web context before generating. Billed per search query in addition to the per-image cost.",
 					"default":     false,
+				},
+				"quality": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"low", "medium", "auto"},
+					"description": "Grok Imagine 2.0 generation quality. Default auto (xAI chooses; currently low for generation, medium for edits). Ignored by other models.",
 				},
 				"input_images": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]interface{}{"type": "string"},
-					"description": "Optional reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs (passed through to xAI). Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. Grok uses POST /v1/images/edits; multi-image Grok prompts may reference <IMAGE_0>, <IMAGE_1>, etc.",
+					"description": "Optional reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs (passed through to xAI). Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14. Grok uses POST /v1/images/edits; multi-image Grok prompts may reference <IMAGE_0>, <IMAGE_1>, etc.",
 					"maxItems":    14,
 				},
 				"user": map[string]interface{}{
@@ -215,6 +230,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			grounding, _ := args["grounding"].(bool)
 			inputImages := coerceStringArray(args["input_images"])
 			userID, _ := args["user"].(string)
+			quality, _ := args["quality"].(string)
 			if thinkingLevel == "" {
 				thinkingLevel = defaultThinkingLevelForProvider(selectedProvider)
 			}
@@ -245,6 +261,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				NumberOfImages:     count,
 				OutputFormat:       outputFormat,
 				User:               userID, // Grok/xAI optional end-user id
+				Quality:            quality,
 				ThinkingLevel:      thinkingLevel,
 				WebSearchGrounding: grounding,
 				InputImages:        inputImages,

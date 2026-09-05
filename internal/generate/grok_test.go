@@ -25,8 +25,26 @@ func TestBuildGrokImageRequest(t *testing.T) {
 		{
 			name:           "empty model uses default",
 			opts:           models.GenerateOptions{},
-			wantModel:      "grok-imagine-image",
+			wantModel:      "grok-imagine-image-2.0",
 			wantResolution: "",
+		},
+		{
+			name:           "2.0 model with 1K",
+			opts:           models.GenerateOptions{Model: "grok-imagine-image-2.0", ImageSize: "1K"},
+			wantModel:      "grok-imagine-image-2.0",
+			wantResolution: "1k",
+		},
+		{
+			name:       "aspect-ratio 21:9 accepted",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image-2.0", AspectRatio: "21:9"},
+			wantModel:  "grok-imagine-image-2.0",
+			wantAspect: "21:9",
+		},
+		{
+			name:       "aspect-ratio 5:2 accepted",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image-2.0", AspectRatio: "5:2"},
+			wantModel:  "grok-imagine-image-2.0",
+			wantAspect: "5:2",
 		},
 		{
 			name:           "1K image-size mapped to 1k",
@@ -66,28 +84,28 @@ func TestBuildGrokImageRequest(t *testing.T) {
 			wantAspect:     "16:9",
 		},
 		{
-			name:           "aspect-ratio auto accepted",
-			opts:           models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "auto"},
-			wantModel:      "grok-imagine-image",
-			wantAspect:     "auto",
+			name:       "aspect-ratio auto accepted",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "auto"},
+			wantModel:  "grok-imagine-image",
+			wantAspect: "auto",
 		},
 		{
-			name:           "aspect-ratio 19.5:9 accepted",
-			opts:           models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "19.5:9"},
-			wantModel:      "grok-imagine-image",
-			wantAspect:     "19.5:9",
+			name:       "aspect-ratio 19.5:9 accepted",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "19.5:9"},
+			wantModel:  "grok-imagine-image",
+			wantAspect: "19.5:9",
 		},
 		{
-			name:           "aspect-ratio 2:1 accepted",
-			opts:           models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "2:1"},
-			wantModel:      "grok-imagine-image",
-			wantAspect:     "2:1",
+			name:       "aspect-ratio 2:1 accepted",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "2:1"},
+			wantModel:  "grok-imagine-image",
+			wantAspect: "2:1",
 		},
 		{
-			name:           "invalid aspect-ratio dropped",
-			opts:           models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "5:4"},
-			wantModel:      "grok-imagine-image",
-			wantAspect:     "",
+			name:       "invalid aspect-ratio dropped",
+			opts:       models.GenerateOptions{Model: "grok-imagine-image", AspectRatio: "5:4"},
+			wantModel:  "grok-imagine-image",
+			wantAspect: "",
 		},
 		{
 			name:           "aspect-ratio dropped for non-imagine model",
@@ -138,8 +156,9 @@ func TestIsValidGrokAspectRatio(t *testing.T) {
 	}
 	assert.False(t, isValidGrokAspectRatio("5:4"))
 	assert.False(t, isValidGrokAspectRatio(""))
-	assert.False(t, isValidGrokAspectRatio("21:9"))
-	assert.Equal(t, 14, len(GrokAspectRatios))
+	assert.True(t, isValidGrokAspectRatio("21:9"))
+	assert.True(t, isValidGrokAspectRatio("5:2"))
+	assert.Equal(t, 16, len(GrokAspectRatios))
 }
 
 func TestAttachGrokInputImages_Single(t *testing.T) {
@@ -187,10 +206,17 @@ func TestAttachGrokInputImages_Multi(t *testing.T) {
 }
 
 func TestAttachGrokInputImages_TooMany(t *testing.T) {
-	req := buildGrokImageRequest("x", models.GenerateOptions{})
+	req := buildGrokImageRequest("x", models.GenerateOptions{Model: "grok-imagine-image"})
 	err := attachGrokInputImages(&req, []string{"a.png", "b.png", "c.png", "d.png"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "at most 3")
+}
+
+func TestAttachGrokInputImages_TooMany20(t *testing.T) {
+	req := buildGrokImageRequest("x", models.GenerateOptions{Model: "grok-imagine-image-2.0"})
+	err := attachGrokInputImages(&req, []string{"a.png", "b.png", "c.png", "d.png", "e.png", "f.png"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "at most 5")
 }
 
 func TestAttachGrokInputImages_HTTPSURL(t *testing.T) {
@@ -261,4 +287,20 @@ func TestBuildGrokImageRequest_EmptyUserOmitted(t *testing.T) {
 func TestMaxInputImagesForModel_Grok(t *testing.T) {
 	assert.Equal(t, grokMaxInputImages, maxInputImagesForModel("grok-imagine-image"))
 	assert.Equal(t, grokMaxInputImages, maxInputImagesForModel("grok-imagine-image-quality"))
+	assert.Equal(t, grokImagine20MaxInputImages, maxInputImagesForModel("grok-imagine-image-2.0"))
+	assert.Equal(t, geminiFlash31MaxRefImages, maxInputImagesForModel("gemini-3.1-flash-lite-image"))
+}
+
+func TestBuildGrokImageRequest_Quality(t *testing.T) {
+	req := buildGrokImageRequest("p", models.GenerateOptions{Model: "grok-imagine-image-2.0", Quality: "low"})
+	assert.Equal(t, "low", req.Quality)
+
+	req = buildGrokImageRequest("p", models.GenerateOptions{Model: "grok-imagine-image-2.0", Quality: "AUTO"})
+	assert.Equal(t, "auto", req.Quality)
+
+	req = buildGrokImageRequest("p", models.GenerateOptions{Model: "grok-imagine-image", Quality: "low"})
+	assert.Empty(t, req.Quality)
+
+	req = buildGrokImageRequest("p", models.GenerateOptions{Model: "grok-imagine-image-2.0", Quality: "ultra"})
+	assert.Empty(t, req.Quality)
 }

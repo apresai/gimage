@@ -8,14 +8,17 @@ import (
 
 // Common provider constraints
 var (
-	// Gemini 3 Pro / Gemini 3.1 Flash: Flexible but prefers certain ratios
-	GoogleAspectRatios = []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"}
+	// Gemini 3 Pro / Gemini 3.1 Flash / Flash Lite (Vertex card includes ultra-wide).
+	GoogleAspectRatios = []string{
+		"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5",
+		"21:9", "1:4", "4:1", "1:8", "8:1",
+	}
 
 	// GrokAspectRatios is the full set accepted by xAI Grok Imagine (generation + edits).
 	// See https://docs.x.ai/developers/model-capabilities/images/generation
 	GrokAspectRatios = []string{
 		"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3",
-		"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto",
+		"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "21:9", "5:2", "auto",
 	}
 )
 

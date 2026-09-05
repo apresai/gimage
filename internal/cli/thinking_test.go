@@ -12,10 +12,13 @@ func TestDefaultThinkingLevelForProvider(t *testing.T) {
 		want string
 	}{
 		{"vertex/flash-3.1-fast", "minimal"},
+		{"vertex/flash-3.1-lite", "minimal"},
 		{"vertex/flash-3.1", "medium"},
 		{"vertex/flash-3.1-ultra", "high"},
 		{"gemini/flash-2.5", ""},
+		{"gemini/flash-3.1-lite", ""},
 		{"grok/grok-imagine", ""},
+		{"grok/grok-imagine-2.0", ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.id, func(t *testing.T) {

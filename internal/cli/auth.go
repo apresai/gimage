@@ -18,9 +18,9 @@ requirements and pricing. Use the subcommands to:
   setup - Interactively configure credentials for a provider
 
 Different providers offer different models with different pricing:
-  - gemini/flash-2.5: $0.039/image via Gemini API
+  - gemini/flash-3.1-lite: $0.034/image via Gemini API (1K only)
   - vertex/flash-3.1: Gemini 3.1 Flash tiered pricing via Vertex AI
-  - grok/grok-imagine: $0.02/image via xAI Grok`,
+  - grok/grok-imagine-2.0: $0.04/image via xAI Grok`,
 	Example: `  # List all providers and auth status
   gimage auth list
 

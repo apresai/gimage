@@ -115,7 +115,7 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 				},
 				"pricing_note": "Costs shown are in USD. The vertex-flash* providers (Gemini 3.1 Flash via Vertex) use tiered pricing by resolution via generateContent.",
 				"recommendations": map[string]interface{}{
-					"budget_users": "gemini/flash-2.5 ($0.039/image via Gemini API, most affordable)",
+					"budget_users": "gemini/flash-3.1-lite ($0.034/image via Gemini API, most affordable; 1K only)",
 					"paid_users":   "vertex-flash (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
 				},
 			}, nil

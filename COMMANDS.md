@@ -86,20 +86,23 @@ gimage generate --prompt "your prompt" [flags]
 
 - `gemini-3-pro-image` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
 - `gemini-3.1-flash-image` - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
-- `gemini-2.5-flash-image` - $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
+- `gemini-3.1-flash-lite-image` (`flash`, `gemini-flash`) - $0.034/image, 1K only, thinking `minimal`/`high`
+- `gemini-2.5-flash-image` - legacy, $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**
 
 - `vertex-flash` (`vertex/flash-3.1`) - Gemini 3.1 Flash via Vertex, tiered $0.045-$0.151/image, medium thinking default
 - `vertex-flash-fast` (`vertex/flash-3.1-fast`) - same backend with minimal thinking default
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`) - same backend with high thinking default
+- `vertex-flash-lite` (`vertex/flash-3.1-lite`) - Gemini 3.1 Flash Lite via Vertex, $0.034/image, 1K only, minimal thinking default
 - Options the chosen provider does not support are reported with a warning and ignored (e.g. seed on Grok, image-size on Gemini 2.5 Flash).
 - Retired names (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` or `-pro` variants) now error with guidance to use the `vertex-flash` aliases above.
 
 **xAI Grok (Paid):**
 
-- `grok-imagine-image` - $0.02/image, fast and affordable (default Grok model); aspect ratio (14 values incl. `auto`); `--input-image` edits (max 3, local path or https:// URL)
-- `grok-imagine-image-quality` - $0.05/image at 1K, $0.07/image at 2K (aliases: `grok-quality`, `grok-imagine-pro`, `grok-imagine-image-pro`); same aspect/edit support
+- `grok-imagine-image-2.0` - $0.04/image, current Quality Mode (default `grok` / `grok-quality` alias); `--quality low|medium|auto`; aspect ratio (16 values incl. `auto`); `--input-image` edits (max 5)
+- `grok-imagine-image` (`grok-fast`) - $0.02/image speed tier; `--input-image` edits (max 3)
+- `grok-imagine-image-quality` - previous quality tier, $0.05/image at 1K, $0.07/image at 2K (xAI `-pro` aliases still resolve here)
 
 ### Examples
 
@@ -140,7 +143,7 @@ gimage generate "random pattern" --seed 12345
 gimage generate "place this on a marble counter, soft studio light" \
  --model gemini-3.1-flash --input-image product.png
 
-# Grok edit via xAI /images/edits (max 3 images)
+# Grok 2.0 edit via xAI /images/edits (max 5 images)
 gimage generate "render this as a pencil sketch with detailed shading" \
  --model grok-quality --input-image photo.png --image-size 2K
 

@@ -112,6 +112,50 @@ func isGeminiAdvanced(modelName string) bool {
 	return strings.Contains(modelName, "gemini-3")
 }
 
+// isGeminiFlashLite reports whether modelName is Gemini 3.1 Flash Lite Image.
+func isGeminiFlashLite(modelName string) bool {
+	return strings.Contains(modelName, "flash-lite-image")
+}
+
+// geminiSupportsGrounding is Gemini 3+ except Flash Lite (no Google Search tool).
+func geminiSupportsGrounding(modelName string) bool {
+	return isGeminiAdvanced(modelName) && !isGeminiFlashLite(modelName)
+}
+
+// normalizeLiteImageSize returns an API imageSize for Gemini 3+. Lite accepts 1K
+// only; other values are dropped with a stderr warning.
+func normalizeLiteImageSize(modelName, imageSize string) string {
+	if imageSize == "" {
+		return ""
+	}
+	size := strings.ToUpper(imageSize)
+	if isGeminiFlashLite(modelName) && size != "1K" {
+		fmt.Fprintf(os.Stderr, "warning: --image-size %q not supported on Gemini 3.1 Flash Lite (1K only); omitting\n", imageSize)
+		return ""
+	}
+	return size
+}
+
+// normalizeGeminiThinkingLevel lowercases a thinking level and, on Flash Lite,
+// coerces unsupported low/medium to minimal/high.
+func normalizeGeminiThinkingLevel(modelName, level string) string {
+	level = strings.ToLower(level)
+	if level == "" || level == "off" {
+		return ""
+	}
+	if isGeminiFlashLite(modelName) {
+		switch level {
+		case "low":
+			fmt.Fprintf(os.Stderr, "warning: --thinking low is not supported on Gemini 3.1 Flash Lite; using minimal\n")
+			return "minimal"
+		case "medium":
+			fmt.Fprintf(os.Stderr, "warning: --thinking medium is not supported on Gemini 3.1 Flash Lite; using high\n")
+			return "high"
+		}
+	}
+	return level
+}
+
 // buildGenerateContentRequest assembles the full generateContent request payload
 // for a given model + prompt + options. It returns the struct (not a serialized
 // payload) so unit tests can introspect the assembled shape without an HTTP
@@ -142,9 +186,9 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 		// Add imageConfig for Gemini 3+ (supports 4K, aspect ratio)
 		imageConfig := &geminiImageConfig{}
 
-		// Set imageSize if specified (1K, 2K, 4K)
-		if options.ImageSize != "" {
-			imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
+		// Set imageSize if specified (1K, 2K, 4K; Lite is 1K only)
+		if size := normalizeLiteImageSize(modelName, options.ImageSize); size != "" {
+			imageConfig.ImageSize = size
 			log.Debug("Using imageSize: %s", imageConfig.ImageSize)
 		}
 
@@ -168,7 +212,7 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 		}
 
 		// Thinking config (Gemini 3+ only). "off" or empty omits the field entirely.
-		if level := strings.ToLower(options.ThinkingLevel); level != "" && level != "off" {
+		if level := normalizeGeminiThinkingLevel(modelName, options.ThinkingLevel); level != "" {
 			genConfig.ThinkingConfig = &geminiThinkingConfig{ThinkingLevel: level}
 			log.Debug("Using thinkingLevel: %s", level)
 		}
@@ -224,7 +268,7 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 
 	// Build tools list (Google Search grounding is Gemini 3+ only).
 	var tools []geminiTool
-	if options.WebSearchGrounding && isGeminiAdvanced(modelName) {
+	if options.WebSearchGrounding && geminiSupportsGrounding(modelName) {
 		tools = append(tools, geminiTool{GoogleSearch: &geminiGoogleSearch{}})
 		log.Debug("Google Search grounding enabled")
 	}
@@ -552,6 +596,8 @@ const maxInputImageBytes = 20 * 1024 * 1024
 // Unknown models default to the most conservative cap.
 func maxInputImagesForModel(modelName string) int {
 	switch {
+	case isGeminiFlashLite(modelName):
+		return geminiFlash31MaxRefImages
 	case strings.Contains(modelName, "gemini-3.1-flash-image"):
 		return geminiFlash31MaxRefImages
 	case strings.Contains(modelName, "gemini-3-pro-image"):
@@ -559,7 +605,7 @@ func maxInputImagesForModel(modelName string) int {
 	case strings.Contains(modelName, "gemini-2.5-flash-image"):
 		return geminiFlash25MaxRefImages
 	case strings.HasPrefix(modelName, "grok-imagine"):
-		return grokMaxInputImages
+		return maxGrokInputImages(modelName)
 	default:
 		return geminiFlash25MaxRefImages
 	}

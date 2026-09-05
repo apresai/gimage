@@ -68,12 +68,22 @@ const (
 const (
 	Gemini25FlashImage      GenerateRequestModel = "gemini-2.5-flash-image"
 	Gemini31FlashImage      GenerateRequestModel = "gemini-3.1-flash-image"
+	Gemini31FlashLiteImage  GenerateRequestModel = "gemini-3.1-flash-lite-image"
 	Gemini3ProImage         GenerateRequestModel = "gemini-3-pro-image"
 	GrokImagineImage        GenerateRequestModel = "grok-imagine-image"
+	GrokImagineImage20      GenerateRequestModel = "grok-imagine-image-2.0"
 	GrokImagineImageQuality GenerateRequestModel = "grok-imagine-image-quality"
 	VertexFlash             GenerateRequestModel = "vertex-flash"
 	VertexFlashFast         GenerateRequestModel = "vertex-flash-fast"
+	VertexFlashLite         GenerateRequestModel = "vertex-flash-lite"
 	VertexFlashUltra        GenerateRequestModel = "vertex-flash-ultra"
+)
+
+// Defines values for GenerateRequestQuality.
+const (
+	GenerateRequestQualityAuto   GenerateRequestQuality = "auto"
+	GenerateRequestQualityLow    GenerateRequestQuality = "low"
+	GenerateRequestQualityMedium GenerateRequestQuality = "medium"
 )
 
 // Defines values for GenerateRequestResponseFormat.
@@ -254,6 +264,9 @@ type GenerateRequest struct {
 	// Prompt Text description of the image to generate
 	Prompt string `json:"prompt"`
 
+	// Quality Grok Imagine 2.0 generation quality. Ignored by other models.
+	Quality *GenerateRequestQuality `json:"quality,omitempty"`
+
 	// ResponseFormat Preferred response format
 	ResponseFormat *GenerateRequestResponseFormat `json:"response_format,omitempty"`
 
@@ -278,6 +291,9 @@ type GenerateRequestImageSize string
 
 // GenerateRequestModel AI model to use for generation
 type GenerateRequestModel string
+
+// GenerateRequestQuality Grok Imagine 2.0 generation quality. Ignored by other models.
+type GenerateRequestQuality string
 
 // GenerateRequestResponseFormat Preferred response format
 type GenerateRequestResponseFormat string

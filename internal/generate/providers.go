@@ -75,6 +75,7 @@ type ModelCapabilities struct {
 	SupportsInputImages    bool
 	SupportsOutputFormat   bool // Only the Vertex full-mode (unified SDK) path honors OutputMIMEType
 	SupportsMultipleImages bool // count>1: Grok returns N exactly; Gemini/Vertex are best-effort
+	SupportsQuality        bool // Grok Imagine 2.0 quality=low|medium|auto
 	MaxPromptLength        int
 }
 
@@ -96,14 +97,14 @@ var apiRegistry = map[string]APIInfo{
 		ID:          "gemini",
 		DisplayName: "Gemini API (Google AI Studio)",
 		Description: "Direct access via Google AI Studio",
-		PricingNote: "Paid: $0.039-0.24 per image",
+		PricingNote: "Paid: $0.034-0.24 per image",
 		Order:       1,
 	},
 	"vertex": {
 		ID:          "vertex",
 		DisplayName: "Vertex AI (Google Cloud)",
 		Description: "Google Cloud's enterprise AI platform",
-		PricingNote: "Paid: $0.045-0.151 per image (Gemini 3.1 Flash tiered)",
+		PricingNote: "Paid: $0.034-0.151 per image (Gemini 3.1 Flash Lite / Flash tiered)",
 		Order:       2,
 	},
 	"grok": {
@@ -207,6 +208,47 @@ func (r *ProviderRegistry) registerAllProviders() {
 			SupportsAspectRatio:    true,
 			SupportsThinking:       true,
 			SupportsGrounding:      true,
+			SupportsInputImages:    true,
+			SupportsMultipleImages: true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GEMINI_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GEMINI_API_KEY is required")
+			}
+			return NewGeminiRESTClient(apiKey)
+		},
+	})
+
+	// Gemini 3.1 Flash Lite Image via Gemini API (Nano Banana 2 Lite)
+	r.Register(&Provider{
+		ID:          "gemini/flash-3.1-lite",
+		Name:        "Gemini 3.1 Flash Lite (via Gemini API)",
+		API:         "gemini",
+		ModelID:     "gemini-3.1-flash-lite-image",
+		Description: "Fastest/cheapest Gemini image model (Nano Banana 2 Lite). 1K only; thinking minimal|high; no Search grounding.",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GEMINI_API_KEY",
+				ConfigKey:   "gemini_api_key",
+				Description: "API key from https://aistudio.google.com",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.034),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsSeed:           true,
+			SupportsImageSize:      true, // 1K only; 2K/4K dropped in the client
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true, // minimal and high only
+			SupportsGrounding:      false,
 			SupportsInputImages:    true,
 			SupportsMultipleImages: true,
 			MaxPromptLength:        2000,
@@ -454,15 +496,119 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
+	// Gemini 3.1 Flash Lite via Vertex AI (minimal thinking default)
+	r.Register(&Provider{
+		ID:          "vertex/flash-3.1-lite",
+		Name:        "Gemini 3.1 Flash Lite via Vertex (minimal thinking)",
+		API:         "vertex",
+		ModelID:     "gemini-3.1-flash-lite-image",
+		Description: "Gemini 3.1 Flash Lite via Vertex generateContent; 1K only, $0.034/image. Default thinking: minimal (--thinking overrides; high also supported). No Search grounding.",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., us-central1)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.034),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsSeed:           false,
+			SupportsImageSize:      true, // 1K only
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      false,
+			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
+		},
+	})
+
 	// Imagen retired entirely. Vertex now serves Gemini 3.1 Flash via the vertex/flash-3.1* presets above.
 
-	// Grok Imagine via xAI (new default)
+	// Grok Imagine Image 2.0 via xAI (current recommended / Quality Mode)
+	r.Register(&Provider{
+		ID:          "grok/grok-imagine-2.0",
+		Name:        "Grok Imagine 2.0 (via xAI)",
+		API:         "grok",
+		ModelID:     "grok-imagine-image-2.0",
+		Description: "xAI's latest image generation model (Quality Mode); $0.04/image; optional --quality low|medium|auto; up to 5 reference images",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "GROK_API_KEY",
+				ConfigKey:   "grok_api_key",
+				Description: "API key from https://console.x.ai",
+				Required:    true,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.04),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         false,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsInputImages:    true, // POST /v1/images/edits, max 5
+			SupportsMultipleImages: true,
+			SupportsQuality:        true,
+			MaxPromptLength:        8000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			apiKey := creds["GROK_API_KEY"]
+			if apiKey == "" {
+				return nil, fmt.Errorf("GROK_API_KEY is required")
+			}
+			return NewGrokClient(apiKey)
+		},
+	})
+
+	// Grok Imagine via xAI (speed tier)
 	r.Register(&Provider{
 		ID:          "grok/grok-imagine",
 		Name:        "Grok Imagine (via xAI)",
 		API:         "grok",
 		ModelID:     "grok-imagine-image",
-		Description: "xAI's latest image generation model - fast and affordable",
+		Description: "xAI speed tier — fast and affordable ($0.02/image); alias: grok-fast",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -757,9 +903,14 @@ var providerAliases = map[string]string{
 	"gemini-3.1-flash-image": "gemini/flash-3.1",
 	"gemini-3.1":             "gemini/flash-3.1",
 	"3.1-flash":              "gemini/flash-3.1",
-	// Gemini 2.5 Flash
-	"gemini-flash":           "gemini/flash-2.5",
-	"flash":                  "gemini/flash-2.5",
+	// Gemini 3.1 Flash Lite (Nano Banana 2 Lite) — informal flash names
+	"gemini-3.1-flash-lite":       "gemini/flash-3.1-lite",
+	"gemini-3.1-flash-lite-image": "gemini/flash-3.1-lite",
+	"3.1-flash-lite":              "gemini/flash-3.1-lite",
+	"gemini-lite":                 "gemini/flash-3.1-lite",
+	"gemini-flash":                "gemini/flash-3.1-lite",
+	"flash":                       "gemini/flash-3.1-lite",
+	// Gemini 2.5 Flash (legacy; exact IDs only)
 	"gemini-2.5":             "gemini/flash-2.5",
 	"gemini-2.5-flash":       "gemini/flash-2.5",
 	"gemini-2.5-flash-image": "gemini/flash-2.5",
@@ -767,18 +918,25 @@ var providerAliases = map[string]string{
 	"vertex-flash":       "vertex/flash-3.1",
 	"vertex-flash-fast":  "vertex/flash-3.1-fast",
 	"vertex-flash-ultra": "vertex/flash-3.1-ultra",
-	// Grok
-	"grok":                       "grok/grok-imagine",
-	"grok-imagine":               "grok/grok-imagine",
+	"vertex-flash-lite":  "vertex/flash-3.1-lite",
+	// Grok Imagine 2.0 is the current recommended / Quality Mode
+	"grok":                   "grok/grok-imagine-2.0",
+	"grok-imagine":           "grok/grok-imagine-2.0",
+	"grok-2":                 "grok/grok-imagine-2.0",
+	"grok-imagine-2":         "grok/grok-imagine-2.0",
+	"grok-imagine-2.0":       "grok/grok-imagine-2.0",
+	"grok-imagine-image-2.0": "grok/grok-imagine-2.0",
+	"grok-quality":           "grok/grok-imagine-2.0",
+	"grok-imagine-quality":   "grok/grok-imagine-2.0",
+	"xai":                    "grok/grok-imagine-2.0",
+	"aurora":                 "grok/grok-imagine-2.0",
+	// Speed tier and previous quality model stay available via exact IDs
+	"grok-fast":                  "grok/grok-imagine",
 	"grok-imagine-image":         "grok/grok-imagine",
-	"grok-quality":               "grok/grok-imagine-quality",
-	"grok-imagine-quality":       "grok/grok-imagine-quality",
 	"grok-imagine-image-quality": "grok/grok-imagine-quality",
-	// xAI still aliases -pro → quality (verified live GET /v1/models 2026-08-01)
+	// xAI still aliases -pro → the previous quality model (verified live GET /v1/models 2026-08-01)
 	"grok-imagine-pro":       "grok/grok-imagine-quality",
 	"grok-imagine-image-pro": "grok/grok-imagine-quality",
-	"xai":                    "grok/grok-imagine",
-	"aurora":                 "grok/grok-imagine",
 }
 
 // retiredAliases are model names we used to accept but no longer run. They must
@@ -809,6 +967,18 @@ var retiredAliases = map[string]string{
 	"vertex/imagen-4-ultra": `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-ultra" or "vertex-flash-ultra"`,
 }
 
+// nonImageModels are live Google/xAI names that are not still-image generators.
+// ResolveProvider returns guidance instead of a generic "no provider found".
+var nonImageModels = map[string]string{
+	"omni":                        `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni":                 `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni-flash":           `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni-flash-preview":   `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni-1.1":             `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni-1.1-flash":       `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"gemini-omni-1.1-flash-preview": `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+}
+
 // ResolveProvider finds a provider by various identifiers
 func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 	if p, err := r.Get(input); err == nil {
@@ -821,6 +991,10 @@ func (r *ProviderRegistry) ResolveProvider(input string) (*Provider, error) {
 
 	if guidance, ok := retiredAliases[strings.ToLower(input)]; ok {
 		return nil, fmt.Errorf("model %q was retired: %s", input, guidance)
+	}
+
+	if guidance, ok := nonImageModels[strings.ToLower(input)]; ok {
+		return nil, fmt.Errorf("model %q is not an image model: %s", input, guidance)
 	}
 
 	return nil, fmt.Errorf("no provider found for: %s", input)
@@ -876,6 +1050,10 @@ func ReconcileOptions(p *Provider, o *models.GenerateOptions) []string {
 		warnings = append(warnings, fmt.Sprintf("--output-format is ignored by %s; the provider's default format is returned (convert afterward with `gimage convert`)", p.ID))
 		o.OutputFormat = ""
 	}
+	if o.Quality != "" && !c.SupportsQuality {
+		warnings = append(warnings, fmt.Sprintf("--quality is ignored by %s; it needs grok-imagine-image-2.0", p.ID))
+		o.Quality = ""
+	}
 	if o.NumberOfImages > 1 && p.API != "grok" {
 		warnings = append(warnings, fmt.Sprintf("--count %d is best-effort on %s; the Gemini image API often returns a single image (use a grok/* model for an exact count)", o.NumberOfImages, p.ID))
 	}
@@ -904,7 +1082,7 @@ func DetectAPIFromModel(modelName string) (string, error) {
 	registry := GetProviderRegistry()
 	provider, err := registry.ResolveProvider(modelName)
 	if err != nil {
-		return "", fmt.Errorf("unknown model: %s", modelName)
+		return "", fmt.Errorf("unknown model: %s: %w", modelName, err)
 	}
 
 	return provider.API, nil

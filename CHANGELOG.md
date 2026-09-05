@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(empty - ready for next release)
+### Added
+- Gemini 3.1 Flash Lite Image (`gemini-3.1-flash-lite-image`, Nano Banana 2 Lite) via Gemini API and Vertex (`vertex-flash-lite`)
+- Grok Imagine Image 2.0 (`grok-imagine-image-2.0`) with `--quality low|medium|auto` and up to 5 reference images
+- Grok aspect ratios `21:9` and `5:2`
+
+### Changed
+- Informal `flash` / `gemini-flash` aliases now resolve to Gemini 3.1 Flash Lite ($0.034/image, 1K only); Gemini 2.5 Flash remains available via exact IDs
+- Informal `grok`, `grok-imagine`, `grok-quality`, `xai`, and `aurora` aliases now resolve to Grok Imagine 2.0 ($0.04/image); speed tier is `grok-fast` / `grok-imagine-image`
+
+### Notes
+- Gemini Omni (`gemini-omni-flash-preview` / Omni 1.1 Flash) is a video model on the Interactions API and is not registered. Passing those names now errors with guidance to use a still-image model.
 
 ## [1.2.161] - 2026-08-01
 

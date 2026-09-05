@@ -123,9 +123,10 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 
 STEP 1: Check providers with list_models
 This shows all providers with pricing and capabilities:
-- gemini/flash-2.5: $0.039/image, up to 1024x1024
+- gemini/flash-3.1-lite: $0.034/image, 1K only (fastest Gemini image model)
 - gemini/pro-3: $0.134-$0.24/image, native 4K (default)
 - vertex/flash-3.1: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+- grok/grok-imagine-2.0: $0.04/image (xAI Quality Mode)
 
 STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or vertex-flash for Vertex billing
 generate_image(
@@ -136,7 +137,7 @@ generate_image(
 )
 
 PROVIDER COMPARISON:
-- Gemini Flash (gemini/flash-2.5): Good quality, $0.039/image, best for iterations
+- Gemini Flash Lite (gemini/flash-3.1-lite): Fastest/cheapest Gemini image, $0.034/image, 1K only
 - Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134-$0.24/image, sharp text
 - vertex-flash (vertex/flash-3.1): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
 

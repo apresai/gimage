@@ -278,3 +278,46 @@ func TestBuildGenerateContentRequest_CapViolationErrorsEarly(t *testing.T) {
 		t.Errorf("expected cap-violation message, got: %v", err)
 	}
 }
+
+func TestBuildGenerateContentRequest_LiteCoercesThinkingAndDropsGrounding(t *testing.T) {
+	c := newTestGeminiClient(t)
+	req, err := c.buildGenerateContentRequest(
+		"gemini-3.1-flash-lite-image",
+		"a sunset",
+		models.GenerateOptions{
+			ThinkingLevel:      "medium",
+			WebSearchGrounding: true,
+			ImageSize:          "2K",
+		},
+	)
+	if err != nil {
+		t.Fatalf("buildGenerateContentRequest returned error: %v", err)
+	}
+	if req.GenerationConfig == nil || req.GenerationConfig.ThinkingConfig == nil {
+		t.Fatal("expected ThinkingConfig on Flash Lite")
+	}
+	if req.GenerationConfig.ThinkingConfig.ThinkingLevel != "high" {
+		t.Errorf("expected thinkingLevel=high (coerced from medium), got %q", req.GenerationConfig.ThinkingConfig.ThinkingLevel)
+	}
+	if len(req.Tools) != 0 {
+		t.Errorf("did not expect grounding tools on Flash Lite, got %#v", req.Tools)
+	}
+	if req.GenerationConfig.ImageConfig != nil && req.GenerationConfig.ImageConfig.ImageSize == "2K" {
+		t.Errorf("Flash Lite must not send imageSize 2K, got %#v", req.GenerationConfig.ImageConfig)
+	}
+
+	req, err = c.buildGenerateContentRequest(
+		"gemini-3.1-flash-lite-image",
+		"a sunset",
+		models.GenerateOptions{ThinkingLevel: "low", ImageSize: "1K"},
+	)
+	if err != nil {
+		t.Fatalf("buildGenerateContentRequest returned error: %v", err)
+	}
+	if req.GenerationConfig.ThinkingConfig.ThinkingLevel != "minimal" {
+		t.Errorf("expected thinkingLevel=minimal (coerced from low), got %q", req.GenerationConfig.ThinkingConfig.ThinkingLevel)
+	}
+	if req.GenerationConfig.ImageConfig == nil || req.GenerationConfig.ImageConfig.ImageSize != "1K" {
+		t.Errorf("expected imageSize 1K on Flash Lite, got %#v", req.GenerationConfig.ImageConfig)
+	}
+}

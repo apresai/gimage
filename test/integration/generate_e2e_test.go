@@ -284,6 +284,100 @@ func TestGrokImagineE2E(t *testing.T) {
 	}
 }
 
+func TestGeminiFlashLiteE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping E2E test in short mode")
+	}
+	if !shouldTestProvider("gemini") {
+		t.Skip("Skipping: gemini not in GIMAGE_TEST_PROVIDERS")
+	}
+
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		cfg, err := config.LoadConfig()
+		if err != nil || cfg.GeminiAPIKey == "" {
+			t.Skip("GEMINI_API_KEY not set, skipping Gemini Flash Lite E2E test")
+		}
+		apiKey = cfg.GeminiAPIKey
+	}
+
+	client, err := generate.NewGeminiRESTClient(apiKey)
+	if err != nil {
+		t.Fatalf("Failed to create Gemini client: %v", err)
+	}
+	defer client.Close()
+
+	ctx := context.Background()
+	options := models.GenerateOptions{
+		Model:     "gemini-3.1-flash-lite-image",
+		ImageSize: "1K",
+	}
+
+	t.Log("Generating test image with Gemini 3.1 Flash Lite...")
+	t.Log("This will cost approximately $0.034")
+
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
+	if err != nil {
+		t.Fatalf("Gemini Flash Lite image generation failed: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatal("Gemini Flash Lite returned no images")
+	}
+
+	for i, img := range results {
+		t.Logf("Gemini Flash Lite E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("gemini_flash_lite_%d", i+1))
+	}
+}
+
+func TestGrokImagine20E2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping E2E test in short mode")
+	}
+	if !shouldTestProvider("grok") {
+		t.Skip("Skipping: grok not in GIMAGE_TEST_PROVIDERS")
+	}
+
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		cfg, err := config.LoadConfig()
+		if err != nil || cfg.GrokAPIKey == "" {
+			t.Skip("GROK_API_KEY not set, skipping Grok Imagine 2.0 E2E test")
+		}
+		apiKey = cfg.GrokAPIKey
+	}
+
+	client, err := generate.NewGrokClient(apiKey)
+	if err != nil {
+		t.Fatalf("Failed to create Grok client: %v", err)
+	}
+	defer client.Close()
+
+	ctx := context.Background()
+	options := models.GenerateOptions{
+		Model:   "grok-imagine-image-2.0",
+		Quality: "low",
+	}
+
+	t.Log("Generating test image with xAI Grok Imagine 2.0...")
+	t.Log("This will cost approximately $0.04")
+
+	results, err := client.GenerateImage(ctx, e2ePrompt, options)
+	if err != nil {
+		t.Fatalf("Grok Imagine 2.0 image generation failed: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatal("Grok Imagine 2.0 returned no images")
+	}
+
+	for i, img := range results {
+		t.Logf("Grok Imagine 2.0 E2E image %d: %d bytes, format=%s, size=%dx%d", i+1, len(img.Data), img.Format, img.Width, img.Height)
+		saveAndLogImage(t, img, fmt.Sprintf("grok_imagine_2_0_%d", i+1))
+	}
+}
+
 func TestGrokImagineQualityE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping E2E test in short mode")
@@ -398,9 +492,11 @@ func TestAllAPIsE2E(t *testing.T) {
 	}
 
 	t.Run("GeminiFlash", TestGeminiFlashE2E)
+	t.Run("GeminiFlashLite", TestGeminiFlashLiteE2E)
 	t.Run("Gemini3Pro", TestGemini3ProE2E)
 	t.Run("VertexREST", TestVertexAIE2E)
 	t.Run("VertexUnifiedSDK", TestVertexAIUnifiedSDKE2E)
 	t.Run("GrokImagine", TestGrokImagineE2E)
+	t.Run("GrokImagine20", TestGrokImagine20E2E)
 	t.Run("GrokImagineQuality", TestGrokImagineQualityE2E)
 }

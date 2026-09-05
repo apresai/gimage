@@ -70,6 +70,15 @@ var ModelPricing = map[string]PricingEntry{
 		Verified:       "2026-05-23",
 		Note:           "Legacy preview retained for cost audit only; discontinued 2026-06-25. Batch endpoint pricing matched GA before shutdown.",
 	},
+	"gemini-3.1-flash-lite-image": {
+		ModelID:        "gemini-3.1-flash-lite-image",
+		Summary:        "$0.034/image (1K only)",
+		Representative: 0.034,
+		Calculate:      flatPrice(0.034),
+		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
+		Verified:       "2026-09-05",
+		Note:           "Nano Banana 2 Lite. 1K only (1120 output tokens at $30/1M ≈ $0.0336, listed as $0.034). Batch (~50% off) via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
+	},
 	"gemini-3.1-flash-image": {
 		ModelID:        "gemini-3.1-flash-image",
 		Summary:        "$0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)",
@@ -99,6 +108,15 @@ var ModelPricing = map[string]PricingEntry{
 	// Imagen pricing entries removed: gimage no longer runs any Imagen model
 	// (the former imagen-* aliases were Gemini 3.1 Flash via Vertex, priced under
 	// the "gemini-3.1-flash-image" tiered entry above).
+	"grok-imagine-image-2.0": {
+		ModelID:        "grok-imagine-image-2.0",
+		Summary:        "$0.04/image",
+		Representative: 0.04,
+		Calculate:      flatPrice(0.04),
+		Source:         "https://docs.x.ai/developers/pricing",
+		Verified:       "2026-09-05",
+		Note:           "Official list price is flat $0.04/image. Optional quality=low|medium|auto (2.0 only). Edits bill input images in addition to output. Live ticks may still vary by resolution/quality.",
+	},
 	"grok-imagine-image": {
 		ModelID:        "grok-imagine-image",
 		Summary:        "$0.02/image (1K/2K)",

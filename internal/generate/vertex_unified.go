@@ -125,8 +125,8 @@ func buildVertexGeminiGenerateContentRequest(modelName, prompt string, options m
 	} else if options.ImageSize != "" {
 		imageConfig.AspectRatio = "1:1"
 	}
-	if options.ImageSize != "" {
-		imageConfig.ImageSize = strings.ToUpper(options.ImageSize)
+	if size := normalizeLiteImageSize(modelName, options.ImageSize); size != "" {
+		imageConfig.ImageSize = size
 	}
 	if options.OutputFormat != "" {
 		switch strings.ToLower(options.OutputFormat) {
@@ -145,10 +145,10 @@ func buildVertexGeminiGenerateContentRequest(modelName, prompt string, options m
 	if options.Seed != 0 {
 		config.Seed = genai.Ptr[int32](int32(options.Seed))
 	}
-	if level := strings.ToLower(options.ThinkingLevel); level != "" && level != "off" {
+	if level := normalizeGeminiThinkingLevel(modelName, options.ThinkingLevel); level != "" {
 		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingLevel: toGenAIThinkingLevel(level)}
 	}
-	if options.WebSearchGrounding && isGeminiAdvanced(modelName) {
+	if options.WebSearchGrounding && geminiSupportsGrounding(modelName) {
 		config.Tools = []*genai.Tool{{GoogleSearch: &genai.GoogleSearch{}}}
 	}
 

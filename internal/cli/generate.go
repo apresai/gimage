@@ -132,7 +132,7 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/flash-3.1-fast":
+	case "vertex/flash-3.1-fast", "vertex/flash-3.1-lite":
 		return "minimal"
 	case "vertex/flash-3.1":
 		return "medium"
@@ -275,7 +275,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	thinkingLevel, _ := cmd.Flags().GetString("thinking")       // Gemini 3+ only
 	grounding, _ := cmd.Flags().GetBool("grounding")            // Gemini 3+ only
 	inputImages, _ := cmd.Flags().GetStringArray("input-image") // Reference images for compositional editing
-	userID, _ := cmd.Flags().GetString("user")                   // Optional end-user id (Grok/xAI abuse monitoring)
+	userID, _ := cmd.Flags().GetString("user")                  // Optional end-user id (Grok/xAI abuse monitoring)
+	quality, _ := cmd.Flags().GetString("quality")              // Grok Imagine 2.0 only: low|medium|auto
 	inputImages = sanitizeInputImagePaths(inputImages)
 
 	// Handle --list-providers flag
@@ -395,6 +396,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		OutputFormat:       outputFormat,
 		ResizeMode:         resizeMode,
 		User:               userID,
+		Quality:            quality,
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
@@ -547,7 +549,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		// Use default model if not specified
 		modelName := model
 		if modelName == "" {
-			modelName = "grok-imagine-image"
+			modelName = "grok-imagine-image-2.0"
 		}
 
 		// Get provider info and announce selection
@@ -682,6 +684,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 	inputImages, _ := cmd.Flags().GetStringArray("input-image")
 	inputImages = sanitizeInputImagePaths(inputImages)
 	userID, _ := cmd.Flags().GetString("user")
+	quality, _ := cmd.Flags().GetString("quality")
 	if thinkingLevel == "" {
 		thinkingLevel = defaultThinkingLevelForProvider(provider)
 	}
@@ -695,6 +698,7 @@ func runGenerateWithProvider(cmd *cobra.Command, prompt, providerID, output, siz
 		NumberOfImages:     count,        // Number of images to generate (Grok exact up to 10)
 		OutputFormat:       outputFormat, // For all APIs: png, jpeg, webp
 		User:               userID,       // Grok/xAI optional end-user id
+		Quality:            quality,      // Grok Imagine 2.0 only
 		ThinkingLevel:      thinkingLevel,
 		WebSearchGrounding: grounding,
 		InputImages:        inputImages,
@@ -1108,13 +1112,17 @@ func printPromptHowto() error {
 │   gimage generate "..." --model gemini-3.1-flash --image-size 2K                │
 │   gimage generate "..." --model gemini-3.1-flash --aspect-ratio 16:9            │
 │                                                                                 │
-│ Supported aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3          │
+│ Supported aspect ratios: 1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3,         │
+│   21:9, 1:4, 4:1, 1:8, 8:1 (Gemini); Grok also adds 2:1, 1:2, 19.5:9,           │
+│   9:19.5, 20:9, 9:20, 5:2, auto                                                 │
 │                                                                                 │
 │ Gemini 3 Pro pricing (varies by size):                                          │
 │   1K/2K: $0.134/image    4K: $0.24/image                                        │
 │                                                                                 │
 │ Gemini 3.1 Flash pricing (tiered by resolution):                                │
 │   0.5K: $0.045    1K: $0.067    2K: $0.101    4K: $0.151                        │
+│                                                                                 │
+│ Gemini 3.1 Flash Lite pricing: $0.034/image (1K only)                           │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
@@ -1123,7 +1131,7 @@ func printPromptHowto() error {
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │ Pass one or more reference images via --input-image and describe the change.    │
-│   Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14       │
+│   Caps: Grok 2.0=5, older Grok=3, Gemini 2.5=3, Pro=11, Flash/Lite=14          │
 │   Formats: PNG, JPEG, WebP. Each image capped at 20 MB.                         │
 │   Grok uses xAI /images/edits; multi-image prompts may use <IMAGE_0>, etc.      │
 │                                                                                 │
@@ -1190,16 +1198,17 @@ func init() {
 	generateCmd.Flags().Bool("list-providers", false, "List all available providers with pricing and auth status")
 	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
-	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3+ (Pro/3.1 Flash): 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only.")
-	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine. Grok: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, auto")
+	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only.")
+	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, auto")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime (Gemini/Vertex only)")
 	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility, 0 for random (Gemini API providers)")
 	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (Grok returns N exactly up to 10; Gemini is best-effort)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
-	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Ignored for Gemini 2.5 Flash.")
-	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query).")
-	generateCmd.Flags().StringArray("input-image", []string{}, "Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.")
+	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Flash Lite accepts minimal|high only. Ignored for Gemini 2.5 Flash.")
+	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query). Ignored by Flash Lite and Grok.")
+	generateCmd.Flags().String("quality", "", "Grok Imagine 2.0 generation quality: low, medium, or auto (default auto). Ignored by other models.")
+	generateCmd.Flags().StringArray("input-image", []string{}, "Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14.")
 	generateCmd.Flags().String("user", "", "Optional end-user identifier for abuse monitoring (Grok/xAI only; sent as the API user field).")
 
 	// Bind to viper for config file support

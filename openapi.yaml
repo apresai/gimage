@@ -48,9 +48,9 @@ paths:
         Generate an AI image from a text description using Google Gemini, Vertex AI, or xAI Grok.
 
         **Models Available:**
-        - Gemini: `gemini-2.5-flash-image` ($0.039/image), `gemini-3.1-flash-image` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image` ($0.134-$0.24/image, native 4K)
-        - Vertex AI: `vertex-flash` (medium thinking, default), `vertex-flash-fast` (minimal thinking), `vertex-flash-ultra` (high thinking) — all use Gemini 3.1 Flash via Vertex generateContent; $0.045-$0.151/image tiered by resolution; thinking depth varies by preset
-        - xAI Grok: `grok-imagine-image` ($0.02/image), `grok-imagine-image-quality` ($0.05-$0.07/image)
+        - Gemini: `gemini-3.1-flash-lite-image` ($0.034/image, 1K), `gemini-3.1-flash-image` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image` ($0.134-$0.24/image, native 4K), `gemini-2.5-flash-image` (legacy, $0.039/image)
+        - Vertex AI: `vertex-flash` (medium thinking), `vertex-flash-fast` (minimal thinking), `vertex-flash-ultra` (high thinking), `vertex-flash-lite` (Flash Lite, $0.034/image)
+        - xAI Grok: `grok-imagine-image-2.0` ($0.04/image), `grok-imagine-image` ($0.02/image), `grok-imagine-image-quality` ($0.05-$0.07/image)
 
         **Response Formats:**
         - `base64`: Image data encoded in base64 (for images < 512KB)
@@ -449,11 +449,14 @@ components:
             - gemini-2.5-flash-image
             - gemini-3-pro-image
             - gemini-3.1-flash-image
+            - gemini-3.1-flash-lite-image
             - vertex-flash
             - vertex-flash-fast
             - vertex-flash-ultra
+            - vertex-flash-lite
             - grok-imagine-image
             - grok-imagine-image-quality
+            - grok-imagine-image-2.0
         size:
           type: string
           description: Image dimensions (WIDTHxHEIGHT)
@@ -483,7 +486,7 @@ components:
           example: "s3_url"
         image_size:
           type: string
-          description: "Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution)."
+          description: "Native image resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution)."
           enum:
             - 1K
             - 2K
@@ -504,14 +507,22 @@ components:
           example: "low"
         grounding:
           type: boolean
-          description: Enable Google Search grounding for Gemini 3+ models. Billed per search query in addition to the per-image cost.
+          description: Enable Google Search grounding for Gemini 3+ models (not Flash Lite). Billed per search query in addition to the per-image cost.
           example: false
           default: false
+        quality:
+          type: string
+          description: Grok Imagine 2.0 generation quality. Ignored by other models.
+          enum:
+            - low
+            - medium
+            - auto
+          example: "auto"
         input_images:
           type: array
           items:
             type: string
-          description: "Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14."
+          description: "Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14."
           maxItems: 14
           example:
             - "/tmp/character.png"

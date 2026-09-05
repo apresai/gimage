@@ -27,12 +27,15 @@ func TestRegistryGet(t *testing.T) {
 	}{
 		{"gemini flash", "gemini/flash-2.5", "gemini-2.5-flash-image", false},
 		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image", false},
+		{"gemini flash 3.1 lite", "gemini/flash-3.1-lite", "gemini-3.1-flash-lite-image", false},
 		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image", false},
 		{"vertex flash 3.1", "vertex/flash-3.1", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 fast", "vertex/flash-3.1-fast", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 ultra", "vertex/flash-3.1-ultra", "gemini-3.1-flash-image", false},
+		{"vertex flash 3.1 lite", "vertex/flash-3.1-lite", "gemini-3.1-flash-lite-image", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
 		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
+		{"grok imagine 2.0", "grok/grok-imagine-2.0", "grok-imagine-image-2.0", false},
 		{"nonexistent", "nonexistent", "", true},
 	}
 
@@ -55,8 +58,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 8 providers (3 gemini + 3 vertex + 2 grok)
-	assert.GreaterOrEqual(t, len(providers), 8, "should have at least 8 providers")
+	// Should have at least 11 providers (4 gemini + 4 vertex + 3 grok)
+	assert.GreaterOrEqual(t, len(providers), 11, "should have at least 11 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -74,9 +77,9 @@ func TestRegistryListByAPI(t *testing.T) {
 		api      string
 		minCount int
 	}{
-		{"gemini providers", "gemini", 3},
-		{"vertex providers", "vertex", 3},
-		{"grok providers", "grok", 2},
+		{"gemini providers", "gemini", 4},
+		{"vertex providers", "vertex", 4},
+		{"grok providers", "grok", 3},
 		{"invalid api empty", "invalid", 0},
 	}
 
@@ -148,13 +151,15 @@ func TestResolveProvider(t *testing.T) {
 		wantErr bool
 	}{
 		{"gemini default to pro-3", "gemini", "gemini/pro-3", false},
-		{"flash alias", "flash", "gemini/flash-2.5", false},
-		{"gemini-flash alias", "gemini-flash", "gemini/flash-2.5", false},
+		{"flash alias", "flash", "gemini/flash-3.1-lite", false},
+		{"gemini-flash alias", "gemini-flash", "gemini/flash-3.1-lite", false},
+		{"gemini-lite alias", "gemini-lite", "gemini/flash-3.1-lite", false},
 		{"gemini-2.5-flash-image exact model", "gemini-2.5-flash-image", "gemini/flash-2.5", false},
 		{"gemini-3 alias", "gemini-3", "gemini/pro-3", false},
 		{"vertex-flash alias", "vertex-flash", "vertex/flash-3.1", false},
 		{"vertex-flash-fast alias", "vertex-flash-fast", "vertex/flash-3.1-fast", false},
 		{"vertex-flash-ultra alias", "vertex-flash-ultra", "vertex/flash-3.1-ultra", false},
+		{"vertex-flash-lite alias", "vertex-flash-lite", "vertex/flash-3.1-lite", false},
 		{"retired imagen errors", "imagen", "", true},
 		{"retired imagen-4 errors", "imagen-4", "", true},
 		{"retired imagen-4-fast errors", "imagen-4-fast", "", true},
@@ -162,14 +167,17 @@ func TestResolveProvider(t *testing.T) {
 		{"retired imagen-4-ultra errors", "imagen-4-ultra", "", true},
 		{"retired nova errors", "nova", "", true},
 		{"retired nova-canvas errors", "nova-canvas", "", true},
-		{"grok alias", "grok", "grok/grok-imagine", false},
-		{"grok-imagine alias", "grok-imagine", "grok/grok-imagine", false},
-		{"grok-imagine-quality alias", "grok-imagine-quality", "grok/grok-imagine-quality", false},
-		{"grok-quality alias", "grok-quality", "grok/grok-imagine-quality", false},
+		{"grok alias", "grok", "grok/grok-imagine-2.0", false},
+		{"grok-imagine alias", "grok-imagine", "grok/grok-imagine-2.0", false},
+		{"grok-imagine-quality alias", "grok-imagine-quality", "grok/grok-imagine-2.0", false},
+		{"grok-quality alias", "grok-quality", "grok/grok-imagine-2.0", false},
+		{"grok-fast alias", "grok-fast", "grok/grok-imagine", false},
+		{"grok-imagine-image exact", "grok-imagine-image", "grok/grok-imagine", false},
+		{"grok-imagine-image-quality exact", "grok-imagine-image-quality", "grok/grok-imagine-quality", false},
 		{"grok-imagine-pro aliases to quality", "grok-imagine-pro", "grok/grok-imagine-quality", false},
 		{"grok-imagine-image-pro aliases to quality", "grok-imagine-image-pro", "grok/grok-imagine-quality", false},
-		{"xai alias", "xai", "grok/grok-imagine", false},
-		{"aurora alias", "aurora", "grok/grok-imagine", false},
+		{"xai alias", "xai", "grok/grok-imagine-2.0", false},
+		{"aurora alias", "aurora", "grok/grok-imagine-2.0", false},
 		{"exact provider ID", "gemini/flash-2.5", "gemini/flash-2.5", false},
 		{"nonexistent", "nonexistent", "", true},
 	}
@@ -213,17 +221,39 @@ func TestRetiredAliasesError(t *testing.T) {
 	}
 }
 
+func TestNonImageModelsError(t *testing.T) {
+	reg := GetProviderRegistry()
+
+	names := []string{
+		"omni",
+		"gemini-omni",
+		"gemini-omni-flash",
+		"gemini-omni-flash-preview",
+		"gemini-omni-1.1-flash",
+	}
+
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			p, err := reg.ResolveProvider(name)
+			require.Error(t, err, "video model %q must not resolve", name)
+			assert.Nil(t, p)
+			assert.Contains(t, err.Error(), "not an image model", "error for %q should say it is not an image model", name)
+			assert.Contains(t, err.Error(), "video", "error for %q should mention video", name)
+		})
+	}
+}
+
 func TestResolveModelName(t *testing.T) {
 	tests := []struct {
 		name   string
 		input  string
 		wantID string
 	}{
-		{"flash alias resolves", "flash", "gemini-2.5-flash-image"},
+		{"flash alias resolves", "flash", "gemini-3.1-flash-lite-image"},
 		{"vertex-flash alias resolves", "vertex-flash", "gemini-3.1-flash-image"},
 		{"retired imagen returns original", "imagen", "imagen"},
 		{"retired nova returns original", "nova", "nova"},
-		{"grok alias resolves", "grok", "grok-imagine-image"},
+		{"grok alias resolves", "grok", "grok-imagine-image-2.0"},
 		{"grok-imagine-pro resolves to quality", "grok-imagine-pro", "grok-imagine-image-quality"},
 		{"grok-imagine-image-pro resolves to quality", "grok-imagine-image-pro", "grok-imagine-image-quality"},
 		{"unknown returns original", "unknown-model", "unknown-model"},
@@ -251,6 +281,7 @@ func TestDetectAPIFromModel(t *testing.T) {
 		{"vertex-flash alias", "vertex-flash", "vertex", false},
 		{"retired imagen-4 errors", "imagen-4", "", true},
 		{"retired nova-canvas errors", "nova-canvas", "", true},
+		{"omni video model errors", "gemini-omni", "", true},
 		{"grok alias", "grok", "grok", false},
 		{"unknown model", "totally-unknown-model-xyz", "", true},
 	}
@@ -291,7 +322,7 @@ func TestMigratedVertexProviderCapabilities(t *testing.T) {
 
 func TestGrokProviderCapabilities(t *testing.T) {
 	reg := GetProviderRegistry()
-	for _, providerID := range []string{"grok/grok-imagine", "grok/grok-imagine-quality"} {
+	for _, providerID := range []string{"grok/grok-imagine", "grok/grok-imagine-quality", "grok/grok-imagine-2.0"} {
 		t.Run(providerID, func(t *testing.T) {
 			p, err := reg.Get(providerID)
 			require.NoError(t, err)
@@ -305,6 +336,11 @@ func TestGrokProviderCapabilities(t *testing.T) {
 			assert.False(t, p.Capabilities.SupportsOutputFormat)
 			// Grok returns N images exactly.
 			assert.True(t, p.Capabilities.SupportsMultipleImages)
+			if providerID == "grok/grok-imagine-2.0" {
+				assert.True(t, p.Capabilities.SupportsQuality)
+			} else {
+				assert.False(t, p.Capabilities.SupportsQuality)
+			}
 		})
 	}
 }
@@ -570,7 +606,9 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "gemini-3.1-flash-image", imageSize: "2K", want: 0.101},
 		{modelID: "gemini-3.1-flash-image", imageSize: "4K", want: 0.151},
 		{modelID: "gemini-3.1-flash-image", want: 0.067},
+		{modelID: "gemini-3.1-flash-lite-image", want: 0.034},
 		{modelID: "grok-imagine-image", want: 0.02},
+		{modelID: "grok-imagine-image-2.0", want: 0.04},
 		{modelID: "grok-imagine-image-quality", want: 0.05},
 		{modelID: "grok-imagine-image-quality", imageSize: "2K", want: 0.07},
 		{modelID: "gemini-3-pro-image-preview", imageSize: "4K", want: 0.24},

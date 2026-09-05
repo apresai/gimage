@@ -23,6 +23,7 @@ func fullOptions() models.GenerateOptions {
 		OutputFormat:       "webp",
 		ThinkingLevel:      "high",
 		WebSearchGrounding: true,
+		Quality:            "low",
 		InputImages:        []string{"a.png"},
 	}
 }
@@ -65,6 +66,36 @@ func TestReconcileOptions_Grok(t *testing.T) {
 	assert.False(t, warningsContain(w, "--image-size"))
 	assert.False(t, warningsContain(w, "--aspect-ratio"))
 	assert.False(t, warningsContain(w, "--count"))
+	assert.Empty(t, o.Quality)
+	assert.True(t, warningsContain(w, "--quality"))
+}
+
+func TestReconcileOptions_Grok20(t *testing.T) {
+	p, err := GetProviderRegistry().Get("grok/grok-imagine-2.0")
+	require.NoError(t, err)
+
+	o := fullOptions()
+	w := ReconcileOptions(p, &o)
+
+	assert.Equal(t, "low", o.Quality)
+	assert.False(t, warningsContain(w, "--quality"))
+	assert.Equal(t, "2K", o.ImageSize)
+	assert.Empty(t, o.ThinkingLevel)
+}
+
+func TestReconcileOptions_GeminiLite(t *testing.T) {
+	p, err := GetProviderRegistry().Get("gemini/flash-3.1-lite")
+	require.NoError(t, err)
+
+	o := fullOptions()
+	w := ReconcileOptions(p, &o)
+
+	assert.Equal(t, "high", o.ThinkingLevel)
+	assert.Equal(t, "2K", o.ImageSize) // client drops 2K; capabilities still allow image-size
+	assert.False(t, o.WebSearchGrounding)
+	assert.True(t, warningsContain(w, "--grounding"))
+	assert.False(t, warningsContain(w, "--thinking"))
+	assert.Empty(t, o.Quality)
 }
 
 func TestReconcileOptions_Gemini25(t *testing.T) {
