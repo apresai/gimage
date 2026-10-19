@@ -8,8 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	gimaging "github.com/apresai/gimage/internal/imaging"
-	"github.com/disintegration/imaging"
+	"github.com/apresai/gimage/internal/imaging"
 )
 
 // generateOutputPath creates an output path based on input and suffix
@@ -181,7 +180,7 @@ func saveImage(img image.Image, path string) error {
 
 	// For WebP, use our custom implementation
 	if format == "webp" {
-		return gimaging.SaveImageWithFormat(img, path, format)
+		return imaging.SaveImageWithFormat(img, path, format)
 	}
 
 	// For other formats, use imaging.Save

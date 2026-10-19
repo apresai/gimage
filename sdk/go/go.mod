@@ -2,9 +2,9 @@ module github.com/apresai/gimage/sdk/go
 
 go 1.26
 
-toolchain go1.26.4
+toolchain go1.27.2
 
-require github.com/getkin/kin-openapi v0.149.0
+require github.com/getkin/kin-openapi v0.151.0
 
 require (
 	github.com/go-openapi/jsonpointer v0.22.5 // indirect
@@ -13,5 +13,5 @@ require (
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )

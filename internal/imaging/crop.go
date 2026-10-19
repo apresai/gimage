@@ -7,7 +7,6 @@ import (
 	"image"
 
 	"github.com/apresai/gimage/internal/progress"
-	"github.com/disintegration/imaging"
 )
 
 // CropImage crops a rectangular region from an image.
@@ -66,7 +65,7 @@ func CropImage(ctx context.Context, inputPath, outputPath string, x, y, width, h
 
 	// Load the input image
 	reporter.Update(1, 4, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -115,7 +114,7 @@ func CropImage(ctx context.Context, inputPath, outputPath string, x, y, width, h
 
 	// Perform the crop
 	reporter.Update(3, 4, "Cropping image")
-	cropped := imaging.Crop(img, cropRect)
+	cropped := Crop(img, cropRect)
 
 	// Check for cancellation
 	select {
@@ -128,7 +127,7 @@ func CropImage(ctx context.Context, inputPath, outputPath string, x, y, width, h
 
 	// Save the cropped image
 	reporter.Update(4, 4, "Saving cropped image")
-	if err := imaging.Save(cropped, outputPath); err != nil {
+	if err := Save(cropped, outputPath); err != nil {
 		err = fmt.Errorf("failed to save cropped image to %s: %w", outputPath, err)
 		reporter.Error(err)
 		return err

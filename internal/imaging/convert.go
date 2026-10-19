@@ -10,13 +10,11 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/HugoSmits86/nativewebp"
 	"github.com/apresai/gimage/internal/progress"
-	"github.com/disintegration/imaging"
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/tiff"
 )
@@ -86,7 +84,7 @@ func ConvertImageFile(ctx context.Context, inputPath, outputPath string) error {
 
 	// Load the input image
 	reporter.Update(1, 3, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -116,45 +114,7 @@ func ConvertImageFile(ctx context.Context, inputPath, outputPath string) error {
 
 // SaveImageWithFormat saves an image to a file with explicit format specification.
 func SaveImageWithFormat(img image.Image, path string, format string) error {
-	format = strings.ToLower(format)
-	format = strings.TrimPrefix(format, ".")
-
-	// Handle transparency for formats that don't support it
-	if !supportsTransparency(format) && hasTransparency(img) {
-		img = removeTransparency(img)
-	}
-
-	// Handle WebP encoding with nativewebp
-	if format == "webp" {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return fmt.Errorf("failed to get absolute path: %w", err)
-		}
-
-		dir := filepath.Dir(absPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
-
-		outFile, err := os.Create(path)
-		if err != nil {
-			return fmt.Errorf("failed to create file: %w", err)
-		}
-		defer outFile.Close()
-
-		// nativewebp provides lossless VP8L encoding
-		return nativewebp.Encode(outFile, img, &nativewebp.Options{
-			UseExtendedFormat: false, // Basic VP8L format, no metadata
-		})
-	}
-
-	// Use imaging package's Save which handles format detection
-	if format == "jpg" || format == "jpeg" {
-		// For JPEG, use explicit quality setting
-		return imaging.Save(img, path, imaging.JPEGQuality(90))
-	}
-
-	return imaging.Save(img, path)
+	return encodeToFile(img, path, format, 90)
 }
 
 // ExtractFormatFromPath extracts the image format from a file path.

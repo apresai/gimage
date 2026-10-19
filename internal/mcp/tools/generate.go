@@ -20,11 +20,11 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/flash-3.1-fast", "vertex/flash-3.1-lite":
+	case "vertex/flash-3.1-fast", "vertex/flash-3.1-lite", "vertex/nano-banana-2.1-fast":
 		return "minimal"
-	case "vertex/flash-3.1":
+	case "vertex/flash-3.1", "vertex/nano-banana-2.1":
 		return "medium"
-	case "vertex/flash-3.1-ultra":
+	case "vertex/flash-3.1-ultra", "vertex/nano-banana-2.1-ultra":
 		return "high"
 	default:
 		return ""
@@ -35,7 +35,7 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 func RegisterGenerateImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "generate_image",
-		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini provider. The 'count' parameter requests multiple images (Grok returns N exactly; the Gemini family is best-effort), saved as image_1.png, image_2.png, etc. Styles, seeds, image_size, and other options depend on provider capabilities; options the chosen provider does not support are reported in the response 'warning' field and ignored. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
+		Description: "Generate AI images using multiple providers (Gemini, Vertex AI, xAI Grok). Call list_models first to see available providers with pricing and capability flags. Quick start: generate_image(prompt='sunset', output='~/Desktop/sunset.png') uses the default Gemini Nano Banana 2.1 provider. The 'count' parameter requests multiple images (Grok returns N exactly; the Gemini family is best-effort), saved as image_1.png, image_2.png, etc. Styles, seeds, image_size, and other options depend on provider capabilities; options the chosen provider does not support are reported in the response 'warning' field and ignored. IMPORTANT: Always specify output path (e.g., ~/Desktop/image.png).",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: false, // Creates new files but doesn't modify existing ones
 			IdempotentHint:  false, // Each call generates a different image
@@ -55,13 +55,16 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"size": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"512x512", "1024x1024", "1024x1792", "1792x1024"},
-					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-2.5 up to 1024x1024. Gemini 3+ and the vertex-flash* presets (Gemini 3.1 Flash via Vertex) set native resolution via the image_size param (1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
+					"description": "Image dimensions (WIDTHxHEIGHT). Default: 1024x1024. Provider limits: gemini/flash-3.1-lite up to 1024x1024. Gemini Nano Banana 2.1, Gemini 3+, and Vertex presets set native resolution via the image_size param (0.5K/1K/2K/4K), not this field. Examples: '1024x1024' (square), '1792x1024' (16:9 landscape), '1024x1792' (9:16 portrait).",
 					"default":     "1024x1024",
 				},
 				"model": map[string]interface{}{
 					"type": "string",
 					"enum": []string{
-						"gemini-2.5-flash-image",
+						"gemini-nano-banana-2.1",
+						"nano-banana",
+						"nano-banana-2",
+						"nano-banana-2.1",
 						"gemini-3-pro-image",
 						"gemini-3",
 						"gemini-3-pro",
@@ -73,6 +76,9 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"gemini-3.1-flash-lite",
 						"gemini-lite",
 						"3.1-flash-lite",
+						"vertex-nano-banana",
+						"vertex-nano-banana-fast",
+						"vertex-nano-banana-ultra",
 						"vertex-flash",
 						"vertex-flash-fast",
 						"vertex-flash-ultra",
@@ -95,13 +101,13 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"xai",
 						"aurora",
 					},
-					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'flash' / 'gemini-flash' (Gemini 3.1 Flash Lite, $0.034/image, 1K only), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K), 'vertex-flash' / 'vertex-flash-lite', 'grok' (Grok Imagine 2.0, $0.04/image), 'grok-fast' ($0.02/image speed tier). Aliases automatically resolve. Defaults to gemini-3-pro-image when no model is supplied; an explicitly invalid model returns an error.",
-					"default":     "gemini-3-pro-image",
+					"description": "Provider/model to use. Call list_models to see all options with pricing. Common choices: 'gemini-nano-banana-2.1' / 'nano-banana' (Gemini Nano Banana 2.1, $0.0225-$0.0756/image, default), 'flash' / 'gemini-flash' (Gemini 3.1 Flash Lite, $0.034/image, 1K only), 'gemini-3.1-flash' ($0.045-$0.151/image by resolution), 'gemini-3' or 'gemini-3-pro-image' ($0.134-$0.24/image, native 4K), 'vertex-nano-banana' / 'vertex-flash' / 'vertex-flash-lite', 'grok' (Grok Imagine 2.0, $0.015-$0.07/image), 'grok-fast' ($0.02/image speed tier). Aliases automatically resolve. Defaults to gemini-nano-banana-2.1 when no model is supplied; an explicitly invalid model returns an error.",
+					"default":     "gemini-nano-banana-2.1",
 				},
 				"image_size": map[string]interface{}{
 					"type":        "string",
-					"enum":        []string{"1K", "2K", "4K"},
-					"description": "Native image resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution).",
+					"enum":        []string{"0.5K", "1K", "2K", "4K"},
+					"description": "Native image resolution. Gemini Nano Banana 2.1 / 3.1 Flash / vertex-nano-banana* / vertex-flash*: 0.5K, 1K, 2K, or 4K. Gemini 3 Pro: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution).",
 				},
 				"style": map[string]interface{}{
 					"type":        "string",
@@ -110,7 +116,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				},
 				"seed": map[string]interface{}{
 					"type":        "integer",
-					"description": "Random seed for reproducible generation (Gemini API providers). Use the same seed to get the same image.",
+					"description": "Random seed for reproducible generation (Gemini 3 Pro and 3.1 Flash). Use the same seed to get the same image.",
 				},
 				"aspect_ratio": map[string]interface{}{
 					"type": "string",
@@ -119,7 +125,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 						"21:9", "1:4", "4:1", "1:8", "8:1",
 						"2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "5:2", "auto",
 					},
-					"description": "Aspect ratio. Gemini 3+ adds 21:9 and ultra-wide 1:4/4:1/1:8/8:1. Grok Imagine also supports 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, and auto. Overrides size.",
+					"description": "Aspect ratio. Gemini Nano Banana 2.1 and Gemini 3+ add 21:9 and ultra-wide 1:4/4:1/1:8/8:1. Grok Imagine also supports 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, and auto. Overrides size.",
 				},
 				"count": map[string]interface{}{
 					"type":        "integer",
@@ -136,11 +142,11 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"thinking": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"minimal", "low", "medium", "high"},
-					"description": "Reasoning depth for Gemini 3+ models. Higher = more planning before generation (slower, may improve layout/text). Flash Lite accepts minimal|high only. Ignored for Gemini 2.5 Flash and non-Gemini providers.",
+					"description": "Reasoning depth for Gemini Nano Banana 2.1 and Gemini 3+ models. Higher = more planning before generation (slower, may improve layout/text). Nano Banana 2.1 and 3.1 Flash coerce low to minimal; Flash Lite accepts minimal|high only. Ignored for non-Gemini providers.",
 				},
 				"grounding": map[string]interface{}{
 					"type":        "boolean",
-					"description": "Enable Google Search grounding for Gemini 3+ models (not Flash Lite). Lets the model pull real-time web context before generating. Billed per search query in addition to the per-image cost.",
+					"description": "Enable Google Search grounding for Gemini Nano Banana 2.1 and Gemini 3+ models (not Flash Lite). Lets the model pull real-time web context before generating. Billed per search query in addition to the per-image cost.",
 					"default":     false,
 				},
 				"quality": map[string]interface{}{
@@ -151,7 +157,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 				"input_images": map[string]interface{}{
 					"type":        "array",
 					"items":       map[string]interface{}{"type": "string"},
-					"description": "Optional reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs (passed through to xAI). Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14. Grok uses POST /v1/images/edits; multi-image Grok prompts may reference <IMAGE_0>, <IMAGE_1>, etc.",
+					"description": "Optional reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs (passed through to xAI). Caps: Grok 2.0=5, Grok Fast=3, Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash / Lite=14. Grok uses POST /v1/images/edits; multi-image Grok prompts may reference <IMAGE_0>, <IMAGE_1>, etc.",
 					"maxItems":    14,
 				},
 				"user": map[string]interface{}{
@@ -418,7 +424,7 @@ func RegisterGenerateImageTool(server *mcp.MCPServer) {
 			if selectedProvider != nil {
 				modelDisplayName = selectedProvider.Name
 				// Use shared pricing helper for consistent pricing display
-				pricing := generate.GetProviderPricing(selectedProvider, imageSize, size, style)
+				pricing := generate.GetProviderPricing(selectedProvider, opts.ImageSize, size, opts.Quality)
 				pricingInfo = pricing.Display
 			} else {
 				modelDisplayName = modelName

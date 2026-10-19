@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 type GrokClient struct {
 	apiKey         string
 	httpClient     *http.Client
-	circuitBreaker *gobreaker.CircuitBreaker
+	circuitBreaker *gobreaker.CircuitBreaker[[]*models.GeneratedImage]
 }
 
 // GrokImageSource is a single input image for the edits endpoint (URL or data URI).
@@ -100,7 +100,7 @@ func NewGrokClient(apiKey string) (*GrokClient, error) {
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second, // Image generation can take time
 		},
-		circuitBreaker: newCircuitBreaker("GrokAPI"),
+		circuitBreaker: newCircuitBreaker[[]*models.GeneratedImage]("GrokAPI"),
 	}, nil
 }
 
@@ -258,7 +258,7 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 	}
 
 	// Execute through circuit breaker
-	result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
+	result, err := c.circuitBreaker.Execute(func() ([]*models.GeneratedImage, error) {
 		return c.doRequest(ctx, endpoint, request)
 	})
 
@@ -269,7 +269,7 @@ func (c *GrokClient) GenerateImage(ctx context.Context, prompt string, options m
 		return nil, err
 	}
 
-	return result.([]*models.GeneratedImage), nil
+	return result, nil
 }
 
 // doRequest performs the actual HTTP request to the Grok API

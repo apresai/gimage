@@ -86,7 +86,7 @@ func TestGenerateImageTool_InputSchema(t *testing.T) {
 	optionalProps := []string{
 		"output", "size", "model", "style", "seed",
 		"image_size", "aspect_ratio", "count", "output_format",
-		"thinking", "grounding", "input_images", "user",
+		"thinking", "grounding", "quality", "input_images", "user",
 	}
 	for _, prop := range optionalProps {
 		if _, exists := properties[prop]; !exists {
@@ -175,6 +175,7 @@ func TestGenerateImageTool_ExplicitInvalidModelErrors(t *testing.T) {
 	}{
 		{"retired imagen alias", "imagen-4", "retired"},
 		{"retired preview alias", "gemini-3-pro-image-preview", "retired"},
+		{"retired gemini-2.5-flash alias", "gemini-2.5-flash-image", "retired"},
 		{"unknown model", "totally-bogus-model-xyz", "no provider found"},
 	}
 
@@ -215,7 +216,7 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 				"prompt": "test prompt",
 			},
 			expectedSize:  "1024x1024",
-			expectedModel: "gemini-3-pro-image",
+			expectedModel: "gemini-nano-banana-2.1",
 		},
 		{
 			name: "custom size",
@@ -224,7 +225,7 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 				"size":   "512x512",
 			},
 			expectedSize:  "512x512",
-			expectedModel: "gemini-3-pro-image",
+			expectedModel: "gemini-nano-banana-2.1",
 		},
 		{
 			name: "custom model",
@@ -249,7 +250,7 @@ func TestGenerateImageTool_ParameterDefaults(t *testing.T) {
 
 			model, _ := tt.args["model"].(string)
 			if model == "" {
-				model = "gemini-3-pro-image"
+				model = "gemini-nano-banana-2.1"
 			}
 
 			if size != tt.expectedSize {

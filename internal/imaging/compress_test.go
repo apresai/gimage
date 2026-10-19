@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +27,7 @@ func createTestJPEG(t *testing.T, path string, width, height int) {
 			})
 		}
 	}
-	err := imaging.Save(img, path)
+	err := Save(img, path)
 	require.NoError(t, err, "failed to create test JPEG")
 }
 

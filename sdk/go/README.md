@@ -86,7 +86,7 @@ func main() {
 	// Generate image with custom options
 	resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt: "futuristic city with flying cars",
-		Model: stringPtr("gemini-2.5-flash-image"),
+		Model: stringPtr("gemini-nano-banana-2.1"),
 		Size: stringPtr("1024x1024"),
 		Style: (*gimage.ImageStyle)(stringPtr("photorealistic")),
 		Seed: intPtr(42),

@@ -66,7 +66,7 @@ func main() {
 	fmt.Println("2. Generating image with Gemini...")
 	genResp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt: "a sunset over mountains with vibrant colors",
-		Model: stringPtr("gemini-2.5-flash-image"),
+		Model: stringPtr("gemini-nano-banana-2.1"),
 		Size: stringPtr("1024x1024"),
 		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("base64")),
 	})
@@ -112,7 +112,7 @@ func main() {
 	fmt.Println("3. Generating large image with S3 URL...")
 	s3Resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt: "futuristic city with flying cars, ultra detailed",
-		Model: stringPtr("gemini-2.5-flash-image"),
+		Model: stringPtr("gemini-nano-banana-2.1"),
 		Size: stringPtr("1024x1024"),
 		Style: (*gimage.ImageStyle)(stringPtr("photorealistic")),
 		ResponseFormat: (*gimage.ResponseFormat)(stringPtr("s3_url")),

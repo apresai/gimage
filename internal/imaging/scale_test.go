@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +62,7 @@ func TestScaleImage(t *testing.T) {
 
 			// Create a simple test image
 			img := image.NewRGBA(image.Rect(0, 0, tt.imgWidth, tt.imgHeight))
-			err := imaging.Save(img, inputPath)
+			err := Save(img, inputPath)
 			require.NoError(t, err, "failed to create test image")
 
 			// Test scale
@@ -75,7 +74,7 @@ func TestScaleImage(t *testing.T) {
 			assert.NoError(t, err, "output file should exist")
 
 			// Verify dimensions
-			scaledImg, err := imaging.Open(outputPath)
+			scaledImg, err := Open(outputPath)
 			require.NoError(t, err, "failed to open scaled image")
 
 			bounds := scaledImg.Bounds()
@@ -111,7 +110,7 @@ func TestScaleImage_InvalidFactor(t *testing.T) {
 
 			// Create a simple test image
 			img := image.NewRGBA(image.Rect(0, 0, 100, 100))
-			err := imaging.Save(img, inputPath)
+			err := Save(img, inputPath)
 			require.NoError(t, err, "failed to create test image")
 
 			err = ScaleImage(context.Background(), inputPath, outputPath, tt.factor)

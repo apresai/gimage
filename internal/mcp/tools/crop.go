@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/observability"
-	"github.com/disintegration/imaging"
 )
 
 // RegisterCropImageTool registers the crop_image tool

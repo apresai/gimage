@@ -59,17 +59,18 @@ const (
 
 // Defines values for GenerateRequestImageSize.
 const (
-	N1K GenerateRequestImageSize = "1K"
-	N2K GenerateRequestImageSize = "2K"
-	N4K GenerateRequestImageSize = "4K"
+	N05K GenerateRequestImageSize = "0.5K"
+	N1K  GenerateRequestImageSize = "1K"
+	N2K  GenerateRequestImageSize = "2K"
+	N4K  GenerateRequestImageSize = "4K"
 )
 
 // Defines values for GenerateRequestModel.
 const (
-	Gemini25FlashImage      GenerateRequestModel = "gemini-2.5-flash-image"
 	Gemini31FlashImage      GenerateRequestModel = "gemini-3.1-flash-image"
 	Gemini31FlashLiteImage  GenerateRequestModel = "gemini-3.1-flash-lite-image"
 	Gemini3ProImage         GenerateRequestModel = "gemini-3-pro-image"
+	GeminiNanoBanana21      GenerateRequestModel = "gemini-nano-banana-2.1"
 	GrokImagineImage        GenerateRequestModel = "grok-imagine-image"
 	GrokImagineImage20      GenerateRequestModel = "grok-imagine-image-2.0"
 	GrokImagineImageQuality GenerateRequestModel = "grok-imagine-image-quality"
@@ -77,6 +78,9 @@ const (
 	VertexFlashFast         GenerateRequestModel = "vertex-flash-fast"
 	VertexFlashLite         GenerateRequestModel = "vertex-flash-lite"
 	VertexFlashUltra        GenerateRequestModel = "vertex-flash-ultra"
+	VertexNanoBanana        GenerateRequestModel = "vertex-nano-banana"
+	VertexNanoBananaFast    GenerateRequestModel = "vertex-nano-banana-fast"
+	VertexNanoBananaUltra   GenerateRequestModel = "vertex-nano-banana-ultra"
 )
 
 // Defines values for GenerateRequestQuality.
@@ -246,16 +250,16 @@ type ErrorResponse struct {
 
 // GenerateRequest defines model for GenerateRequest.
 type GenerateRequest struct {
-	// AspectRatio Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto.
+	// AspectRatio Aspect ratio for Gemini Nano Banana 2.1, Gemini 3+, and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto.
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
 
-	// Grounding Enable Google Search grounding for Gemini 3+ models. Billed per search query in addition to the per-image cost.
+	// Grounding Enable Google Search grounding for Gemini Nano Banana 2.1 and Gemini 3+ models (not Flash Lite). Billed per search query in addition to the per-image cost.
 	Grounding *bool `json:"grounding,omitempty"`
 
-	// ImageSize Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).
+	// ImageSize Native image resolution. Gemini Nano Banana 2.1 / 3.1 Flash / vertex-nano-banana* / vertex-flash*: 0.5K, 1K, 2K, or 4K. Gemini 3 Pro: 1K, 2K, or 4K. Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution).
 	ImageSize *GenerateRequestImageSize `json:"image_size,omitempty"`
 
-	// InputImages Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14.
+	// InputImages Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, Grok Fast=3, Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash / Lite=14.
 	InputImages *[]string `json:"input_images,omitempty"`
 
 	// Model AI model to use for generation
@@ -279,14 +283,14 @@ type GenerateRequest struct {
 	// Style Image style/aesthetic
 	Style *GenerateRequestStyle `json:"style,omitempty"`
 
-	// ThinkingLevel Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+	// ThinkingLevel Reasoning depth for Gemini Nano Banana 2.1 and Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
 	ThinkingLevel *GenerateRequestThinkingLevel `json:"thinking_level,omitempty"`
 
 	// User Optional end-user identifier for abuse monitoring (Grok/xAI only).
 	User *string `json:"user,omitempty"`
 }
 
-// GenerateRequestImageSize Native image resolution. Gemini 3+ / vertex-flash*: 1K, 2K, or 4K. Grok Imagine / Quality: 1K or 2K only (maps to xAI resolution).
+// GenerateRequestImageSize Native image resolution. Gemini Nano Banana 2.1 / 3.1 Flash / vertex-nano-banana* / vertex-flash*: 0.5K, 1K, 2K, or 4K. Gemini 3 Pro: 1K, 2K, or 4K. Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution).
 type GenerateRequestImageSize string
 
 // GenerateRequestModel AI model to use for generation
@@ -301,7 +305,7 @@ type GenerateRequestResponseFormat string
 // GenerateRequestStyle Image style/aesthetic
 type GenerateRequestStyle string
 
-// GenerateRequestThinkingLevel Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+// GenerateRequestThinkingLevel Reasoning depth for Gemini Nano Banana 2.1 and Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
 type GenerateRequestThinkingLevel string
 
 // HealthResponse defines model for HealthResponse.

@@ -411,6 +411,8 @@ func (m *SettingsMenuModel) viewEditAPIKey() string {
 		keyName = "Gemini API Key"
 	case "vertex":
 		keyName = "Vertex API Key"
+	case "grok":
+		keyName = "Grok API Key"
 	default:
 		keyName = "API Key"
 	}
@@ -439,7 +441,7 @@ func (m *SettingsMenuModel) saveAPIKey() tea.Cmd {
 			// If no config exists, create a new one
 			cfg = &config.Config{
 				DefaultAPI:   "gemini",
-				DefaultModel: "gemini-3-pro-image",
+				DefaultModel: "gemini-nano-banana-2.1",
 				DefaultSize:  "1024x1024",
 			}
 		}
@@ -450,6 +452,8 @@ func (m *SettingsMenuModel) saveAPIKey() tea.Cmd {
 			cfg.GeminiAPIKey = newValue
 		case "vertex":
 			cfg.VertexAPIKey = newValue
+		case "grok":
+			cfg.GrokAPIKey = newValue
 		}
 
 		// Save config

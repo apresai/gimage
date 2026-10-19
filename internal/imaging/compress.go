@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/apresai/gimage/internal/progress"
-	"github.com/disintegration/imaging"
 )
 
 // CompressImage compresses an image by adjusting its quality setting.
@@ -56,7 +55,7 @@ func CompressImage(ctx context.Context, inputPath, outputPath string, quality in
 
 	// Load the input image
 	reporter.Update(1, 3, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -75,32 +74,10 @@ func CompressImage(ctx context.Context, inputPath, outputPath string, quality in
 	// Compress and save
 	reporter.Update(2, 3, "Compressing and saving image")
 
-	// Use the format from the output path
-	outputFormat := ExtractFormatFromPath(outputPath)
-
-	// For JPEG, use explicit quality
-	if outputFormat == "jpeg" || outputFormat == "jpg" {
-		if err := imaging.Save(img, outputPath, imaging.JPEGQuality(quality)); err != nil {
-			err = fmt.Errorf("failed to save compressed image to %s: %w", outputPath, err)
-			reporter.Error(err)
-			return err
-		}
-	} else if outputFormat == "png" {
-		// For PNG, use PNG compression (lossless)
-		// PNG doesn't support quality parameter in the same way
-		// Use DefaultCompression level (which is -1)
-		if err := imaging.Save(img, outputPath, imaging.PNGCompressionLevel(-1)); err != nil {
-			err = fmt.Errorf("failed to save compressed image to %s: %w", outputPath, err)
-			reporter.Error(err)
-			return err
-		}
-	} else {
-		// For other formats, save with default settings
-		if err := imaging.Save(img, outputPath); err != nil {
-			err = fmt.Errorf("failed to save compressed image to %s: %w", outputPath, err)
-			reporter.Error(err)
-			return err
-		}
+	if err := SaveWithQuality(img, outputPath, quality); err != nil {
+		err = fmt.Errorf("failed to save compressed image to %s: %w", outputPath, err)
+		reporter.Error(err)
+		return err
 	}
 
 	// Check for cancellation

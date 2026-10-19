@@ -139,7 +139,7 @@ func TestGenerateOptions_Validate(t *testing.T) {
         {
             name: "valid options",
             opts: models.GenerateOptions{
-                Model: "gemini-2.5-flash-image",
+                Model: "gemini-nano-banana-2.1",
                 Size:  "1024x1024",
             },
             wantErr: false,
@@ -147,7 +147,7 @@ func TestGenerateOptions_Validate(t *testing.T) {
         {
             name: "invalid size format",
             opts: models.GenerateOptions{
-                Model: "gemini-2.5-flash-image",
+                Model: "gemini-nano-banana-2.1",
                 Size:  "invalid",
             },
             wantErr: true,

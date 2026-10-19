@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/observability"
-	"github.com/disintegration/imaging"
 )
 
 // RegisterCompressImageTool registers the compress_image tool
@@ -87,7 +87,7 @@ func RegisterCompressImageTool(server *mcp.MCPServer) {
 			}
 
 			// Save with quality setting
-			err = imaging.Save(img, output, imaging.JPEGQuality(quality))
+			err = imaging.SaveWithQuality(img, output, quality)
 			if err != nil {
 				return nil, fmt.Errorf("failed to save compressed image: %w", err)
 			}

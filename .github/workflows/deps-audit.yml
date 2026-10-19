@@ -33,9 +33,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OSV_SCANNER_VERSION: "2.4.0"
-  # Flip to "true" after the repo's baseline OSV findings are remediated.
-  OSV_FAIL_ON_VULN: "false"
+  OSV_SCANNER_VERSION: "2.7.0"
+  # Baseline OSV findings remediated (disintegration/imaging removed).
+  OSV_FAIL_ON_VULN: "true"
 
 jobs:
   deps-audit:
@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -53,7 +53,7 @@ jobs:
       #   blocked-packages.txt
       # Or checkout deps-hygiene as a second path (below).
       - name: Checkout shared hygiene scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: chadneal/deps-hygiene
           path: .deps-hygiene

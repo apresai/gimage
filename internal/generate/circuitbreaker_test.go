@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewCircuitBreaker(t *testing.T) {
-	cb := newCircuitBreaker("TestAPI")
+	cb := newCircuitBreaker[any]("TestAPI")
 
 	require.NotNil(t, cb, "Circuit breaker should not be nil")
 	assert.Equal(t, "TestAPI", cb.Name(), "Circuit breaker should have correct name")
@@ -19,12 +19,12 @@ func TestNewCircuitBreaker(t *testing.T) {
 }
 
 func TestCircuitBreakerOpensAfterConsecutiveFailures(t *testing.T) {
-	cb := newCircuitBreaker("TestAPI")
+	cb := newCircuitBreaker[any]("TestAPI")
 
 	// Simulate consecutive failures
 	failureCount := 0
 	for i := 0; i < maxConsecutiveFailures+1; i++ {
-		_, err := cb.Execute(func() (interface{}, error) {
+		_, err := cb.Execute(func() (any, error) {
 			return nil, errors.New("simulated failure")
 		})
 		if err != nil {
@@ -37,11 +37,11 @@ func TestCircuitBreakerOpensAfterConsecutiveFailures(t *testing.T) {
 }
 
 func TestCircuitBreakerFailsFastWhenOpen(t *testing.T) {
-	cb := newCircuitBreaker("TestAPI")
+	cb := newCircuitBreaker[any]("TestAPI")
 
 	// Force circuit breaker open by causing consecutive failures
 	for i := 0; i < maxConsecutiveFailures+1; i++ {
-		cb.Execute(func() (interface{}, error) {
+		_, _ = cb.Execute(func() (any, error) {
 			return nil, errors.New("simulated failure")
 		})
 	}
@@ -51,7 +51,7 @@ func TestCircuitBreakerFailsFastWhenOpen(t *testing.T) {
 
 	// Try to execute - should fail fast without calling the function
 	called := false
-	_, err := cb.Execute(func() (interface{}, error) {
+	_, err := cb.Execute(func() (any, error) {
 		called = true
 		return "success", nil
 	})
@@ -72,12 +72,12 @@ func TestCircuitBreakerRecoversAfterTimeout(t *testing.T) {
 			return counts.ConsecutiveFailures >= 3
 		},
 	}
-	cb := gobreaker.NewCircuitBreaker(settings)
+	cb := gobreaker.NewCircuitBreaker[string](settings)
 
 	// Force circuit breaker open
 	for i := 0; i < 3; i++ {
-		cb.Execute(func() (interface{}, error) {
-			return nil, errors.New("simulated failure")
+		_, _ = cb.Execute(func() (string, error) {
+			return "", errors.New("simulated failure")
 		})
 	}
 
@@ -87,7 +87,7 @@ func TestCircuitBreakerRecoversAfterTimeout(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 
 	// Try to execute - circuit should be in half-open state
-	result, err := cb.Execute(func() (interface{}, error) {
+	result, err := cb.Execute(func() (string, error) {
 		return "recovered", nil
 	})
 
@@ -97,11 +97,11 @@ func TestCircuitBreakerRecoversAfterTimeout(t *testing.T) {
 }
 
 func TestCircuitBreakerAllowsSuccessfulRequests(t *testing.T) {
-	cb := newCircuitBreaker("TestAPI")
+	cb := newCircuitBreaker[int]("TestAPI")
 
 	// Execute successful requests
 	for i := 0; i < 10; i++ {
-		result, err := cb.Execute(func() (interface{}, error) {
+		result, err := cb.Execute(func() (int, error) {
 			return i, nil
 		})
 
@@ -113,7 +113,7 @@ func TestCircuitBreakerAllowsSuccessfulRequests(t *testing.T) {
 }
 
 func TestCircuitBreakerFailureRatio(t *testing.T) {
-	cb := newCircuitBreaker("TestAPI")
+	cb := newCircuitBreaker[string]("TestAPI")
 
 	// Execute mix of successful and failed requests
 	// Need at least 10 requests for failure ratio to trigger (from ReadyToTrip logic)
@@ -121,10 +121,10 @@ func TestCircuitBreakerFailureRatio(t *testing.T) {
 	failureCount := 0
 
 	for i := 0; i < 15; i++ {
-		_, err := cb.Execute(func() (interface{}, error) {
+		_, err := cb.Execute(func() (string, error) {
 			// 80% failure rate
 			if i%5 != 0 {
-				return nil, errors.New("simulated failure")
+				return "", errors.New("simulated failure")
 			}
 			return "success", nil
 		})

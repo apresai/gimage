@@ -54,6 +54,10 @@ func printAuthStatus() {
 	printProviderAuthStatus("Vertex AI", checkVertexAuth(cfg))
 	fmt.Println()
 
+	// Check xAI Grok
+	printProviderAuthStatus("Grok API", checkGrokAuth(cfg))
+	fmt.Println()
+
 	// Show credential priority diagram
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("  Credential Priority Hierarchy")
@@ -95,6 +99,31 @@ func checkGeminiAuth(cfg *config.Config) authStatus {
 			status.configured = true
 			status.sources = append(status.sources, fmt.Sprintf("Config file: gemini_api_key = %s", maskKey(cfg.GeminiAPIKey)))
 			status.key = cfg.GeminiAPIKey
+		}
+	}
+
+	return status
+}
+
+func checkGrokAuth(cfg *config.Config) authStatus {
+	status := authStatus{sources: []string{}, conflicts: []string{}}
+
+	// Check environment variable
+	envKey := os.Getenv("GROK_API_KEY")
+	if envKey != "" {
+		status.configured = true
+		status.sources = append(status.sources, fmt.Sprintf("Environment: GROK_API_KEY = %s", maskKey(envKey)))
+		status.key = envKey
+	}
+
+	// Check config file
+	if cfg.GrokAPIKey != "" {
+		if status.configured {
+			status.conflicts = append(status.conflicts, "Also found in config file (environment takes precedence)")
+		} else {
+			status.configured = true
+			status.sources = append(status.sources, fmt.Sprintf("Config file: grok_api_key = %s", maskKey(cfg.GrokAPIKey)))
+			status.key = cfg.GrokAPIKey
 		}
 	}
 

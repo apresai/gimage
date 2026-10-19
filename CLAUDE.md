@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 `gimage` - A Go-based CLI tool for AI-powered image generation and processing.
 
 **Core Capabilities**:
-- Generate images using Google Gemini 3.1 Flash Lite, Gemini 3.1 Flash, Gemini 3 Pro (native 4K), Gemini 2.5 Flash (legacy), Vertex presets, or xAI Grok Imagine 2.0
+- Generate images using Google Gemini Nano Banana 2.1 (default, native 4K), Gemini 3.1 Flash Lite, Gemini 3.1 Flash, Gemini 3 Pro (native 4K), Vertex AI presets, or xAI Grok Imagine 2.0
 - Process images: resize, scale, crop, compress, convert (PNG, JPG, WebP, GIF, TIFF, BMP)
 - Batch processing via MCP server (batch_resize, batch_compress, batch_convert)
 - MCP server for Claude Desktop integration
@@ -15,7 +15,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 **Technology Stack**:
 - Pure Go 1.26+ (zero C dependencies for portability)
-- Image processing: `github.com/disintegration/imaging`
+- Image processing: `golang.org/x/image/draw` (`CatmullRom`) + Go standard library `image/*` + `golang.org/x/image/{bmp,tiff,webp}`
 - CLI: Cobra + Viper
 - APIs: Gemini API, Vertex AI, xAI Grok
 
@@ -71,7 +71,7 @@ gimage/
 This project uses **pure Go with zero C dependencies**:
 - Single binary distribution, no system dependencies
 - Cross-compilation to any platform
-- Uses `disintegration/imaging` (not bimg/libvips)
+- Uses `golang.org/x/image` + standard library `image/*` (not bimg/libvips)
 - **Never add C library dependencies**
 
 ### Configuration Hierarchy (Priority Order)
@@ -102,7 +102,7 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
     ID:          "grok",
     DisplayName: "xAI Grok",
     Description: "xAI's Aurora-powered image generation",
-    PricingNote: "Paid: ~$0.07 per image",
+    PricingNote: "Paid: $0.015-$0.07 per image",
     Order:       4,
 },
 ```
@@ -123,17 +123,19 @@ The `ProviderRegistry` in `internal/generate/providers.go` is the central system
 ### Backend Selection Logic
 
 Model name implies backend (auto-detect):
+- `gemini-nano-banana-2.1` → gemini (default; tiered: $0.0225/0.5K, $0.0336/1K, $0.0504/2K, $0.0756/4K)
 - `gemini-3.1-flash-lite-image` → gemini ($0.034/image, 1K only)
 - `gemini-3.1-flash-image` → gemini (tiered: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
-- `gemini-3-pro-image` → gemini (native 4K, $0.134/image)
-- `gemini-2.5-flash-image` → gemini ($0.039/image, legacy)
+- `gemini-3-pro-image` → gemini (native 4K, $0.134/image at 1K/2K, $0.24/image at 4K)
+- `vertex-nano-banana` → vertex (`vertex/nano-banana-2.1`, Gemini Nano Banana 2.1 via Vertex, medium thinking default)
+- `vertex-nano-banana-fast` → vertex (`vertex/nano-banana-2.1-fast`, Gemini Nano Banana 2.1 via Vertex, minimal thinking default)
+- `vertex-nano-banana-ultra` → vertex (`vertex/nano-banana-2.1-ultra`, Gemini Nano Banana 2.1 via Vertex, high thinking default)
 - `vertex-flash` → vertex (`vertex/flash-3.1`, Gemini 3.1 Flash via Vertex, medium thinking default)
 - `vertex-flash-fast` → vertex (`vertex/flash-3.1-fast`, Gemini 3.1 Flash via Vertex, minimal thinking default)
 - `vertex-flash-ultra` → vertex (`vertex/flash-3.1-ultra`, Gemini 3.1 Flash via Vertex, high thinking default)
 - `vertex-flash-lite` → vertex (`vertex/flash-3.1-lite`, Gemini 3.1 Flash Lite via Vertex, minimal thinking default)
-- `grok-imagine-image-2.0` → grok ($0.04/image; optional `--quality low|medium|auto`)
+- `grok-imagine-image-2.0` → grok (tiered by quality & resolution: $0.015-$0.07/image; optional `--quality low|medium|auto`; `-quality` and `-pro` aliases resolve here)
 - `grok-imagine-image` → grok ($0.02/image, speed tier)
-- `grok-imagine-image-quality` → grok ($0.05/image at 1K, $0.07/image at 2K; xAI `-pro` aliases still resolve here)
 
 Optional `--api` flag overrides auto-detection.
 
@@ -143,35 +145,37 @@ Map informal names to exact model IDs:
 
 | User Input | Exact Model ID | API | Features |
 |-----------|---------------|-----|----------|
-| "gemini", "gemini-3", "gemini-3-pro" | `gemini-3-pro-image` | gemini | Native 4K, sharp text, $0.134/image (default) |
+| "gemini", "nano-banana", "nano-banana-2", "nano-banana-2.1", "gemini-nano-banana-2.1" | `gemini-nano-banana-2.1` | gemini | Default; native 4K, tiered: $0.0225 (0.5K), $0.0336 (1K), $0.0504 (2K), $0.0756 (4K) |
+| "gemini-3", "gemini-3-pro", "gemini-3-pro-image" | `gemini-3-pro-image` | gemini | Native 4K, sharp text, $0.134/image at 1K/2K, $0.24/image at 4K |
 | "gemini-3.1-flash", "gemini-3.1", "3.1-flash" | `gemini-3.1-flash-image` | gemini | Tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K) |
 | "flash", "gemini-flash", "gemini-lite", "gemini-3.1-flash-lite" | `gemini-3.1-flash-lite-image` | gemini | $0.034/image, 1K only; thinking `minimal`/`high`; no Search grounding |
-| "gemini-2.5", "gemini-2.5-flash", "gemini-2.5-flash-image" | `gemini-2.5-flash-image` | gemini | Legacy Nano Banana, $0.039/image, 1024x1024 max |
+| "vertex-nano-banana" | `gemini-nano-banana-2.1` | vertex | Gemini Nano Banana 2.1 via Vertex, medium thinking default; tiered $0.0225-$0.0756/image |
+| "vertex-nano-banana-fast" | `gemini-nano-banana-2.1` | vertex | Gemini Nano Banana 2.1 via Vertex, minimal thinking default; tiered $0.0225-$0.0756/image |
+| "vertex-nano-banana-ultra" | `gemini-nano-banana-2.1` | vertex | Gemini Nano Banana 2.1 via Vertex, high thinking default; tiered $0.0225-$0.0756/image |
 | "vertex-flash" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, medium thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-fast" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, minimal thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-ultra" | `gemini-3.1-flash-image` | vertex | Gemini 3.1 Flash via Vertex, high thinking default; tiered $0.045-$0.151/image |
 | "vertex-flash-lite" | `gemini-3.1-flash-lite-image` | vertex | Gemini 3.1 Flash Lite via Vertex, minimal thinking default; $0.034/image, 1K only |
-| "grok", "grok-imagine", "grok-2", "xai", "aurora", "grok-quality", "grok-imagine-quality" | `grok-imagine-image-2.0` | grok | Latest Quality Mode, $0.04/image; optional `--quality low\|medium\|auto`; up to 5 refs |
+| "grok", "grok-imagine", "grok-2", "xai", "aurora", "grok-quality", "grok-imagine-quality", "grok-imagine-image-quality", "grok-imagine-pro", "grok-imagine-image-pro" | `grok-imagine-image-2.0` | grok | Latest Quality Mode, $0.015-$0.07/image; optional `--quality low\|medium\|auto`; up to 5 refs |
 | "grok-fast", "grok-imagine-image" | `grok-imagine-image` | grok | Speed tier, $0.02/image |
-| "grok-imagine-image-quality", "grok-imagine-pro" (xAI alias), "grok-imagine-image-pro" (xAI alias) | `grok-imagine-image-quality` | grok | Previous quality tier, $0.05/image at 1K, $0.07/image at 2K. xAI still aliases `-pro` names here. |
 
-**Gemini 3 Pro** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `1K`, `2K`, or `4K`. **Gemini 3.1 Flash Lite** accepts `1K` only. **Grok Imagine** models accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
+**Gemini Nano Banana 2.1** and **Gemini 3.1 Flash** support native upscaling via `--image-size` flag: `0.5K`, `1K`, `2K`, or `4K`. **Gemini 3 Pro** accepts `1K`, `2K`, or `4K`. **Gemini 3.1 Flash Lite** accepts `1K` only. **Grok Imagine** models accept `--image-size 1K` or `2K` (mapped to xAI's `resolution` param).
 
 **Grok Imagine** supports `aspect_ratio` with 16 values: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `21:9`, `5:2`, `auto`.
 
 **Reference image editing** via repeatable `--input-image` (PNG/JPEG/WebP, local paths only):
-- **Grok** (max 5 on Imagine 2.0, max 3 on older Grok): routes to `POST /v1/images/edits`. Each `--input-image` may be a local path or a public `https://` URL (URLs are passed through to xAI; `http://` is rejected). Multi-image prompts may reference `<IMAGE_0>`, `<IMAGE_1>`, etc. Optional `--user` sends xAI's end-user abuse-monitoring field. Optional `--quality` (`low|medium|auto`) is Imagine 2.0 only.
-- **Gemini / Vertex**: compositional editing (Nano Banana style). Caps — Gemini 2.5 Flash: 3, Gemini 3 Pro: 11 (docs: 6 objects + 5 characters), Gemini 3.1 Flash / Flash Lite: 14. The API doesn't distinguish object vs character images in the payload, so gimage enforces a single combined total per model.
+- **Grok** (max 5 on Imagine 2.0, max 3 on Grok Fast): routes to `POST /v1/images/edits`. Each `--input-image` may be a local path or a public `https://` URL (URLs are passed through to xAI; `http://` is rejected). Multi-image prompts may reference `<IMAGE_0>`, `<IMAGE_1>`, etc. Optional `--user` sends xAI's end-user abuse-monitoring field. Optional `--quality` (`low|medium|auto`) is Imagine 2.0 only.
+- **Gemini / Vertex**: compositional editing (Nano Banana style). Caps — Gemini Nano Banana 2.1 / Gemini 3 Pro / Gemini 3.1 Flash / Flash Lite: 14 (10 objects + 4 characters). The API doesn't distinguish object vs character images in the payload, so gimage enforces a single combined total per model.
 
-**Gemini 3+ exclusive options** (silently ignored by Gemini 2.5 Flash and non-Gemini providers):
-- `--thinking` (`minimal|low|medium|high`): controls reasoning depth before generation. Higher = better layouts and text, slightly slower. Flash Lite accepts `minimal` and `high` only (`low`/`medium` are coerced).
+**Gemini Nano Banana 2.1 / Gemini 3+ exclusive options** (silently ignored by non-Gemini providers):
+- `--thinking` (`minimal|low|medium|high`): controls reasoning depth before generation. Higher = better layouts and text, slightly slower. Nano Banana 2.1 and 3.1 Flash coerce `low` to `minimal`; Flash Lite accepts `minimal` and `high` only (`low`/`medium` are coerced).
 - `--grounding` (bool): enables Google Search grounding via `tools: [{"google_search":{}}]`. Not supported by Flash Lite. Billed per search query in addition to per-image cost. Useful when the prompt references real-world current entities (products, news, logos).
 
 **Batch pricing tier (Gemini, ~50% off)** is available via Google's separate `:batchGenerateContent` async endpoint with a 24-hour SLA. This is **not** wired into the gimage CLI — adding it requires a job-submission/polling subsystem, tracked as future work.
 
 **Always use exact model IDs from the mapping table.**
 
-**RETIRED names (now error with guidance)**: `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `nova`, `nova-canvas`, `amazon.nova-canvas-v1:0`, `bedrock/nova-canvas` (Bedrock Nova Canvas retired, AWS end-of-life 2026-09-30). Passing any of these to `--model` or `--provider` returns an error with guidance. Note: `grok-imagine-pro` / `grok-imagine-image-pro` are **not** retired errors; they resolve to `grok-imagine-image-quality` (matching xAI's live aliases).
+**RETIRED names (now error with guidance)**: `gemini-2.5-flash-image`, `gemini-2.5-flash`, `gemini-2.5`, `gemini/flash-2.5`, `imagen`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, `imagen-fast`, `imagen-ultra`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`, `imagen-4.0-ultra-generate-001`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `nova`, `nova-canvas`, `amazon.nova-canvas-v1:0`, `bedrock/nova-canvas` (Bedrock Nova Canvas retired, AWS end-of-life 2026-09-30). Passing any of these to `--model` or `--provider` returns an error with guidance. Note: `grok-imagine-pro`, `grok-imagine-image-pro`, `grok-quality`, `grok-imagine-quality`, and `grok-imagine-image-quality` are **not** retired errors; they resolve to `grok-imagine-image-2.0`.
 
 **VIDEO / NON-IMAGE names (error, not supported)**: Gemini Omni (`omni`, `gemini-omni`, `gemini-omni-flash`, `gemini-omni-flash-preview`, `gemini-omni-1.1-flash`) is a video model on the Interactions API (3–10s, 720p). gimage is still-image only; do not register Omni as an image provider.
 
@@ -199,7 +203,7 @@ cwebp -q 85 -mt -sharp_yuv -preset photo generated.png -o generated.webp
 
 ### Adding Image Processing Operations
 1. Create operation file in `internal/imaging/`
-2. Use `disintegration/imaging` library exclusively
+2. Use `golang.org/x/image` + standard library `image/*` exclusively
 3. Handle all supported formats (PNG, JPG, WebP, GIF, TIFF, BMP)
 4. Add comprehensive error handling
 5. Create unit tests with fixtures from `test/fixtures/` (DO NOT MODIFY)
@@ -404,7 +408,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **vertex_credentials_path**: /path/to/service-account.json
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
-**default_model**: gemini-3-pro-image
+**default_model**: gemini-nano-banana-2.1
 **log_level**: info
 ```
 
@@ -496,7 +500,7 @@ if err != nil {
     return fmt.Errorf("failed to open image: %w", err)
 }
 
-result := imaging.Resize(img, width, height, imaging.Lanczos)
+result := imaging.ResizeImage(img, width, height)
 err = imaging.Save(result, outputPath)
 ```
 
@@ -669,7 +673,7 @@ client, _ := gimage.NewClient(
 // Generate image
 resp, _ := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
     Prompt: "sunset over mountains",
-    Model:  stringPtr("gemini-2.5-flash-image"),
+    Model:  stringPtr("gemini-nano-banana-2.1"),
 })
 ```
 

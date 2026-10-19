@@ -236,7 +236,7 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "1024x1024", cfg.DefaultSize)
 		assert.Equal(t, "global", cfg.VertexLocation)
 		assert.Equal(t, "info", cfg.LogLevel)
-		assert.Equal(t, "gemini-3-pro-image", cfg.DefaultModel)
+		assert.Equal(t, "gemini-nano-banana-2.1", cfg.DefaultModel)
 	})
 
 	t.Run("config file is loaded", func(t *testing.T) {

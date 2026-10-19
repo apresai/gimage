@@ -11,7 +11,7 @@ import (
 func RegisterListModelsTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "list_models",
-		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, current per-image pricing, native image-size support, and which credentials are missing. Returns provider IDs (e.g., 'gemini/pro-3', 'vertex/flash-3.1'), pricing, capability flags, and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
+		Description: "List all available AI image generation providers with pricing, capabilities, and authentication status. Use this FIRST to discover: which providers are configured and ready to use, current per-image pricing, native image-size support, and which credentials are missing. Returns provider IDs (e.g., 'gemini/nano-banana-2.1', 'gemini/pro-3', 'vertex/nano-banana-2.1'), pricing, capability flags, and availability status. RECOMMENDED: Call this before generate_image to choose the best provider for your needs.",
 		InputSchema: map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
@@ -113,10 +113,10 @@ func RegisterListModelsTool(server *mcp.MCPServer) {
 					"pricing_summary": defaultProviderPricing,
 					"configured":      defaultProviderConfigured,
 				},
-				"pricing_note": "Costs shown are in USD. The vertex-flash* providers (Gemini 3.1 Flash via Vertex) use tiered pricing by resolution via generateContent.",
+				"pricing_note": "Costs shown are in USD. Gemini Nano Banana 2.1, Gemini 3.1 Flash, and Grok Imagine 2.0 use tiered pricing by resolution/quality.",
 				"recommendations": map[string]interface{}{
-					"budget_users": "gemini/flash-3.1-lite ($0.034/image via Gemini API, most affordable; 1K only)",
-					"paid_users":   "vertex-flash (Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution)",
+					"budget_users": "gemini/nano-banana-2.1 ($0.0225-$0.0756/image via Gemini API, default) or gemini/flash-3.1-lite ($0.034/image, 1K only)",
+					"paid_users":   "vertex/nano-banana-2.1 ($0.0225-$0.0756/image via Vertex) or gemini/pro-3 ($0.134-$0.24/image)",
 				},
 			}, nil
 		},

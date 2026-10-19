@@ -11,11 +11,14 @@ func TestDefaultThinkingLevelForProvider(t *testing.T) {
 		id   string
 		want string
 	}{
+		{"vertex/nano-banana-2.1-fast", "minimal"},
+		{"vertex/nano-banana-2.1", "medium"},
+		{"vertex/nano-banana-2.1-ultra", "high"},
 		{"vertex/flash-3.1-fast", "minimal"},
 		{"vertex/flash-3.1-lite", "minimal"},
 		{"vertex/flash-3.1", "medium"},
 		{"vertex/flash-3.1-ultra", "high"},
-		{"gemini/flash-2.5", ""},
+		{"gemini/nano-banana-2.1", ""},
 		{"gemini/flash-3.1-lite", ""},
 		{"grok/grok-imagine", ""},
 		{"grok/grok-imagine-2.0", ""},

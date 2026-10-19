@@ -16,11 +16,10 @@ import (
 
 	"github.com/apresai/gimage/internal/config"
 	"github.com/apresai/gimage/internal/generate"
-	gimageimaging "github.com/apresai/gimage/internal/imaging"
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/disintegration/imaging"
 )
 
 // handleGenerate handles AI image generation requests
@@ -37,10 +36,11 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 
 	// Build generate options
 	options := models.GenerateOptions{
-		Model: req.Model,
-		Size:  req.Size,
-		Style: req.Style,
-		Seed:  req.Seed,
+		Model:   req.Model,
+		Size:    req.Size,
+		Style:   req.Style,
+		Seed:    req.Seed,
+		Quality: req.Quality,
 	}
 
 	// Set defaults
@@ -114,6 +114,22 @@ func (h *Handler) handleGenerate(ctx context.Context, body []byte) (events.APIGa
 				return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
 			}
 		}
+	} else if api == "grok" {
+		key, err := config.GetGrokAPIKey("")
+		if err != nil {
+			return errorResponse(500, fmt.Sprintf("Grok API key not configured: %v", err)), nil
+		}
+
+		client, err := generate.NewGrokClient(key)
+		if err != nil {
+			return errorResponse(500, fmt.Sprintf("Failed to create Grok client: %v", err)), nil
+		}
+		defer client.Close()
+
+		generatedImages, err = client.GenerateImage(ctx, req.Prompt, options)
+		if err != nil {
+			return errorResponse(500, fmt.Sprintf("Failed to generate image: %v", err)), nil
+		}
 	} else {
 		return errorResponse(400, fmt.Sprintf("Unsupported API: %s", api)), nil
 	}
@@ -154,8 +170,8 @@ func (h *Handler) handleResize(ctx context.Context, body []byte) (events.APIGate
 		return errorResponse(400, fmt.Sprintf("Failed to decode image: %v", err)), nil
 	}
 
-	// Resize using Lanczos resampling
-	resized := imaging.Resize(img, req.Width, req.Height, imaging.Lanczos)
+	// Resize using Catmull-Rom resampling
+	resized := imaging.Resize(img, req.Width, req.Height)
 
 	// Encode to bytes
 	outputData, err := encodeImage(resized, format)
@@ -199,7 +215,7 @@ func (h *Handler) handleScale(ctx context.Context, body []byte) (events.APIGatew
 	newHeight := int(float64(bounds.Dy()) * req.Factor)
 
 	// Scale
-	scaled := imaging.Resize(img, newWidth, newHeight, imaging.Lanczos)
+	scaled := imaging.Resize(img, newWidth, newHeight)
 
 	// Encode
 	outputData, err := encodeImage(scaled, format)
@@ -334,7 +350,7 @@ func (h *Handler) handleConvert(ctx context.Context, body []byte) (events.APIGat
 	}
 
 	// Convert using existing function
-	convertedData, err := gimageimaging.ConvertImageData(imageData, req.TargetFormat)
+	convertedData, err := imaging.ConvertImageData(imageData, req.TargetFormat)
 	if err != nil {
 		return errorResponse(400, fmt.Sprintf("Failed to convert image: %v", err)), nil
 	}
@@ -439,6 +455,13 @@ func (h *Handler) handleHealth(ctx context.Context) (events.APIGatewayProxyRespo
 		health.APIs["vertex"] = "available"
 	} else {
 		health.APIs["vertex"] = "not_configured"
+	}
+
+	// Check Grok API
+	if config.HasGrokCredentials() {
+		health.APIs["grok"] = "available"
+	} else {
+		health.APIs["grok"] = "not_configured"
 	}
 
 	return successResponse(200, health), nil

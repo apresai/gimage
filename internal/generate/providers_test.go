@@ -25,17 +25,21 @@ func TestRegistryGet(t *testing.T) {
 		wantModelID string
 		wantErr     bool
 	}{
-		{"gemini flash", "gemini/flash-2.5", "gemini-2.5-flash-image", false},
+		{"gemini nano banana 2.1", "gemini/nano-banana-2.1", "gemini-nano-banana-2.1", false},
 		{"gemini flash 3.1", "gemini/flash-3.1", "gemini-3.1-flash-image", false},
 		{"gemini flash 3.1 lite", "gemini/flash-3.1-lite", "gemini-3.1-flash-lite-image", false},
 		{"gemini pro 3", "gemini/pro-3", "gemini-3-pro-image", false},
+		{"vertex nano banana 2.1", "vertex/nano-banana-2.1", "gemini-nano-banana-2.1", false},
+		{"vertex nano banana 2.1 fast", "vertex/nano-banana-2.1-fast", "gemini-nano-banana-2.1", false},
+		{"vertex nano banana 2.1 ultra", "vertex/nano-banana-2.1-ultra", "gemini-nano-banana-2.1", false},
 		{"vertex flash 3.1", "vertex/flash-3.1", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 fast", "vertex/flash-3.1-fast", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 ultra", "vertex/flash-3.1-ultra", "gemini-3.1-flash-image", false},
 		{"vertex flash 3.1 lite", "vertex/flash-3.1-lite", "gemini-3.1-flash-lite-image", false},
 		{"grok imagine", "grok/grok-imagine", "grok-imagine-image", false},
-		{"grok imagine quality", "grok/grok-imagine-quality", "grok-imagine-image-quality", false},
 		{"grok imagine 2.0", "grok/grok-imagine-2.0", "grok-imagine-image-2.0", false},
+		{"retired gemini flash 2.5 not in Get", "gemini/flash-2.5", "", true},
+		{"folded grok imagine quality not in Get", "grok/grok-imagine-quality", "", true},
 		{"nonexistent", "nonexistent", "", true},
 	}
 
@@ -58,8 +62,8 @@ func TestRegistryList(t *testing.T) {
 	reg := GetProviderRegistry()
 	providers := reg.List()
 
-	// Should have at least 11 providers (4 gemini + 4 vertex + 3 grok)
-	assert.GreaterOrEqual(t, len(providers), 11, "should have at least 11 providers")
+	// Should have at least 13 providers (4 gemini + 7 vertex + 2 grok)
+	assert.GreaterOrEqual(t, len(providers), 13, "should have at least 13 providers")
 
 	for _, p := range providers {
 		assert.NotEmpty(t, p.ID, "provider ID should not be empty")
@@ -78,8 +82,8 @@ func TestRegistryListByAPI(t *testing.T) {
 		minCount int
 	}{
 		{"gemini providers", "gemini", 4},
-		{"vertex providers", "vertex", 4},
-		{"grok providers", "grok", 3},
+		{"vertex providers", "vertex", 7},
+		{"grok providers", "grok", 2},
 		{"invalid api empty", "invalid", 0},
 	}
 
@@ -150,12 +154,20 @@ func TestResolveProvider(t *testing.T) {
 		wantID  string
 		wantErr bool
 	}{
-		{"gemini default to pro-3", "gemini", "gemini/pro-3", false},
+		{"gemini default to nano-banana-2.1", "gemini", "gemini/nano-banana-2.1", false},
+		{"nano-banana alias", "nano-banana", "gemini/nano-banana-2.1", false},
+		{"nano-banana-2 alias", "nano-banana-2", "gemini/nano-banana-2.1", false},
+		{"nano-banana-2.1 alias", "nano-banana-2.1", "gemini/nano-banana-2.1", false},
+		{"gemini-nano-banana-2 alias", "gemini-nano-banana-2", "gemini/nano-banana-2.1", false},
+		{"gemini-nano-banana-2.1 exact", "gemini-nano-banana-2.1", "gemini/nano-banana-2.1", false},
 		{"flash alias", "flash", "gemini/flash-3.1-lite", false},
 		{"gemini-flash alias", "gemini-flash", "gemini/flash-3.1-lite", false},
 		{"gemini-lite alias", "gemini-lite", "gemini/flash-3.1-lite", false},
-		{"gemini-2.5-flash-image exact model", "gemini-2.5-flash-image", "gemini/flash-2.5", false},
+		{"retired gemini-2.5-flash-image errors", "gemini-2.5-flash-image", "", true},
 		{"gemini-3 alias", "gemini-3", "gemini/pro-3", false},
+		{"vertex-nano-banana alias", "vertex-nano-banana", "vertex/nano-banana-2.1", false},
+		{"vertex-nano-banana-fast alias", "vertex-nano-banana-fast", "vertex/nano-banana-2.1-fast", false},
+		{"vertex-nano-banana-ultra alias", "vertex-nano-banana-ultra", "vertex/nano-banana-2.1-ultra", false},
 		{"vertex-flash alias", "vertex-flash", "vertex/flash-3.1", false},
 		{"vertex-flash-fast alias", "vertex-flash-fast", "vertex/flash-3.1-fast", false},
 		{"vertex-flash-ultra alias", "vertex-flash-ultra", "vertex/flash-3.1-ultra", false},
@@ -173,12 +185,14 @@ func TestResolveProvider(t *testing.T) {
 		{"grok-quality alias", "grok-quality", "grok/grok-imagine-2.0", false},
 		{"grok-fast alias", "grok-fast", "grok/grok-imagine", false},
 		{"grok-imagine-image exact", "grok-imagine-image", "grok/grok-imagine", false},
-		{"grok-imagine-image-quality exact", "grok-imagine-image-quality", "grok/grok-imagine-quality", false},
-		{"grok-imagine-pro aliases to quality", "grok-imagine-pro", "grok/grok-imagine-quality", false},
-		{"grok-imagine-image-pro aliases to quality", "grok-imagine-image-pro", "grok/grok-imagine-quality", false},
+		{"grok-imagine-image-quality folds to 2.0", "grok-imagine-image-quality", "grok/grok-imagine-2.0", false},
+		{"grok-imagine-pro folds to 2.0", "grok-imagine-pro", "grok/grok-imagine-2.0", false},
+		{"grok-imagine-image-pro folds to 2.0", "grok-imagine-image-pro", "grok/grok-imagine-2.0", false},
+		{"grok/grok-imagine-quality folds to 2.0", "grok/grok-imagine-quality", "grok/grok-imagine-2.0", false},
 		{"xai alias", "xai", "grok/grok-imagine-2.0", false},
 		{"aurora alias", "aurora", "grok/grok-imagine-2.0", false},
-		{"exact provider ID", "gemini/flash-2.5", "gemini/flash-2.5", false},
+		{"exact provider ID", "gemini/nano-banana-2.1", "gemini/nano-banana-2.1", false},
+		{"retired provider ID gemini/flash-2.5", "gemini/flash-2.5", "", true},
 		{"nonexistent", "nonexistent", "", true},
 	}
 
@@ -205,6 +219,10 @@ func TestRetiredAliasesError(t *testing.T) {
 		"imagen-4-ultra",
 		"gemini-3-pro-image-preview",
 		"gemini-3.1-flash-image-preview",
+		"gemini-2.5",
+		"gemini-2.5-flash",
+		"gemini-2.5-flash-image",
+		"gemini/flash-2.5",
 		"nova",
 		"nova-canvas",
 		"amazon.nova-canvas-v1:0",
@@ -250,14 +268,16 @@ func TestResolveModelName(t *testing.T) {
 		wantID string
 	}{
 		{"flash alias resolves", "flash", "gemini-3.1-flash-lite-image"},
+		{"nano-banana-2.1 alias resolves", "nano-banana-2.1", "gemini-nano-banana-2.1"},
 		{"vertex-flash alias resolves", "vertex-flash", "gemini-3.1-flash-image"},
 		{"retired imagen returns original", "imagen", "imagen"},
 		{"retired nova returns original", "nova", "nova"},
+		{"retired gemini-2.5-flash-image returns original", "gemini-2.5-flash-image", "gemini-2.5-flash-image"},
 		{"grok alias resolves", "grok", "grok-imagine-image-2.0"},
-		{"grok-imagine-pro resolves to quality", "grok-imagine-pro", "grok-imagine-image-quality"},
-		{"grok-imagine-image-pro resolves to quality", "grok-imagine-image-pro", "grok-imagine-image-quality"},
+		{"grok-imagine-pro resolves to 2.0", "grok-imagine-pro", "grok-imagine-image-2.0"},
+		{"grok-imagine-image-pro resolves to 2.0", "grok-imagine-image-pro", "grok-imagine-image-2.0"},
 		{"unknown returns original", "unknown-model", "unknown-model"},
-		{"exact model ID returns itself", "gemini-2.5-flash-image", "gemini-2.5-flash-image"},
+		{"exact model ID returns itself", "gemini-nano-banana-2.1", "gemini-nano-banana-2.1"},
 	}
 
 	for _, tt := range tests {
@@ -276,7 +296,8 @@ func TestDetectAPIFromModel(t *testing.T) {
 		wantErr bool
 	}{
 		{"empty defaults to gemini", "", "gemini", false},
-		{"gemini flash model", "gemini-2.5-flash-image", "gemini", false},
+		{"gemini nano banana model", "gemini-nano-banana-2.1", "gemini", false},
+		{"retired gemini 2.5 flash model errors", "gemini-2.5-flash-image", "", true},
 		{"gemini alias", "gemini", "gemini", false},
 		{"vertex-flash alias", "vertex-flash", "vertex", false},
 		{"retired imagen-4 errors", "imagen-4", "", true},
@@ -322,7 +343,7 @@ func TestMigratedVertexProviderCapabilities(t *testing.T) {
 
 func TestGrokProviderCapabilities(t *testing.T) {
 	reg := GetProviderRegistry()
-	for _, providerID := range []string{"grok/grok-imagine", "grok/grok-imagine-quality", "grok/grok-imagine-2.0"} {
+	for _, providerID := range []string{"grok/grok-imagine", "grok/grok-imagine-2.0"} {
 		t.Run(providerID, func(t *testing.T) {
 			p, err := reg.Get(providerID)
 			require.NoError(t, err)
@@ -348,11 +369,12 @@ func TestGrokProviderCapabilities(t *testing.T) {
 func TestGetProviderPricing(t *testing.T) {
 	reg := GetProviderRegistry()
 
-	flashProvider, _ := reg.Get("gemini/flash-2.5")
+	nanoBananaProvider, _ := reg.Get("gemini/nano-banana-2.1")
+	flashLiteProvider, _ := reg.Get("gemini/flash-3.1-lite")
 	flash31Provider, _ := reg.Get("gemini/flash-3.1")
 	pro3Provider, _ := reg.Get("gemini/pro-3")
 	grokProvider, _ := reg.Get("grok/grok-imagine")
-	grokQualityProvider, _ := reg.Get("grok/grok-imagine-quality")
+	grok20Provider, _ := reg.Get("grok/grok-imagine-2.0")
 
 	tests := []struct {
 		name        string
@@ -364,9 +386,26 @@ func TestGetProviderPricing(t *testing.T) {
 		wantDisplay string
 	}{
 		{
-			name:     "gemini flash pricing",
-			provider: flashProvider,
-			wantCost: 0.039,
+			name:     "gemini nano banana 2.1 default pricing",
+			provider: nanoBananaProvider,
+			wantCost: 0.0336,
+		},
+		{
+			name:      "gemini nano banana 2.1 2K pricing",
+			provider:  nanoBananaProvider,
+			imageSize: "2K",
+			wantCost:  0.0504,
+		},
+		{
+			name:      "gemini nano banana 2.1 4K pricing",
+			provider:  nanoBananaProvider,
+			imageSize: "4K",
+			wantCost:  0.1134,
+		},
+		{
+			name:     "gemini flash lite pricing",
+			provider: flashLiteProvider,
+			wantCost: 0.034,
 		},
 		{
 			name:      "gemini 3.1 flash 0.5K pricing",
@@ -426,16 +465,16 @@ func TestGetProviderPricing(t *testing.T) {
 			wantCost: 0.02,
 		},
 		{
-			name:      "grok quality 1K pricing",
-			provider:  grokQualityProvider,
+			name:      "grok 2.0 1K pricing",
+			provider:  grok20Provider,
 			imageSize: "1K",
-			wantCost:  0.05,
+			wantCost:  0.04,
 		},
 		{
-			name:      "grok quality 2K pricing",
-			provider:  grokQualityProvider,
+			name:      "grok 2.0 2K pricing",
+			provider:  grok20Provider,
 			imageSize: "2K",
-			wantCost:  0.07,
+			wantCost:  0.06,
 		},
 	}
 
@@ -459,15 +498,15 @@ func TestGetProviderPricingExpensiveFlag(t *testing.T) {
 	reg := GetProviderRegistry()
 
 	pro3Provider, _ := reg.Get("gemini/pro-3")
-	flashProvider, _ := reg.Get("gemini/flash-2.5")
+	nanoBananaProvider, _ := reg.Get("gemini/nano-banana-2.1")
 
 	// 4K Gemini 3 Pro should be expensive ($0.24 > $0.05)
 	expensive := GetProviderPricing(pro3Provider, "4K", "", "")
 	assert.True(t, expensive.IsExpensive, "4K Gemini 3 Pro should be marked expensive")
 
-	// Gemini Flash should not be expensive ($0.039 < $0.05)
-	cheap := GetProviderPricing(flashProvider, "", "", "")
-	assert.False(t, cheap.IsExpensive, "Gemini Flash should not be marked expensive")
+	// Gemini Nano Banana 2.1 at 1K should not be expensive ($0.0336 < $0.05)
+	cheap := GetProviderPricing(nanoBananaProvider, "", "", "")
+	assert.False(t, cheap.IsExpensive, "Gemini Nano Banana 2.1 at 1K should not be marked expensive")
 }
 
 func TestImageSizeLabel(t *testing.T) {
@@ -509,7 +548,7 @@ func TestProviderRequiredEnvVars(t *testing.T) {
 		providerID  string
 		wantEnvVars []string
 	}{
-		{"gemini needs api key", "gemini/flash-2.5", []string{"GEMINI_API_KEY"}},
+		{"gemini needs api key", "gemini/nano-banana-2.1", []string{"GEMINI_API_KEY"}},
 		{"vertex needs project and location", "vertex/flash-3.1", []string{"VERTEX_PROJECT", "VERTEX_LOCATION"}},
 		{"grok needs api key", "grok/grok-imagine", []string{"GROK_API_KEY"}},
 	}
@@ -551,11 +590,13 @@ func TestModelPricingRegistry(t *testing.T) {
 	// signal — when pricing is re-verified next, bump geminiVerifiedDate here
 	// in the same commit as the pricing.go Verified field. Without this guard,
 	// the Notes silently rot.
-	const geminiVerifiedDate = "2026-05-23"
+	const geminiVerifiedDate = "2026-10-19"
 	geminiEntries := []string{
+		"gemini-nano-banana-2.1",
 		"gemini-2.5-flash-image",
 		"gemini-3-pro-image",
 		"gemini-3.1-flash-image",
+		"gemini-3.1-flash-lite-image",
 	}
 	for _, modelID := range geminiEntries {
 		t.Run("gemini_audit_"+modelID, func(t *testing.T) {
@@ -596,6 +637,11 @@ func TestModelPricingRegistry(t *testing.T) {
 		style     string
 		want      float64
 	}{
+		{modelID: "gemini-nano-banana-2.1", imageSize: "0.5K", want: 0.0168},
+		{modelID: "gemini-nano-banana-2.1", imageSize: "1K", want: 0.0336},
+		{modelID: "gemini-nano-banana-2.1", imageSize: "2K", want: 0.0504},
+		{modelID: "gemini-nano-banana-2.1", imageSize: "4K", want: 0.1134},
+		{modelID: "gemini-nano-banana-2.1", want: 0.0336},
 		{modelID: "gemini-2.5-flash-image", want: 0.039},
 		{modelID: "gemini-3-pro-image", imageSize: "1K", want: 0.134},
 		{modelID: "gemini-3-pro-image", imageSize: "2K", want: 0.134},
@@ -609,6 +655,8 @@ func TestModelPricingRegistry(t *testing.T) {
 		{modelID: "gemini-3.1-flash-lite-image", want: 0.034},
 		{modelID: "grok-imagine-image", want: 0.02},
 		{modelID: "grok-imagine-image-2.0", want: 0.04},
+		{modelID: "grok-imagine-image-2.0", imageSize: "1K", want: 0.04},
+		{modelID: "grok-imagine-image-2.0", imageSize: "2K", want: 0.06},
 		{modelID: "grok-imagine-image-quality", want: 0.05},
 		{modelID: "grok-imagine-image-quality", imageSize: "2K", want: 0.07},
 		{modelID: "gemini-3-pro-image-preview", imageSize: "4K", want: 0.24},

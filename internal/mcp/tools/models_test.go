@@ -277,14 +277,14 @@ func TestListModelsDefaultProvider(t *testing.T) {
 	}
 
 	// The default provider must be the resolve of generate.DefaultModel
-	// (gemini-3-pro-image -> provider id "gemini/pro-3"), independent of which
+	// (gemini-nano-banana-2.1 -> provider id "gemini/nano-banana-2.1"), independent of which
 	// providers currently have credentials configured.
 	providerID, ok := defaultProvider["provider_id"].(string)
 	if !ok {
 		t.Fatal("default_provider.provider_id is not a string")
 	}
-	if providerID != "gemini/pro-3" {
-		t.Errorf("default_provider.provider_id = %q, want %q", providerID, "gemini/pro-3")
+	if providerID != "gemini/nano-banana-2.1" {
+		t.Errorf("default_provider.provider_id = %q, want %q", providerID, "gemini/nano-banana-2.1")
 	}
 }
 

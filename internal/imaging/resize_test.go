@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -117,7 +116,7 @@ func TestResizeImage(t *testing.T) {
 
 			// Create a simple test image
 			img := image.NewRGBA(image.Rect(0, 0, tt.imgWidth, tt.imgHeight))
-			err := imaging.Save(img, inputPath)
+			err := Save(img, inputPath)
 			require.NoError(t, err, "failed to create test image")
 
 			// Test resize
@@ -138,7 +137,7 @@ func TestResizeImage(t *testing.T) {
 			assert.NoError(t, err, "output file should exist")
 
 			// Verify dimensions
-			resizedImg, err := imaging.Open(outputPath)
+			resizedImg, err := Open(outputPath)
 			require.NoError(t, err, "failed to open resized image")
 
 			bounds := resizedImg.Bounds()
@@ -270,7 +269,7 @@ func TestResizeFit(t *testing.T) {
 
 			// Create a simple test image
 			img := image.NewRGBA(image.Rect(0, 0, tt.imgWidth, tt.imgHeight))
-			err := imaging.Save(img, inputPath)
+			err := Save(img, inputPath)
 			require.NoError(t, err, "failed to create test image")
 
 			// Test resize fit
@@ -291,7 +290,7 @@ func TestResizeFit(t *testing.T) {
 			assert.NoError(t, err, "output file should exist")
 
 			// Verify dimensions
-			resizedImg, err := imaging.Open(outputPath)
+			resizedImg, err := Open(outputPath)
 			require.NoError(t, err, "failed to open resized image")
 
 			bounds := resizedImg.Bounds()
@@ -336,7 +335,7 @@ func TestResizeFit_RealFixture(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify dimensions are within bounds
-	img, err := imaging.Open(outputPath)
+	img, err := Open(outputPath)
 	require.NoError(t, err)
 
 	bounds := img.Bounds()

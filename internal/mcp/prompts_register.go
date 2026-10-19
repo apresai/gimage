@@ -7,21 +7,22 @@ func RegisterAllPrompts(server *MCPServer) {
 	server.RegisterPrompt(Prompt{
 		Name:        "gimage_quick_start",
 		Title:       "Get Started with gimage",
-		Description: "Learn how to generate your first AI image using the affordable Gemini provider",
+		Description: "Learn how to generate your first AI image using the default Gemini Nano Banana 2.1 provider",
 		Arguments:   []PromptArgument{},
 		Template: `I want to generate an AI image using gimage. Here's how to get started:
 
 STEP 1: Check available providers
 Call list_models to see all providers with pricing:
-- Affordable option: Gemini 2.5 Flash ($0.039/image)
-- Default: Gemini 3 Pro ($0.134/image, native 4K)
-- Paid options: Gemini 3.1 Flash via Vertex, Grok Imagine
+- Default: Gemini Nano Banana 2.1 ($0.0225-$0.0756/image, native 4K)
+- Fast option: Gemini 3.1 Flash Lite ($0.034/image, 1K)
+- Pro option: Gemini 3 Pro ($0.134-$0.24/image, native 4K)
+- Other options: Vertex AI presets, Grok Imagine 2.0
 
 STEP 2: Generate a simple image
 Call generate_image with:
 - prompt: "a sunset over mountains"
 - output: "~/Desktop/sunset.png"
-- (defaults to gemini-3-pro-image)
+- (defaults to gemini-nano-banana-2.1)
 
 EXAMPLE:
 generate_image(
@@ -67,8 +68,8 @@ generate_image(
   output="~/Desktop/city_photorealistic.png"
 )
 
-NOTE: Gemini Flash is the lowest-cost Google option for quick iterations.
-Use model="vertex-flash" when you need Vertex credentials/billing; it runs Gemini 3.1 Flash through Vertex with tiered image pricing.`,
+NOTE: Gemini Nano Banana 2.1 is the default and lowest-cost Google option for quick iterations ($0.0225 at 0.5K, $0.0336 at 1K).
+Use model="vertex-nano-banana" when you need Vertex credentials/billing.`,
 	})
 
 	// 3. Generate and Crop Workflow - Multi-step workflow
@@ -115,7 +116,7 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 	server.RegisterPrompt(Prompt{
 		Name:        "high_quality_image",
 		Title:       "Generate High-Quality Professional Images",
-		Description: "Learn when and how to use Gemini 3 Pro or Vertex-backed Gemini 3.1 Flash for professional-quality images",
+		Description: "Learn when and how to use Gemini Nano Banana 2.1, Gemini 3 Pro, or Vertex presets for professional-quality images",
 		Arguments: []PromptArgument{
 			{Name: "subject", Description: "What to generate", Required: true},
 		},
@@ -123,38 +124,40 @@ TIP: Use get_image_info first to verify actual image dimensions before cropping.
 
 STEP 1: Check providers with list_models
 This shows all providers with pricing and capabilities:
-- gemini/flash-3.1-lite: $0.034/image, 1K only (fastest Gemini image model)
-- gemini/pro-3: $0.134-$0.24/image, native 4K (default)
-- vertex/flash-3.1: Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
-- grok/grok-imagine-2.0: $0.04/image (xAI Quality Mode)
+- gemini/nano-banana-2.1: $0.0225-$0.0756/image, native 4K (default)
+- gemini/flash-3.1-lite: $0.034/image, 1K only (fast Gemini image model)
+- gemini/pro-3: $0.134-$0.24/image, native 4K
+- vertex/nano-banana-2.1: Gemini Nano Banana 2.1 via Vertex, $0.0225-$0.0756/image by resolution
+- grok/grok-imagine-2.0: $0.015-$0.07/image (xAI Grok Imagine 2.0)
 
-STEP 2: Use Gemini 3 Pro for highest quality text/diagram work, or vertex-flash for Vertex billing
+STEP 2: Use Gemini Nano Banana 2.1 or Gemini 3 Pro at 4K for highest quality
 generate_image(
   prompt="{{subject}}, ultra detailed, professional quality, 8k",
-  model="gemini-3-pro-image",
+  model="gemini-nano-banana-2.1",
   image_size="4K",
   output="~/Desktop/{{subject}}_hq.png"
 )
 
 PROVIDER COMPARISON:
-- Gemini Flash Lite (gemini/flash-3.1-lite): Fastest/cheapest Gemini image, $0.034/image, 1K only
+- Gemini Nano Banana 2.1 (gemini/nano-banana-2.1): Default, native 4K, $0.0225-$0.0756/image
+- Gemini Flash Lite (gemini/flash-3.1-lite): Fast Gemini image, $0.034/image, 1K only
 - Gemini 3 Pro (gemini/pro-3): Native 4K, $0.134-$0.24/image, sharp text
-- vertex-flash (vertex/flash-3.1): Gemini 3.1 Flash via Vertex, $0.045-$0.151/image by resolution
+- vertex-nano-banana (vertex/nano-banana-2.1): Gemini Nano Banana 2.1 via Vertex
 
 WHEN TO USE EACH:
-- Gemini Flash: Quick iterations, testing prompts, social media ($0.039/image)
-- Gemini 3 Pro: Text-heavy images, diagrams, native 4K ($0.134-$0.24/image)
-- vertex-flash presets: Vertex-authenticated workflows
+- Gemini Nano Banana 2.1: Default for most use cases, great price/performance ($0.0336 at 1K, $0.0756 at 4K)
+- Gemini 3 Pro: Complex multi-element compositions with deterministic seed support ($0.134-$0.24/image)
+- vertex-nano-banana / vertex-flash presets: Vertex-authenticated workflows
 
 EXAMPLE:
 generate_image(
   prompt="professional headshot, studio lighting, ultra detailed, 8k",
-  model="gemini-3-pro-image",
+  model="gemini-nano-banana-2.1",
   image_size="4K",
   output="~/Desktop/headshot_hq.png"
 )
 
-NOTE: The vertex-flash presets require Vertex AI setup. Run 'gimage auth vertex' first.`,
+NOTE: The vertex-* presets require Vertex AI setup. Run 'gimage auth vertex' first.`,
 	})
 
 	// 5. Web Optimization Workflow - Multi-tool advanced workflow
@@ -168,7 +171,7 @@ NOTE: The vertex-flash presets require Vertex AI setup. Run 'gimage auth vertex'
 		Template: `I want to generate images and optimize them for web use (smaller file size, WebP format).
 
 WORKFLOW:
-1. Generate images with Gemini 2.5 Flash for low-cost iteration
+1. Generate images with Gemini Nano Banana 2.1 for low-cost iteration
 2. Resize to web-friendly dimensions
 3. Convert to WebP (30% smaller than PNG)
 
@@ -203,16 +206,16 @@ TIP: You can also use batch_resize, batch_compress, or batch_convert for multipl
 ERROR: "Provider/model not found"
 SOLUTION: Check available providers first
 1. Call list_models to see all available providers
-2. Use common aliases: "gemini", "vertex-flash", "grok"
-✅ CORRECT: model="gemini" or model="gemini-2.5-flash-image"
-✅ CORRECT: model="vertex-flash" (resolves to vertex/flash-3.1 provider)
+2. Use common aliases: "gemini", "nano-banana", "vertex-nano-banana", "grok"
+✅ CORRECT: model="gemini" or model="gemini-nano-banana-2.1"
+✅ CORRECT: model="vertex-nano-banana" (resolves to vertex/nano-banana-2.1 provider)
 
 ERROR: "Gemini API key not configured"
 SOLUTION: Set up authentication first
 Run: gimage auth gemini
 Then retry your generate_image call
 
-ERROR: "Missing credentials for Gemini 3.1 Flash via Vertex"
+ERROR: "Missing credentials for Gemini Nano Banana 2.1 via Vertex"
 SOLUTION: Set up Vertex AI authentication
 Run: gimage auth vertex
 Requires: GCP project ID and service account or API key
@@ -220,8 +223,8 @@ Requires: GCP project ID and service account or API key
 ERROR: "crop region (x=0 + width=1792 = 1792) exceeds image width 1024"
 SOLUTION: Check provider size limits
 1. Call list_models to see max dimensions per provider
-2. Gemini: up to 1024x1024
-3. Gemini 3.1 Flash via Vertex (vertex-flash): native resolution via image_size (1K/2K/4K)
+2. Gemini Flash Lite: up to 1024x1024
+3. Gemini Nano Banana 2.1 / Gemini 3+: native resolution via image_size (0.5K/1K/2K/4K)
 4. Use get_image_info to verify actual dimensions before cropping
 
 ERROR: "unknown flag: --width" (when using crop)
@@ -230,13 +233,13 @@ SOLUTION: crop_image uses positional arguments, not flags
 ❌ WRONG: crop_image(input="file.png", --width=800, --height=600)
 
 PROVIDER SIZE LIMITS:
-- gemini/flash-2.5: up to 1024x1024
-- vertex/flash-3.1: native resolution via image_size (1K/2K/4K)
+- gemini/flash-3.1-lite: up to 1024x1024
+- gemini/nano-banana-2.1 and vertex/nano-banana-2.1: native resolution via image_size (0.5K/1K/2K/4K)
 
 GENERAL TIPS:
 1. Call list_models first to check providers, pricing, and auth status
 2. Always specify output path (e.g., ~/Desktop/image.png)
-3. Start with Gemini 2.5 Flash for lower-cost testing
+3. Start with Gemini Nano Banana 2.1 for low-cost testing
 4. Use get_image_info before cropping to verify dimensions
 5. Check provider capabilities with list_models`,
 	})

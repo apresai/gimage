@@ -21,10 +21,10 @@ Production-ready serverless REST API for web applications and remote processing.
 ### <img src="docs/icons/spark.svg" width="24" height="24" alt="" /> AI Image Generation
 
 - Generate stunning images from text prompts using Google Gemini, Vertex AI, or xAI Grok
-- Multiple AI models: Gemini 3 Pro (default, native 4K), Gemini 3.1 Flash, Gemini 3.1 Flash Lite ($0.034/image, 1K only), Gemini 2.5 Flash, Gemini 3.1 Flash via Vertex (standard/fast/ultra/lite), Grok Imagine 2.0 ($0.04/image) plus older Grok speed/quality tiers
+- Multiple AI models: Gemini Nano Banana 2.1 (default, native 4K, $0.0225-$0.0756/image), Gemini 3 Pro (native 4K), Gemini 3.1 Flash, Gemini 3.1 Flash Lite ($0.034/image, 1K only), Vertex AI presets (`vertex-nano-banana*`, `vertex-flash*`), and xAI Grok Imagine 2.0 ($0.015-$0.07/image) plus Grok speed tier ($0.02/image)
 - Control size, style, quality, and aspect ratio
 - Reproducible results with seed values on providers that support seeds
-- Provider-specific features: output format (Vertex AI), native resolution (Gemini 3+ / Grok), aspect ratio (Grok 16 values), reference-image editing (Gemini, Vertex, Grok)
+- Provider-specific features: output format (Vertex AI), native resolution (Gemini Nano Banana 2.1 / Gemini 3+ / Grok), aspect ratio (Grok 16 values), reference-image editing (Gemini, Vertex, Grok)
 - Batch generation: create multiple images at once
 
 ### <img src="docs/icons/tools.svg" width="24" height="24" alt="" /> Image Processing
@@ -107,9 +107,9 @@ gimage auth test gemini
 
 **Get API Keys:**
 
-- **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Flash Lite $0.034/image, Gemini 3 Pro $0.134/image)
+- **Gemini API**: https://aistudio.google.com/app/apikey (Gemini Nano Banana 2.1 $0.0225-$0.0756/image, Gemini Flash Lite $0.034/image, Gemini 3 Pro $0.134/image)
 - **Vertex AI**: https://cloud.google.com/vertex-ai (3 auth modes: Express Mode/Service Account/Application Default Credentials)
-- **xAI Grok**: https://console.x.ai (Grok Imagine 2.0 $0.04/image; speed tier $0.02/image)
+- **xAI Grok**: https://console.x.ai (Grok Imagine 2.0 $0.015-$0.07/image; speed tier $0.02/image)
 
 ### 3. Generate Your First Image
 
@@ -130,24 +130,24 @@ gimage generate "futuristic city at night"
 # Specify size and style
 gimage generate "abstract art" --size 1024x1024 --style photorealistic
 
-# Use Gemini 3.1 Flash via Vertex (auto-detects vertex API)
-gimage generate "beautiful landscape" --model vertex-flash
+# Use Gemini Nano Banana 2.1 via Vertex (auto-detects vertex API)
+gimage generate "beautiful landscape" --model vertex-nano-banana
 
 # State exclusions directly in the prompt
 gimage generate "forest scene with no people, no buildings"
 
-# Reproducible results with seed
-gimage generate "random pattern" --seed 12345
+# Reproducible results with seed (Gemini 3 Pro / 3.1 Flash)
+gimage generate "random pattern" --model gemini-3-pro --seed 12345
 
 # Generate multiple images at once
 gimage generate "fantasy landscape" --count 3
 
-# Use aspect ratio with Gemini 3 Pro (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3)
-gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
+# Use aspect ratio with Gemini Nano Banana 2.1 (1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 3:2, 2:3, 21:9, etc.)
+gimage generate "wide landscape" --aspect-ratio 16:9
 
 # Compositional editing with reference images (Gemini, Vertex, or Grok)
 gimage generate "place this product on a marble counter, soft light" \
- --model gemini-3.1-flash --input-image product.png
+ --input-image product.png
 
 # Grok image edit via xAI /images/edits (max 5 on Imagine 2.0; local path or https:// URL)
 gimage generate "render this as a pencil sketch with detailed shading" \
@@ -157,15 +157,15 @@ gimage generate "render this as a pencil sketch with detailed shading" \
 gimage generate "make this neon cyberpunk" \
  --model grok --input-image https://example.com/photo.png
 
-# Combine multiple references (character + scene) - caps: Grok=3, Gemini 2.5=3, 3 Pro=11, 3.1 Flash=14
+# Combine multiple references (character + scene) - caps: Grok 2.0=5, Grok Fast=3, Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash=14
 gimage generate "this character in this environment, cinematic" \
- --model gemini-3-pro --input-image character.png --input-image scene.jpg
+ --input-image character.png --input-image scene.jpg
 
-# Higher reasoning for complex layouts/text (Gemini 3+)
-gimage generate "infographic 'Q3 +18%'" --model gemini-3-pro --image-size 4K --thinking high
+# Higher reasoning for complex layouts/text (Gemini Nano Banana 2.1 / Gemini 3+)
+gimage generate "infographic 'Q3 +18%'" --image-size 4K --thinking high
 
-# Google Search grounding for current/real visual references (Gemini 3+, billed per search)
-gimage generate "official PlayStation 5 Slim front view" --model gemini-3-pro --grounding
+# Google Search grounding for current/real visual references (Gemini Nano Banana 2.1 / Gemini 3+, billed per search)
+gimage generate "official PlayStation 5 Slim front view" --grounding
 
 # Control output format with Vertex AI (png, jpeg, webp)
 gimage generate "portrait" --api vertex --output-format webp
@@ -271,7 +271,7 @@ This file contains SENSITIVE API KEYS stored in PLAINTEXT.
 **vertex_credentials_path**: /path/to/service-account.json
 **grok_api_key**: xai-5zM...
 **default_api**: gemini
-**default_model**: gemini-3-pro-image
+**default_model**: gemini-nano-banana-2.1
 **default_size**: 1024x1024
 **log_level**: info
 ```
@@ -316,52 +316,56 @@ gimage auth status # Shows which credentials are active and their sources
 
 ### Gemini API (Google AI Studio)
 
-- **`gemini-3-pro-image`** (default)
+- **`gemini-nano-banana-2.1`** (default; `gemini`, `nano-banana`, `nano-banana-2`, `nano-banana-2.1`)
+
+ - Pricing tiered by resolution: $0.0225 (0.5K), $0.0336 (1K), $0.0504 (2K), $0.0756 (4K)
+ - Native 4K resolution, thinking (`minimal`, `medium`, `high`), Search grounding, up to 14 reference images
+ - Best for: General-purpose high-quality generation at low cost
+
+- **`gemini-3-pro-image`** (`gemini-3`, `gemini-3-pro`)
 
  - Pricing: $0.134/image (1K/2K), $0.24/image (4K)
- - Native 4K resolution, sharp text rendering
- - Best for: Professional work, text-heavy images, diagrams
+ - Native 4K resolution, sharp text rendering, deterministic seed support
+ - Best for: Professional work, text-heavy images, diagrams, reproducible seeds
 
-- **`gemini-3.1-flash-image`** (4K flash)
+- **`gemini-3.1-flash-image`** (`gemini-3.1-flash`, `3.1-flash`)
 
  - Pricing tiered by resolution: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K)
- - Improved text rendering vs Flash 2.5
- - Best for: High-quality images at flash speed
+ - Native 4K resolution, seed support
+ - Best for: High-quality images with deterministic seeds
 
-- **`gemini-3.1-flash-lite-image`** (Nano Banana 2 Lite; `flash` / `gemini-flash` alias)
+- **`gemini-3.1-flash-lite-image`** (`flash`, `gemini-flash`, `gemini-lite`)
 
  - Pricing: $0.034/image (1K only)
  - Thinking: `minimal` or `high` (no Search grounding)
- - Best for: High-volume, low-latency drafts; Google's recommended upgrade from 2.5 Flash
-
-- **`gemini-2.5-flash-image`** (legacy Nano Banana)
-
- - Pricing: $0.039/image
- - Resolution: up to 1024x1024 (also supports 1024x1792, 1792x1024)
- - Fast generation (~2-3 seconds)
- - Best for: Existing 2.5 Flash workflows (prefer Lite for new work)
+ - Best for: High-volume, low-latency 1K drafts
 
 ### Vertex AI (Google Cloud) - Paid
 
-Vertex `vertex-flash*` presets run Gemini 3.1 Flash via generateContent. `vertex-flash-lite` runs Gemini 3.1 Flash Lite. Options unsupported by the chosen provider are reported and ignored.
+Vertex `vertex-nano-banana*` presets run Gemini Nano Banana 2.1 via generateContent; `vertex-flash*` presets run Gemini 3.1 Flash; `vertex-flash-lite` runs Gemini 3.1 Flash Lite. Options unsupported by the chosen provider are reported and ignored.
 
-- **`vertex-flash`** (provider alias: `vertex/flash-3.1`)
+- **`vertex-nano-banana`** (provider alias: `vertex/nano-banana-2.1`)
 
- - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Pricing: resolution-tiered ($0.0225-$0.0756/image)
  - Medium thinking by default
- - Best for: Vertex-authenticated Gemini image workflows
+ - Best for: Vertex-authenticated Gemini Nano Banana 2.1 workflows
 
-- **`vertex-flash-fast`** (provider alias: `vertex/flash-3.1-fast`)
+- **`vertex-nano-banana-fast`** (provider alias: `vertex/nano-banana-2.1-fast`)
 
- - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Pricing: resolution-tiered ($0.0225-$0.0756/image)
  - Minimal thinking by default for faster generation
  - Best for: Quick iterations, batch processing
 
-- **`vertex-flash-ultra`** (provider alias: `vertex/flash-3.1-ultra`)
+- **`vertex-nano-banana-ultra`** (provider alias: `vertex/nano-banana-2.1-ultra`)
 
- - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Pricing: resolution-tiered ($0.0225-$0.0756/image)
  - High thinking by default for best quality
  - Best for: Print-ready, marketing materials
+
+- **`vertex-flash`** / **`vertex-flash-fast`** / **`vertex-flash-ultra`** (provider aliases: `vertex/flash-3.1*`)
+
+ - Pricing: resolution-tiered ($0.045-$0.151/image)
+ - Medium / minimal / high thinking presets for Gemini 3.1 Flash via Vertex
 
 - **`vertex-flash-lite`** (provider alias: `vertex/flash-3.1-lite`)
 
@@ -369,31 +373,23 @@ Vertex `vertex-flash*` presets run Gemini 3.1 Flash via generateContent. `vertex
  - Minimal thinking by default
  - Best for: Cheap Vertex-authenticated drafts
 
-
 ### xAI Grok - Paid
 
 - **`grok-imagine-image-2.0`** (default Grok model / Quality Mode)
 
- - Pricing: $0.04/image
+ - Pricing tiered by quality & resolution: $0.015 (low 1K), $0.03 (low 2K), $0.05 (medium 1K), $0.07 (medium 2K), $0.04 (auto 1K)
  - Optional `--quality low|medium|auto`
  - Supports aspect ratio (16 values including `21:9`, `5:2`, `auto`)
  - Supports image editing via `--input-image` (up to 5 refs: local path or https:// URL)
  - Optional `--user` for xAI end-user abuse monitoring
  - Best for: Current xAI image generation
- - Aliases: `grok`, `grok-imagine`, `grok-quality`, `xai`, `aurora`
+ - Aliases: `grok`, `grok-imagine`, `grok-quality`, `grok-imagine-quality`, `grok-imagine-image-quality`, `grok-imagine-pro`, `grok-imagine-image-pro`, `xai`, `aurora`
 
 - **`grok-imagine-image`** (speed tier; alias `grok-fast`)
 
- - Pricing: $0.02/image (1K and 2K; live-verified 2026-08-01)
+ - Pricing: $0.02/image (1K and 2K)
  - Supports aspect ratio and `--input-image` editing (max 3)
- - Best for: Cheapest Grok generations
-
-- **`grok-imagine-image-quality`** (previous quality tier)
-
- - Pricing: $0.05/image at 1K, $0.07/image at 2K (live-verified 2026-08-01)
- - Supports aspect ratio, resolution (`1k`, `2k`), and `--input-image` editing (max 3)
- - Best for: Existing quality-tier workflows
- - Aliases `grok-imagine-pro` and `grok-imagine-image-pro` resolve here (xAI still lists them as aliases)
+ - Best for: Fast Grok generations
 
 **View all models with live pricing:**
 
@@ -762,7 +758,7 @@ client, _ := gimage.NewClient(
 // Generate image
 resp, _ := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
  Prompt: "sunset over mountains",
- Model: stringPtr("gemini-2.5-flash-image"),
+ Model: stringPtr("gemini-nano-banana-2.1"),
  Size: stringPtr("1024x1024"),
 })
 ```
@@ -984,9 +980,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 Built with:
 
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
-- [Imaging](https://github.com/disintegration/imaging) - Image processing
-- [Google Gen AI SDK](https://github.com/googleapis/go-genai) - Gemini API
-- [Vertex AI SDK](https://cloud.google.com/go/vertexai) - Vertex AI
+- [golang.org/x/image](https://pkg.go.dev/golang.org/x/image) - Pure-Go image processing
+- [Google Gen AI SDK](https://github.com/googleapis/go-genai) - Gemini & Vertex AI SDK
 
 ---
 

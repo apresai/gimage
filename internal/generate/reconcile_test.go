@@ -98,24 +98,26 @@ func TestReconcileOptions_GeminiLite(t *testing.T) {
 	assert.Empty(t, o.Quality)
 }
 
-func TestReconcileOptions_Gemini25(t *testing.T) {
-	p, err := GetProviderRegistry().Get("gemini/flash-2.5")
+func TestReconcileOptions_GeminiNanoBanana(t *testing.T) {
+	p, err := GetProviderRegistry().Get("gemini/nano-banana-2.1")
 	require.NoError(t, err)
 
 	o := fullOptions()
 	w := ReconcileOptions(p, &o)
 
-	// 2.5 Flash does not do native image-size, thinking, or grounding.
-	assert.Empty(t, o.ImageSize)
-	assert.Empty(t, o.ThinkingLevel)
-	assert.False(t, o.WebSearchGrounding)
-	assert.True(t, warningsContain(w, "--image-size"))
-	assert.True(t, warningsContain(w, "--thinking"))
-	assert.True(t, warningsContain(w, "--grounding"))
+	// Nano Banana 2.1 does not support seed, quality, or output format.
+	assert.Zero(t, o.Seed)
+	assert.Empty(t, o.Quality)
+	assert.Empty(t, o.OutputFormat)
+	assert.True(t, warningsContain(w, "--seed"))
+	assert.True(t, warningsContain(w, "--quality"))
+	assert.True(t, warningsContain(w, "--output-format"))
 
-	// 2.5 Flash honors these — preserved.
+	// Nano Banana 2.1 honors these — preserved.
 	assert.Equal(t, "anime", o.Style)
-	assert.Equal(t, int64(42), o.Seed)
+	assert.Equal(t, "2K", o.ImageSize)
+	assert.Equal(t, "high", o.ThinkingLevel)
+	assert.True(t, o.WebSearchGrounding)
 	assert.Equal(t, "16:9", o.AspectRatio)
 	assert.Equal(t, []string{"a.png"}, o.InputImages)
 }

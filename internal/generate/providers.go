@@ -14,7 +14,7 @@ import (
 
 // Model ID constants for backward compatibility
 const (
-	DefaultModel = "gemini-3-pro-image"
+	DefaultModel = "gemini-nano-banana-2.1"
 )
 
 // ImageGenerator is the common interface for all image generation clients
@@ -25,11 +25,11 @@ type ImageGenerator interface {
 
 // Provider represents a specific way to access a model (API + Model + Auth)
 type Provider struct {
-	// Unique identifier: "provider/model" e.g., "gemini/flash-2.5", "vertex/flash-3.1"
+	// Unique identifier: "provider/model" e.g., "gemini/nano-banana-2.1", "vertex/flash-3.1"
 	ID string
 
 	// Display information
-	Name        string // e.g., "Gemini 2.5 Flash (via Gemini API)"
+	Name        string // e.g., "Gemini Nano Banana 2.1 (via Gemini API)"
 	API         string // "gemini", "vertex", "grok"
 	ModelID     string // Actual model identifier for the API
 	Description string
@@ -104,14 +104,14 @@ var apiRegistry = map[string]APIInfo{
 		ID:          "vertex",
 		DisplayName: "Vertex AI (Google Cloud)",
 		Description: "Google Cloud's enterprise AI platform",
-		PricingNote: "Paid: $0.034-0.151 per image (Gemini 3.1 Flash Lite / Flash tiered)",
+		PricingNote: "Paid: $0.034-0.151 per image (Gemini Nano Banana 2.1 / 3.1 Flash tiered)",
 		Order:       2,
 	},
 	"grok": {
 		ID:          "grok",
 		DisplayName: "xAI Grok",
 		Description: "xAI's Aurora-powered image generation",
-		PricingNote: "Paid: $0.02-0.07 per image",
+		PricingNote: "Paid: $0.02-0.08 per image",
 		Order:       4,
 	},
 }
@@ -139,13 +139,13 @@ func GetProviderRegistry() *ProviderRegistry {
 }
 
 func (r *ProviderRegistry) registerAllProviders() {
-	// Gemini 2.5 Flash via Gemini API
+	// Gemini Nano Banana 2.1 via Gemini API (default workhorse)
 	r.Register(&Provider{
-		ID:          "gemini/flash-2.5",
-		Name:        "Gemini 2.5 Flash (via Gemini API)",
+		ID:          "gemini/nano-banana-2.1",
+		Name:        "Gemini Nano Banana 2.1 (via Gemini API)",
 		API:         "gemini",
-		ModelID:     "gemini-2.5-flash-image",
-		Description: "Direct access via Google AI Studio - Simple, affordable",
+		ModelID:     "gemini-nano-banana-2.1",
+		Description: "Google's recommended flagship workhorse (1K/2K/4K, sharp text, Search grounding, up to 14 reference images)",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GEMINI_API_KEY",
@@ -156,17 +156,20 @@ func (r *ProviderRegistry) registerAllProviders() {
 			},
 		},
 		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.039),
+			CostPerImage: float64Ptr(0.0336),
 			FreeTier:     false,
 			Currency:     "USD",
 		},
 		Capabilities: ModelCapabilities{
 			SupportsStyles:         true,
-			SupportsSeed:           true,
+			SupportsSeed:           false, // Nano Banana 2.1 rejects non-default seed
+			SupportsImageSize:      true,
 			SupportsAspectRatio:    true,
-			SupportsInputImages:    true,
+			SupportsThinking:       true, // minimal, medium, high
+			SupportsGrounding:      true,
+			SupportsInputImages:    true, // up to 14 reference images
 			SupportsMultipleImages: true,
-			MaxPromptLength:        480,
+			MaxPromptLength:        2000,
 		},
 		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
 			apiKey := creds["GEMINI_API_KEY"]
@@ -301,6 +304,198 @@ func (r *ProviderRegistry) registerAllProviders() {
 				return nil, fmt.Errorf("GEMINI_API_KEY is required")
 			}
 			return NewGeminiRESTClient(apiKey)
+		},
+	})
+
+	// Gemini Nano Banana 2.1 via Vertex AI — standard preset (medium thinking)
+	r.Register(&Provider{
+		ID:          "vertex/nano-banana-2.1",
+		Name:        "Gemini Nano Banana 2.1 via Vertex (medium thinking)",
+		API:         "vertex",
+		ModelID:     "gemini-nano-banana-2.1",
+		Description: "Gemini Nano Banana 2.1 via Vertex generateContent; tiered image pricing ($0.0336 @1K). Default thinking: medium (--thinking overrides).",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., global)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.0336),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
+		},
+	})
+
+	// Gemini Nano Banana 2.1 via Vertex AI — fast preset (minimal thinking)
+	r.Register(&Provider{
+		ID:          "vertex/nano-banana-2.1-fast",
+		Name:        "Gemini Nano Banana 2.1 via Vertex (fast, minimal thinking)",
+		API:         "vertex",
+		ModelID:     "gemini-nano-banana-2.1",
+		Description: "Gemini Nano Banana 2.1 via Vertex generateContent; tiered image pricing ($0.0336 @1K). Default thinking: minimal for lowest latency (--thinking overrides).",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., global)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.0336),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
+		},
+	})
+
+	// Gemini Nano Banana 2.1 via Vertex AI — ultra preset (high thinking)
+	r.Register(&Provider{
+		ID:          "vertex/nano-banana-2.1-ultra",
+		Name:        "Gemini Nano Banana 2.1 via Vertex (ultra, high thinking)",
+		API:         "vertex",
+		ModelID:     "gemini-nano-banana-2.1",
+		Description: "Gemini Nano Banana 2.1 via Vertex generateContent; tiered image pricing ($0.0336 @1K). Default thinking: high for best layout/text (--thinking overrides).",
+		RequiredEnvVars: []EnvVar{
+			{
+				Name:        "VERTEX_PROJECT",
+				ConfigKey:   "vertex_project",
+				Description: "GCP Project ID",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_LOCATION",
+				ConfigKey:   "vertex_location",
+				Description: "GCP region (e.g., global)",
+				Required:    true,
+				Secret:      false,
+			},
+			{
+				Name:        "VERTEX_API_KEY",
+				ConfigKey:   "vertex_api_key",
+				Description: "Vertex AI API key (optional)",
+				Required:    false,
+				Secret:      true,
+			},
+		},
+		Pricing: PricingInfo{
+			CostPerImage: float64Ptr(0.0336),
+			FreeTier:     false,
+			Currency:     "USD",
+		},
+		Capabilities: ModelCapabilities{
+			SupportsStyles:         true,
+			SupportsSeed:           false,
+			SupportsImageSize:      true,
+			SupportsAspectRatio:    true,
+			SupportsThinking:       true,
+			SupportsGrounding:      true,
+			SupportsInputImages:    true,
+			SupportsOutputFormat:   true,
+			SupportsMultipleImages: true,
+			MaxPromptLength:        2000,
+		},
+		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
+			project := creds["VERTEX_PROJECT"]
+			location := creds["VERTEX_LOCATION"]
+			apiKey := creds["VERTEX_API_KEY"]
+
+			if project == "" || location == "" {
+				return nil, fmt.Errorf("VERTEX_PROJECT and VERTEX_LOCATION are required")
+			}
+
+			if apiKey != "" {
+				return NewVertexRESTClient(apiKey, project, location)
+			}
+			ctx := context.Background()
+			return NewVertexUnifiedClient(ctx, project, location)
 		},
 	})
 
@@ -560,7 +755,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		},
 	})
 
-	// Imagen retired entirely. Vertex now serves Gemini 3.1 Flash via the vertex/flash-3.1* presets above.
+	// Imagen retired entirely. Vertex now serves Gemini Nano Banana 2.1 and Gemini 3.1 Flash via the vertex/* presets above.
 
 	// Grok Imagine Image 2.0 via xAI (current recommended / Quality Mode)
 	r.Register(&Provider{
@@ -568,7 +763,7 @@ func (r *ProviderRegistry) registerAllProviders() {
 		Name:        "Grok Imagine 2.0 (via xAI)",
 		API:         "grok",
 		ModelID:     "grok-imagine-image-2.0",
-		Description: "xAI's latest image generation model (Quality Mode); $0.04/image; optional --quality low|medium|auto; up to 5 reference images",
+		Description: "xAI's latest image generation model (Quality Mode); $0.04/image at 1K, $0.06 at 2K; optional --quality low|medium|auto; up to 5 reference images",
 		RequiredEnvVars: []EnvVar{
 			{
 				Name:        "GROK_API_KEY",
@@ -640,46 +835,6 @@ func (r *ProviderRegistry) registerAllProviders() {
 			return NewGrokClient(apiKey)
 		},
 	})
-
-	// Grok Imagine Quality via xAI (replaces deprecated -pro retired 2026-05-15)
-	r.Register(&Provider{
-		ID:          "grok/grok-imagine-quality",
-		Name:        "Grok Imagine Quality (via xAI)",
-		API:         "grok",
-		ModelID:     "grok-imagine-image-quality",
-		Description: "xAI quality tier ($0.05/image at 1K, $0.07 at 2K); aliases: grok-quality, grok-imagine-pro",
-		RequiredEnvVars: []EnvVar{
-			{
-				Name:        "GROK_API_KEY",
-				ConfigKey:   "grok_api_key",
-				Description: "API key from https://console.x.ai",
-				Required:    true,
-				Secret:      true,
-			},
-		},
-		Pricing: PricingInfo{
-			CostPerImage: float64Ptr(0.05),
-			FreeTier:     false,
-			Currency:     "USD",
-		},
-		Capabilities: ModelCapabilities{
-			SupportsStyles:         false,
-			SupportsSeed:           false,
-			SupportsImageSize:      true,
-			SupportsAspectRatio:    true,
-			SupportsInputImages:    true, // POST /v1/images/edits, max 3
-			SupportsMultipleImages: true,
-			MaxPromptLength:        8000,
-		},
-		CreateClient: func(creds map[string]string) (ImageGenerator, error) {
-			apiKey := creds["GROK_API_KEY"]
-			if apiKey == "" {
-				return nil, fmt.Errorf("GROK_API_KEY is required")
-			}
-			return NewGrokClient(apiKey)
-		},
-	})
-
 }
 
 // Register adds a provider to the registry
@@ -891,8 +1046,16 @@ func (r *ProviderRegistry) GetAuthStatus() []AuthStatus {
 // providerAliases maps user-friendly names to canonical provider IDs.
 // Kept at package scope so ResolveProvider doesn't re-allocate on every call.
 var providerAliases = map[string]string{
-	// Default "gemini" maps to Gemini 3 Pro
-	"gemini":             "gemini/pro-3",
+	// Default "gemini" maps to Gemini Nano Banana 2.1
+	"gemini":                 "gemini/nano-banana-2.1",
+	"nano-banana":            "gemini/nano-banana-2.1",
+	"nano-banana-2":          "gemini/nano-banana-2.1",
+	"nano-banana-2.1":        "gemini/nano-banana-2.1",
+	"nb2.1":                  "gemini/nano-banana-2.1",
+	"gemini-nano-banana":     "gemini/nano-banana-2.1",
+	"gemini-nano-banana-2":   "gemini/nano-banana-2.1",
+	"gemini-nano-banana-2.1": "gemini/nano-banana-2.1",
+	// Gemini 3 Pro
 	"gemini-3":           "gemini/pro-3",
 	"gemini-3-pro":       "gemini/pro-3",
 	"gemini3":            "gemini/pro-3",
@@ -910,33 +1073,36 @@ var providerAliases = map[string]string{
 	"gemini-lite":                 "gemini/flash-3.1-lite",
 	"gemini-flash":                "gemini/flash-3.1-lite",
 	"flash":                       "gemini/flash-3.1-lite",
-	// Gemini 2.5 Flash (legacy; exact IDs only)
-	"gemini-2.5":             "gemini/flash-2.5",
-	"gemini-2.5-flash":       "gemini/flash-2.5",
-	"gemini-2.5-flash-image": "gemini/flash-2.5",
+	// Gemini Nano Banana 2.1 via Vertex AI (thinking presets)
+	"vertex-nano-banana":       "vertex/nano-banana-2.1",
+	"vertex-nano-banana-2.1":   "vertex/nano-banana-2.1",
+	"vertex-nb2.1":             "vertex/nano-banana-2.1",
+	"vertex-nano-banana-fast":  "vertex/nano-banana-2.1-fast",
+	"vertex-nano-banana-ultra": "vertex/nano-banana-2.1-ultra",
 	// Gemini 3.1 Flash via Vertex AI (thinking presets)
 	"vertex-flash":       "vertex/flash-3.1",
 	"vertex-flash-fast":  "vertex/flash-3.1-fast",
 	"vertex-flash-ultra": "vertex/flash-3.1-ultra",
 	"vertex-flash-lite":  "vertex/flash-3.1-lite",
 	// Grok Imagine 2.0 is the current recommended / Quality Mode
-	"grok":                   "grok/grok-imagine-2.0",
-	"grok-imagine":           "grok/grok-imagine-2.0",
-	"grok-2":                 "grok/grok-imagine-2.0",
-	"grok-imagine-2":         "grok/grok-imagine-2.0",
-	"grok-imagine-2.0":       "grok/grok-imagine-2.0",
-	"grok-imagine-image-2.0": "grok/grok-imagine-2.0",
-	"grok-quality":           "grok/grok-imagine-2.0",
-	"grok-imagine-quality":   "grok/grok-imagine-2.0",
-	"xai":                    "grok/grok-imagine-2.0",
-	"aurora":                 "grok/grok-imagine-2.0",
-	// Speed tier and previous quality model stay available via exact IDs
-	"grok-fast":                  "grok/grok-imagine",
-	"grok-imagine-image":         "grok/grok-imagine",
-	"grok-imagine-image-quality": "grok/grok-imagine-quality",
-	// xAI still aliases -pro → the previous quality model (verified live GET /v1/models 2026-08-01)
-	"grok-imagine-pro":       "grok/grok-imagine-quality",
-	"grok-imagine-image-pro": "grok/grok-imagine-quality",
+	// (Grok Quality and Pro aliases fold into grok/grok-imagine-2.0)
+	"grok":                       "grok/grok-imagine-2.0",
+	"grok-imagine":               "grok/grok-imagine-2.0",
+	"grok-2":                     "grok/grok-imagine-2.0",
+	"grok-imagine-2":             "grok/grok-imagine-2.0",
+	"grok-imagine-2.0":           "grok/grok-imagine-2.0",
+	"grok-imagine-image-2.0":     "grok/grok-imagine-2.0",
+	"grok-quality":               "grok/grok-imagine-2.0",
+	"grok-imagine-quality":       "grok/grok-imagine-2.0",
+	"grok-imagine-image-quality": "grok/grok-imagine-2.0",
+	"grok-imagine-pro":           "grok/grok-imagine-2.0",
+	"grok-imagine-image-pro":     "grok/grok-imagine-2.0",
+	"grok/grok-imagine-quality":  "grok/grok-imagine-2.0",
+	"xai":                        "grok/grok-imagine-2.0",
+	"aurora":                     "grok/grok-imagine-2.0",
+	// Speed tier stays available via exact IDs
+	"grok-fast":          "grok/grok-imagine",
+	"grok-imagine-image": "grok/grok-imagine",
 }
 
 // retiredAliases are model names we used to accept but no longer run. They must
@@ -945,38 +1111,43 @@ var providerAliases = map[string]string{
 // replacement. The imagen-* names never ran Imagen — they were Gemini 3.1 Flash
 // via Vertex; we now say so plainly instead of advertising a model we don't run.
 var retiredAliases = map[string]string{
-	"imagen":                         `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
-	"imagen-4":                       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
-	"imagen-fast":                    `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
-	"imagen-4-fast":                  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
-	"imagen-ultra":                   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
-	"imagen-4-ultra":                 `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
-	"imagen-4.0-generate-001":        `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash" or "gemini-3.1-flash"`,
-	"imagen-4.0-fast-generate-001":   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-fast"`,
-	"imagen-4.0-ultra-generate-001":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-flash-ultra"`,
+	"imagen":                         `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana" or "vertex-flash"`,
+	"imagen-4":                       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana" or "vertex-flash"`,
+	"imagen-fast":                    `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-fast" or "vertex-flash-fast"`,
+	"imagen-4-fast":                  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-fast" or "vertex-flash-fast"`,
+	"imagen-ultra":                   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-ultra" or "vertex-flash-ultra"`,
+	"imagen-4-ultra":                 `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-ultra" or "vertex-flash-ultra"`,
+	"imagen-4.0-generate-001":        `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana" or "vertex-flash"`,
+	"imagen-4.0-fast-generate-001":   `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-fast" or "vertex-flash-fast"`,
+	"imagen-4.0-ultra-generate-001":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex-nano-banana-ultra" or "vertex-flash-ultra"`,
 	"gemini-3-pro-image-preview":     `preview builds were discontinued; use "gemini-3-pro"`,
-	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash"`,
-	// AWS Bedrock Nova Canvas: removed (AWS end-of-life 2026-09-30); no Bedrock image model is offered.
-	"nova":                    `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
-	"nova-canvas":             `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
-	"amazon.nova-canvas-v1:0": `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
-	"bedrock/nova-canvas":     `Bedrock Nova Canvas was retired (AWS end-of-life 2026-09-30); no Bedrock image model is currently offered. Use "gemini-3-pro" or "grok"`,
+	"gemini-3.1-flash-image-preview": `preview builds were discontinued; use "gemini-3.1-flash" or "nano-banana-2.1"`,
+	// Gemini 2.5 Flash Image: restricted to legacy accounts by Google; superseded by Nano Banana 2.1 and 3.1 Flash Lite.
+	"gemini-2.5":             `Gemini 2.5 Flash Image was retired; use "flash" (gemini-3.1-flash-lite-image, $0.034) or "nano-banana-2.1" (gemini-nano-banana-2.1, $0.0336 at 1K)`,
+	"gemini-2.5-flash":       `Gemini 2.5 Flash Image was retired; use "flash" (gemini-3.1-flash-lite-image, $0.034) or "nano-banana-2.1" (gemini-nano-banana-2.1, $0.0336 at 1K)`,
+	"gemini-2.5-flash-image": `Gemini 2.5 Flash Image was retired; use "flash" (gemini-3.1-flash-lite-image, $0.034) or "nano-banana-2.1" (gemini-nano-banana-2.1, $0.0336 at 1K)`,
+	"gemini/flash-2.5":       `Gemini 2.5 Flash Image was retired; use "gemini/flash-3.1-lite" ("flash") or "gemini/nano-banana-2.1" ("nano-banana-2.1")`,
+	// AWS Bedrock Nova Canvas: reached AWS end-of-life on 2026-09-30; no Bedrock image model is offered.
+	"nova":                    `Bedrock Nova Canvas was retired (reached AWS end-of-life on 2026-09-30); no Bedrock image model is currently offered. Use "nano-banana-2.1", "gemini-3-pro", or "grok"`,
+	"nova-canvas":             `Bedrock Nova Canvas was retired (reached AWS end-of-life on 2026-09-30); no Bedrock image model is currently offered. Use "nano-banana-2.1", "gemini-3-pro", or "grok"`,
+	"amazon.nova-canvas-v1:0": `Bedrock Nova Canvas was retired (reached AWS end-of-life on 2026-09-30); no Bedrock image model is currently offered. Use "nano-banana-2.1", "gemini-3-pro", or "grok"`,
+	"bedrock/nova-canvas":     `Bedrock Nova Canvas was retired (reached AWS end-of-life on 2026-09-30); no Bedrock image model is currently offered. Use "nano-banana-2.1", "gemini-3-pro", or "grok"`,
 	// Old internal provider IDs (used by --provider / `auth setup <id>` before the rename).
-	"vertex/imagen-4":       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1" or "vertex-flash"`,
-	"vertex/imagen-4-fast":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-fast" or "vertex-flash-fast"`,
-	"vertex/imagen-4-ultra": `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/flash-3.1-ultra" or "vertex-flash-ultra"`,
+	"vertex/imagen-4":       `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/nano-banana-2.1" or "vertex/flash-3.1"`,
+	"vertex/imagen-4-fast":  `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/nano-banana-2.1-fast" or "vertex/flash-3.1-fast"`,
+	"vertex/imagen-4-ultra": `it ran Gemini 3.1 Flash via Vertex (never Imagen); use "vertex/nano-banana-2.1-ultra" or "vertex/flash-3.1-ultra"`,
 }
 
 // nonImageModels are live Google/xAI names that are not still-image generators.
 // ResolveProvider returns guidance instead of a generic "no provider found".
 var nonImageModels = map[string]string{
-	"omni":                        `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni":                 `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni-flash":           `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni-flash-preview":   `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni-1.1":             `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni-1.1-flash":       `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
-	"gemini-omni-1.1-flash-preview": `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "gemini-3-pro" or "flash" for still images`,
+	"omni":                          `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni":                   `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni-flash":             `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni-flash-preview":     `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni-1.1":               `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni-1.1-flash":         `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
+	"gemini-omni-1.1-flash-preview": `Gemini Omni is a video model (Interactions API, 3–10s 720p) and is not supported by gimage. Use "nano-banana-2.1", "gemini-3-pro", or "flash" for still images`,
 }
 
 // ResolveProvider finds a provider by various identifiers

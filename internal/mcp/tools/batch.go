@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/observability"
-	"github.com/disintegration/imaging"
 )
 
 // RegisterBatchResizeTool registers the batch_resize tool
@@ -339,11 +339,11 @@ func processResize(input, output string, width, height int, mode string) error {
 	var resized image.Image
 	switch mode {
 	case "fit":
-		resized = imaging.Fit(img, width, height, imaging.Lanczos)
+		resized = imaging.Fit(img, width, height)
 	case "stretch":
-		resized = imaging.Resize(img, width, height, imaging.Lanczos)
+		resized = imaging.Resize(img, width, height)
 	default: // "crop"
-		resized = imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+		resized = imaging.Fill(img, width, height)
 	}
 
 	return saveImage(resized, output)
@@ -354,7 +354,7 @@ func processCompress(input, output string, quality int) error {
 	if err != nil {
 		return err
 	}
-	return imaging.Save(img, output, imaging.JPEGQuality(quality))
+	return imaging.SaveWithQuality(img, output, quality)
 }
 
 func processConvert(input, output string) error {

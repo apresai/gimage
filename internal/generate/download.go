@@ -17,7 +17,6 @@ import (
 
 	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/pkg/models"
-	imaginglib "github.com/disintegration/imaging"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 )
@@ -113,7 +112,7 @@ func SaveImage(img *models.GeneratedImage, outputPath string) error {
 				actualWidth, actualHeight, img.Width, img.Height, mode)
 
 			// Resize to match requested dimensions using imaging package
-			srcImg, err := imaginglib.Open(outputPath)
+			srcImg, err := imaging.Open(outputPath)
 			if err != nil {
 				return fmt.Errorf("failed to open image for resize enforcement: %w", err)
 			}
@@ -121,12 +120,12 @@ func SaveImage(img *models.GeneratedImage, outputPath string) error {
 			var resizedImg *image.NRGBA
 			switch strings.ToLower(mode) {
 			case "fit":
-				resizedImg = imaginglib.Fit(srcImg, img.Width, img.Height, imaginglib.Lanczos)
+				resizedImg = imaging.Fit(srcImg, img.Width, img.Height)
 			case "crop", "fill":
-				resizedImg = imaginglib.Fill(srcImg, img.Width, img.Height, imaginglib.Center, imaginglib.Lanczos)
+				resizedImg = imaging.Fill(srcImg, img.Width, img.Height)
 			default:
 				// Default to crop if mode is unknown or explicitly "stretch"
-				resizedImg = imaginglib.Fill(srcImg, img.Width, img.Height, imaginglib.Center, imaginglib.Lanczos)
+				resizedImg = imaging.Fill(srcImg, img.Width, img.Height)
 			}
 
 			// Save with the target format

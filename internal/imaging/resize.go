@@ -6,11 +6,10 @@ import (
 	"fmt"
 
 	"github.com/apresai/gimage/internal/progress"
-	"github.com/disintegration/imaging"
 )
 
 // ResizeImage resizes an image to exactly the specified dimensions by cropping/filling
-// to preserve the original aspect ratio (High-quality Lanczos resampling).
+// to preserve the original aspect ratio (High-quality Catmull-Rom resampling).
 //
 // Parameters:
 //   - ctx: context for cancellation support
@@ -58,7 +57,7 @@ func ResizeFill(ctx context.Context, inputPath, outputPath string, width, height
 
 	// Load the input image
 	reporter.Update(1, 3, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -76,7 +75,7 @@ func ResizeFill(ctx context.Context, inputPath, outputPath string, width, height
 
 	// Resize using Fill (center crop) to preserve aspect ratio
 	reporter.Update(2, 3, "Resizing image (preserving aspect ratio)")
-	resized := imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+	resized := Fill(img, width, height)
 
 	// Check for cancellation
 	select {
@@ -89,7 +88,7 @@ func ResizeFill(ctx context.Context, inputPath, outputPath string, width, height
 
 	// Save the resized image
 	reporter.Update(3, 3, "Saving resized image")
-	if err := imaging.Save(resized, outputPath); err != nil {
+	if err := Save(resized, outputPath); err != nil {
 		err = fmt.Errorf("failed to save resized image to %s: %w", outputPath, err)
 		reporter.Error(err)
 		return err
@@ -139,7 +138,7 @@ func ResizeFit(ctx context.Context, inputPath, outputPath string, width, height 
 
 	// Load the input image
 	reporter.Update(1, 3, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -157,7 +156,7 @@ func ResizeFit(ctx context.Context, inputPath, outputPath string, width, height 
 
 	// Resize to fit within bounds, preserving aspect ratio
 	reporter.Update(2, 3, "Resizing image to fit")
-	resized := imaging.Fit(img, width, height, imaging.Lanczos)
+	resized := Fit(img, width, height)
 
 	// Check for cancellation
 	select {
@@ -170,7 +169,7 @@ func ResizeFit(ctx context.Context, inputPath, outputPath string, width, height 
 
 	// Save the resized image
 	reporter.Update(3, 3, "Saving resized image")
-	if err := imaging.Save(resized, outputPath); err != nil {
+	if err := Save(resized, outputPath); err != nil {
 		err = fmt.Errorf("failed to save resized image to %s: %w", outputPath, err)
 		reporter.Error(err)
 		return err

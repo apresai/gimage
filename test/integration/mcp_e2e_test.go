@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/apresai/gimage/internal/config"
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/mcp/tools"
 )
@@ -283,7 +283,7 @@ func TestMCPToolsE2E(t *testing.T) {
 			"prompt": "a simple red square on white background",
 			"output": outputPath,
 			"size":   "512x512", // Smaller size for faster test
-			"model":  "gemini-2.5-flash-image",
+			"model":  "gemini-nano-banana-2.1",
 		})
 		if err != nil {
 			t.Fatalf("generate_image failed: %v", err)
@@ -396,14 +396,8 @@ func saveTestImage(img image.Image, path string) error {
 }
 
 func saveTestImageAsJPEG(img image.Image, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
 	// Use imaging package to save as JPEG
-	return imaging.Save(img, path, imaging.JPEGQuality(90))
+	return imaging.SaveJPEG(img, path, 90)
 }
 
 func getKeys(m map[string]interface{}) []string {

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +44,7 @@ func TestConvertImageFile(t *testing.T) {
 
 			// Create a simple test image
 			img := image.NewRGBA(image.Rect(0, 0, 200, 150))
-			err := imaging.Save(img, inputPath)
+			err := Save(img, inputPath)
 			require.NoError(t, err, "failed to create test image")
 
 			// Test convert
@@ -56,7 +55,7 @@ func TestConvertImageFile(t *testing.T) {
 			_, err = os.Stat(outputPath)
 			assert.NoError(t, err, "output file should exist")
 
-			openedImg, err := imaging.Open(outputPath)
+			openedImg, err := Open(outputPath)
 			assert.NoError(t, err, "output should be a valid image")
 			assert.NotNil(t, openedImg)
 		})

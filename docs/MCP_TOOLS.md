@@ -23,7 +23,7 @@ Generate an AI image from a text prompt using Gemini, Vertex AI, or xAI Grok.
 
 ### Description
 
-Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash), Grok Imagine/Quality), various sizes up to native 4K with Gemini 3+ models, and style controls. Options the chosen provider does not support are stripped and reported in the response `warning` field.
+Creates images from text descriptions using state-of-the-art AI models. Supports multiple models (Gemini Nano Banana 2.1, Gemini 3 Pro, Gemini 3.1 Flash / Flash Lite, Vertex AI presets (`vertex-nano-banana*`, `vertex-flash*`), and Grok Imagine 2.0 / speed tier), various sizes up to native 4K with Gemini 3+ models, and style controls. Options the chosen provider does not support are stripped and reported in the response `warning` field.
 
 ### Parameters
 
@@ -32,17 +32,17 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 | `prompt` | string | Yes | - | Text description of the image to generate |
 | `output` | string | No | Auto-generated | Output file path |
 | `size` | string | No | "1024x1024" | Image dimensions |
-| `model` | string | No | "gemini-3-pro-image" | AI model to use |
-| `image_size` | string | No | - | Native resolution. Gemini 3 Pro / 3.1 Flash: "1K", "2K", or "4K"; Flash Lite: "1K" only; Grok: "1K" or "2K" |
+| `model` | string | No | "gemini-nano-banana-2.1" | AI model to use |
+| `image_size` | string | No | - | Native resolution. Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash: "1K", "2K", or "4K"; Flash Lite: "1K" only; Grok: "1K" or "2K" |
 | `aspect_ratio` | string | No | - | Aspect ratio. Gemini 3+ includes 21:9 and ultra-wide. Grok Imagine also: "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "21:9", "5:2", "auto" |
 | `style` | string | No | - | Image style (photorealistic, artistic, anime) |
 | `seed` | integer | No | - | Random seed for reproducibility |
 | `count` | integer | No | 1 | Number of images to generate (1-10; Grok returns N exactly, Gemini family is best-effort) |
 | `output_format` | string | No | - | Output format for Vertex AI: "png", "jpeg", or "webp" |
-| `thinking` | string | No | - | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. |
+| `thinking` | string | No | - | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by non-Gemini providers. |
 | `grounding` | boolean | No | `false` | Enable Google Search grounding for Gemini 3+. Billed per search query in addition to per-image cost. |
 | `quality` | string | No | - | Grok Imagine 2.0 only: `low`, `medium`, or `auto`. |
-| `input_images` | array of strings | No | - | Reference images for editing/composition. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14. Grok uses POST /v1/images/edits. |
+| `input_images` | array of strings | No | - | Reference images for editing/composition. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, Grok speed tier=3, Gemini 3 Pro=11, Gemini Nano Banana 2.1 / 3.1 Flash / Lite=14. Grok uses POST /v1/images/edits. |
 | `user` | string | No | - | Optional end-user identifier for abuse monitoring (Grok/xAI only). |
 
 ### Supported Sizes
@@ -59,28 +59,28 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
 
 **Google Gemini API:**
 
-- **gemini-3-pro-image** (default, native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
+- **gemini-nano-banana-2.1** (default, native 4K at 50% lower cost, tiered pricing: $0.0225/0.5K, $0.0336/1K, $0.0504/2K, $0.0756/4K)
+- **gemini-3-pro-image** (native 4K, sharp text, $0.134 for 1K/2K, $0.24 for 4K)
 - **gemini-3.1-flash-image** (native 4K at flash speed, tiered pricing: $0.045/0.5K, $0.067/1K, $0.101/2K, $0.151/4K)
 - **gemini-3.1-flash-lite-image** (`flash` / `gemini-flash`, $0.034/image, 1K only)
-- **gemini-2.5-flash-image** (legacy, $0.039/image, up to 1024x1024)
 
 **Google Vertex AI:**
 
-- **vertex-flash** (`vertex/flash-3.1`, medium thinking default)
+- **vertex-nano-banana** (`vertex/nano-banana-2.1`, Gemini Nano Banana 2.1 via Vertex, medium thinking default, $0.0225-$0.0756/image)
+- **vertex-nano-banana-fast** (`vertex/nano-banana-2.1-fast`, minimal thinking default)
+- **vertex-nano-banana-ultra** (`vertex/nano-banana-2.1-ultra`, high thinking default)
+- **vertex-flash** (`vertex/flash-3.1`, medium thinking default, $0.045-$0.151/image)
 - **vertex-flash-fast** (`vertex/flash-3.1-fast`, minimal thinking default)
 - **vertex-flash-ultra** (`vertex/flash-3.1-ultra`, high thinking default)
 - **vertex-flash-lite** (`vertex/flash-3.1-lite`, Flash Lite, $0.034/image, 1K only)
-- `vertex-flash*` use `gemini-3.1-flash-image` via Vertex generateContent (Lite uses `gemini-3.1-flash-lite-image`)
-- Pricing follows Gemini 3.1 Flash tiers except Lite ($0.034/1K)
 - Options unsupported by the chosen provider are reported in the response `warning` field and ignored.
 
 **xAI Grok:**
 
-- **grok-imagine-image-2.0** (current Quality Mode, $0.04/image; `quality` low|medium|auto; default `grok` alias)
+- **grok-imagine-image-2.0** (current Quality Mode, $0.04/image; `quality` low|medium|auto; default `grok` alias; also matches `grok-quality` and `-pro` aliases)
 - **grok-imagine-image** (speed tier, $0.02/image; alias `grok-fast`)
-- **grok-imagine-image-quality** (previous quality tier, $0.05 at 1K, $0.07 at 2K; xAI `-pro` aliases still resolve here)
  - Note: Grok models do not support size, style, or seed parameters (reported as warnings if passed)
- - Grok Imagine models support `aspect_ratio` (16 values including `auto`), `image_size` (1K or 2K), and `input_images` (max 5 on 2.0, max 3 on older models; routes to `/images/edits`)
+ - Grok Imagine models support `aspect_ratio` (16 values including `auto`), `image_size` (1K or 2K), and `input_images` (max 5 on 2.0, max 3 on speed tier; routes to `/images/edits`)
 
 ### Returns
 
@@ -94,14 +94,14 @@ Creates images from text descriptions using state-of-the-art AI models. Supports
  ],
  "count": 2,
  "size": "1024x1024",
- "model": "gemini-3-pro-image",
+ "model": "gemini-nano-banana-2.1",
  "prompt": "a sunset over mountains"
 }
 ```
 
 ### Examples
 
-**Basic generation (Gemini 3 Pro - default):**
+**Basic generation (Gemini Nano Banana 2.1 - default):**
 
 ```
 Generate an image of a sunset over mountains
@@ -119,7 +119,7 @@ Create a photorealistic image of a wise old wizard
 Generate a 4K image of a detailed infographic about space exploration
 ```
 
-**Gemini 3 Pro with aspect ratio:**
+**Gemini Nano Banana 2.1 with aspect ratio:**
 
 ```
 Generate a 16:9 wide landscape image of mountains at sunset
@@ -150,22 +150,22 @@ Generate 3 variations of a fantasy castle
 Generate an image with seed 42 of abstract patterns
 ```
 
-**Using Gemini 2.5 Flash (affordable):**
+**Using Gemini 3.1 Flash Lite (affordable):**
 
 ```
-Generate an image of a cat using gemini-2.5-flash-image model for affordable generation
+Generate an image of a cat using flash model for affordable generation
 ```
 
-**Gemini 3.1 Flash via Vertex (minimal thinking):**
+**Gemini Nano Banana 2.1 via Vertex (minimal thinking):**
 
 ```
-Generate a quick product mockup using vertex-flash-fast model
+Generate a quick product mockup using vertex-nano-banana-fast model
 ```
 
-**Gemini 3.1 Flash via Vertex (high thinking):**
+**Gemini Nano Banana 2.1 via Vertex (high thinking):**
 
 ```
-Generate a premium architectural visualization using vertex-flash-ultra model
+Generate a premium architectural visualization using vertex-nano-banana-ultra model
 ```
 
 **xAI Grok Imagine 2.0 (current Quality Mode, $0.04/image):**
@@ -588,7 +588,7 @@ None
  }
  // ... more providers
  ],
- "total": 9,
+ "total": 12,
  "configured": 1
 }
 ```
@@ -639,7 +639,7 @@ Error messages are designed to be clear and actionable:
 - **Fast**: resize, scale, crop, convert (< 1 second for typical images)
 - **Medium**: compress (1-3 seconds depending on size and quality)
 - **Slow**: generate (5-30 seconds depending on model and size)
- - Gemini 2.5 Flash: ~5-10 seconds
+ - Gemini Nano Banana 2.1 / Flash Lite: ~5-12 seconds
  - Gemini 3.1 Flash via Vertex (vertex-flash): ~10-20 seconds
 
 ### Batch Operations
@@ -660,7 +660,7 @@ Different providers support different advanced parameters:
 
 **Gemini 3+ and Grok Imagine:**
 
-- `image_size`: Native resolution upscaling. Gemini 3 Pro / 3.1 Flash accept `1K`, `2K`, `4K`. Grok Imagine and Grok Imagine Quality accept `1K`, `2K` only (4K emits a stderr warning and falls back to xAI default).
+- `image_size`: Native resolution upscaling. Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash accept `1K`, `2K`, `4K`. Grok Imagine 2.0 and Grok Imagine speed tier accept `1K`, `2K` only (4K emits a warning and falls back to xAI default).
 
 **Vertex AI Only:**
 
@@ -684,15 +684,14 @@ Different providers support different advanced parameters:
 2. Increase workers for faster batch processing (up to 16)
 3. Use smaller images when possible
 4. For generation:
- - Use **Gemini 3.1 Flash Lite** for cheapest Gemini generation ($0.034/image, 1K only)
+ - Use **Gemini Nano Banana 2.1** (default) for native 4K at 50% lower cost ($0.0225-$0.0756/image)
+ - Use **Gemini 3.1 Flash Lite** (`flash`) for fast 1K Gemini generation ($0.034/image)
  - Use **Gemini 3 Pro** for highest quality text/diagrams ($0.134-$0.24/image)
+ - Use **vertex-nano-banana** (`-fast` / `-ultra`) for Gemini Nano Banana 2.1 via Vertex ($0.0225-$0.0756/image)
  - Use **vertex-flash-lite** for Gemini 3.1 Flash Lite via Vertex ($0.034/image, minimal thinking default)
- - Use **vertex-flash** for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image, medium thinking default)
- - Use **vertex-flash-fast** for the same Vertex backend with minimal thinking default
- - Use **vertex-flash-ultra** for the same Vertex backend with high thinking default
+ - Use **vertex-flash** (`-fast` / `-ultra`) for Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)
  - Use **Grok Imagine 2.0** (`grok` / `grok-quality`) for current xAI Quality Mode ($0.04/image)
  - Use **Grok Imagine** (`grok-fast`) for the $0.02/image speed tier
- - Use **Grok Imagine Quality** (`grok-imagine-image-quality`) for the older quality tier ($0.05 at 1K, $0.07 at 2K)
 5. Use `count` parameter for batch generation instead of calling generate_image multiple times
 
 ---

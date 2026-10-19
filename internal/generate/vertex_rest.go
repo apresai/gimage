@@ -13,7 +13,7 @@ import (
 
 	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 )
 
 // VertexRESTClient uses Vertex AI REST API for image generation
@@ -24,7 +24,7 @@ type VertexRESTClient struct {
 	model          string
 	httpClient     *http.Client
 	log            *observability.VerboseLogger
-	circuitBreaker *gobreaker.CircuitBreaker
+	circuitBreaker *gobreaker.CircuitBreaker[[]*models.GeneratedImage]
 }
 
 // NewVertexRESTClient creates a new Vertex REST API client
@@ -61,12 +61,12 @@ func NewVertexRESTClient(apiKey, projectID, location string) (*VertexRESTClient,
 		apiKey:    apiKey,
 		projectID: projectID,
 		location:  location,
-		model:     "gemini-3.1-flash-image", // Default model
+		model:     DefaultModel, // Default model
 		log:       observability.NewVerboseLogger(observability.ComponentVertex),
 		httpClient: &http.Client{
 			Timeout: 2 * time.Minute,
 		},
-		circuitBreaker: newCircuitBreaker("VertexAPI"),
+		circuitBreaker: newCircuitBreaker[[]*models.GeneratedImage]("VertexAPI"),
 	}, nil
 }
 
@@ -92,12 +92,12 @@ func (c *VertexRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		// Execute through circuit breaker
-		result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
+		result, err := c.circuitBreaker.Execute(func() ([]*models.GeneratedImage, error) {
 			return c.generateWithRetry(ctx, modelName, enhancedPrompt, options)
 		})
 
 		if err == nil {
-			return result.([]*models.GeneratedImage), nil
+			return result, nil
 		}
 
 		lastErr = err

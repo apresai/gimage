@@ -14,7 +14,7 @@ import (
 
 	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 )
 
 // Gemini REST API endpoint
@@ -26,7 +26,7 @@ type GeminiRESTClient struct {
 	model          string
 	httpClient     *http.Client
 	log            *observability.VerboseLogger
-	circuitBreaker *gobreaker.CircuitBreaker
+	circuitBreaker *gobreaker.CircuitBreaker[[]*models.GeneratedImage]
 }
 
 // NewGeminiRESTClient creates a new Gemini REST API client
@@ -42,7 +42,7 @@ func NewGeminiRESTClient(apiKey string) (*GeminiRESTClient, error) {
 		httpClient: &http.Client{
 			Timeout: 2 * time.Minute,
 		},
-		circuitBreaker: newCircuitBreaker("GeminiAPI"),
+		circuitBreaker: newCircuitBreaker[[]*models.GeneratedImage]("GeminiAPI"),
 	}, nil
 }
 
@@ -68,12 +68,12 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		// Execute through circuit breaker
-		result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
+		result, err := c.circuitBreaker.Execute(func() ([]*models.GeneratedImage, error) {
 			return c.generateWithRetry(ctx, modelName, enhancedPrompt, options)
 		})
 
 		if err == nil {
-			return result.([]*models.GeneratedImage), nil
+			return result, nil
 		}
 
 		lastErr = err
@@ -107,9 +107,14 @@ func (c *GeminiRESTClient) GenerateImage(ctx context.Context, prompt string, opt
 	return nil, fmt.Errorf("failed after %d attempts: %w", maxRetries, lastErr)
 }
 
-// isGeminiAdvanced returns true if the model supports TEXT+IMAGE modalities and imageConfig (Gemini 3+ models)
+// isGeminiAdvanced returns true if the model supports TEXT+IMAGE modalities and imageConfig (Gemini 3+ and Nano Banana 2.1 models)
 func isGeminiAdvanced(modelName string) bool {
-	return strings.Contains(modelName, "gemini-3")
+	return strings.Contains(modelName, "gemini-3") || isGeminiNanoBanana(modelName)
+}
+
+// isGeminiNanoBanana reports whether modelName is Gemini Nano Banana 2.1.
+func isGeminiNanoBanana(modelName string) bool {
+	return strings.Contains(modelName, "nano-banana")
 }
 
 // isGeminiFlashLite reports whether modelName is Gemini 3.1 Flash Lite Image.
@@ -117,7 +122,7 @@ func isGeminiFlashLite(modelName string) bool {
 	return strings.Contains(modelName, "flash-lite-image")
 }
 
-// geminiSupportsGrounding is Gemini 3+ except Flash Lite (no Google Search tool).
+// geminiSupportsGrounding is Gemini 3+ / Nano Banana 2.1 except Flash Lite (no Google Search tool).
 func geminiSupportsGrounding(modelName string) bool {
 	return isGeminiAdvanced(modelName) && !isGeminiFlashLite(modelName)
 }
@@ -136,8 +141,9 @@ func normalizeLiteImageSize(modelName, imageSize string) string {
 	return size
 }
 
-// normalizeGeminiThinkingLevel lowercases a thinking level and, on Flash Lite,
-// coerces unsupported low/medium to minimal/high.
+// normalizeGeminiThinkingLevel lowercases a thinking level and coerces
+// unsupported levels for specific models (Flash Lite: low->minimal, medium->high;
+// Nano Banana 2.1: low->minimal).
 func normalizeGeminiThinkingLevel(modelName, level string) string {
 	level = strings.ToLower(level)
 	if level == "" || level == "off" {
@@ -152,6 +158,10 @@ func normalizeGeminiThinkingLevel(modelName, level string) string {
 			fmt.Fprintf(os.Stderr, "warning: --thinking medium is not supported on Gemini 3.1 Flash Lite; using high\n")
 			return "high"
 		}
+	}
+	if isGeminiNanoBanana(modelName) && level == "low" {
+		fmt.Fprintf(os.Stderr, "warning: --thinking low is not supported on Gemini Nano Banana 2.1; using minimal\n")
+		return "minimal"
 	}
 	return level
 }
@@ -234,8 +244,8 @@ func buildGeminiGenerateContentRequest(log *observability.VerboseLogger, modelNa
 		}
 	}
 
-	// Set common generation config (seed and count)
-	if options.Seed != 0 {
+	// Set common generation config (seed and count). Note: gemini-nano-banana-2.1 does not support seed.
+	if options.Seed != 0 && !isGeminiNanoBanana(modelName) {
 		genConfig.Seed = &options.Seed
 		log.Debug("Using seed: %d", options.Seed)
 	}
@@ -576,13 +586,13 @@ func enhanceError(err error) error {
 
 // Per-model caps for input reference images, per Gemini docs:
 // - Gemini 2.5 Flash Image: works best with up to 3 input images
-// - Gemini 3 Pro Image: up to 6 objects + 5 characters = 11 total
-// - Gemini 3.1 Flash Image: up to 10 objects + 4 characters = 14 total
+// - Gemini 3 Pro Image: up to 14 total (6 objects + 5 characters + 3 style/composition)
+// - Gemini 3.1 Flash / Nano Banana 2.1: up to 10 objects + 4 characters = 14 total
 // The API doesn't distinguish object vs character classes in the request payload,
 // so gimage enforces a single combined total.
 const (
 	geminiFlash25MaxRefImages = 3
-	geminiPro3MaxRefImages    = 11
+	geminiPro3MaxRefImages    = 14
 	geminiFlash31MaxRefImages = 14
 )
 
@@ -596,6 +606,8 @@ const maxInputImageBytes = 20 * 1024 * 1024
 // Unknown models default to the most conservative cap.
 func maxInputImagesForModel(modelName string) int {
 	switch {
+	case isGeminiNanoBanana(modelName):
+		return geminiFlash31MaxRefImages
 	case isGeminiFlashLite(modelName):
 		return geminiFlash31MaxRefImages
 	case strings.Contains(modelName, "gemini-3.1-flash-image"):

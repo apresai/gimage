@@ -55,7 +55,7 @@ func TestBuildGrokImageRequest(t *testing.T) {
 		{
 			name:           "2K image-size mapped to 2k on quality model",
 			opts:           models.GenerateOptions{Model: "grok-imagine-image-quality", ImageSize: "2K"},
-			wantModel:      "grok-imagine-image-quality",
+			wantModel:      "grok-imagine-image-2.0",
 			wantResolution: "2k",
 		},
 		{

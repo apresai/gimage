@@ -61,48 +61,51 @@ gimage generate --prompt "your prompt" [flags]
 | Flag | Type | Description | Default |
 | ------------------ | ------ | --------------------------------------------------------------------------------------- | ---------------------------- |
 | `-p, --prompt` | string | Text prompt (alternative to positional arg) | - |
-| `--provider` | string | Provider ID (e.g., `gemini/flash-2.5`, `vertex/flash-3.1`) | Auto-detected |
+| `--provider` | string | Provider ID (e.g., `gemini/nano-banana-2.1`, `vertex/nano-banana-2.1`) | Auto-detected |
 | `--api` | string | API to use: `gemini` or `vertex` (deprecated, use `--provider`) | Auto-detected from model |
-| `--model` | string | Model to use (deprecated, use `--provider`) | `gemini-3-pro-image` |
+| `--model` | string | Model to use (deprecated, use `--provider`) | `gemini-nano-banana-2.1` |
 | `--size` | string | Image size (WxH) | `1024x1024` |
 | `--style` | string | Style: `photorealistic`, `artistic`, `anime` | - |
-| `--seed` | int | Random seed for reproducibility | `0` (random) |
+| `--seed` | int | Random seed for reproducibility (Gemini 3 Pro and 3.1 Flash) | `0` (random) |
 | `-n, --count` | int | Number of images to generate (max varies by provider) | `1` |
 | `--output-format` | string | Output format for Vertex AI: `png`, `jpeg`, or `webp` | Provider default |
 | `-o, --output` | string | Output file path | `generated_<timestamp>.png` |
 | `--list-models` | bool | List all available models with pricing | `false` |
 | `--list-providers` | bool | List all providers with auth status | `false` |
 | `--prompt-howto` | bool | Show tips and examples for writing effective prompts | `false` |
-| `--image-size` | string | Native resolution for Gemini 3 Pro / 3.1 Flash (`1K`, `2K`, `4K`) and Grok Imagine / Quality (`1K`, `2K` only) | - |
-| `--aspect-ratio` | string | Aspect ratio. Gemini 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `auto` | - |
-| `--thinking` | string | Reasoning depth for Gemini 3+ (`minimal`, `low`, `medium`, `high`). Ignored by Gemini 2.5 Flash and non-Gemini providers. | - |
-| `--grounding` | bool | Enable Google Search grounding for Gemini 3+ (billed per search query in addition to per-image cost) | `false` |
-| `--input-image` | string | Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash=14. | - |
+| `--image-size` | string | Native resolution for Gemini Nano Banana 2.1 / 3.1 Flash (`0.5K`, `1K`, `2K`, `4K`), Gemini 3 Pro (`1K`, `2K`, `4K`), and Grok Imagine (`1K`, `2K`) | - |
+| `--aspect-ratio` | string | Aspect ratio. Gemini Nano Banana 2.1 / 3+: `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `5:4`, `4:5`, `21:9`, `1:4`, `4:1`, `1:8`, `8:1`. Grok also: `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, `5:2`, `auto` | - |
+| `--thinking` | string | Reasoning depth for Gemini Nano Banana 2.1 / 3+ (`minimal`, `low`, `medium`, `high`). Ignored by non-Gemini providers. | - |
+| `--grounding` | bool | Enable Google Search grounding for Gemini Nano Banana 2.1 / 3+ (billed per search query in addition to per-image cost) | `false` |
+| `--quality` | string | Grok Imagine 2.0 generation quality: `low`, `medium`, `auto` (default `auto`). | - |
+| `--input-image` | string | Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok 2.0=5, Grok Fast=3, Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash / Lite=14. | - |
 | `--user` | string | Optional end-user identifier for abuse monitoring (Grok/xAI only). | - |
 
 ### Available Models
 
 **Gemini API:**
 
-- `gemini-3-pro-image` (default) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text
-- `gemini-3.1-flash-image` - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
+- `gemini-nano-banana-2.1` (default; `gemini`, `nano-banana`, `nano-banana-2`, `nano-banana-2.1`) - tiered: $0.0225 (0.5K), $0.0336 (1K), $0.0504 (2K), $0.0756 (4K), native 4K
+- `gemini-3-pro-image` (`gemini-3`, `gemini-3-pro`) - $0.134/image (1K/2K), $0.24/image (4K), native 4K, sharp text, seed support
+- `gemini-3.1-flash-image` (`gemini-3.1-flash`, `3.1-flash`) - tiered: $0.045 (0.5K), $0.067 (1K), $0.101 (2K), $0.151 (4K), improved text rendering
 - `gemini-3.1-flash-lite-image` (`flash`, `gemini-flash`) - $0.034/image, 1K only, thinking `minimal`/`high`
-- `gemini-2.5-flash-image` - legacy, $0.039/image, up to 1024x1024 (also 1024x1792, 1792x1024)
 
 **Vertex AI (Paid):**
 
+- `vertex-nano-banana` (`vertex/nano-banana-2.1`) - Gemini Nano Banana 2.1 via Vertex, tiered $0.0225-$0.0756/image, medium thinking default
+- `vertex-nano-banana-fast` (`vertex/nano-banana-2.1-fast`) - same backend with minimal thinking default
+- `vertex-nano-banana-ultra` (`vertex/nano-banana-2.1-ultra`) - same backend with high thinking default
 - `vertex-flash` (`vertex/flash-3.1`) - Gemini 3.1 Flash via Vertex, tiered $0.045-$0.151/image, medium thinking default
 - `vertex-flash-fast` (`vertex/flash-3.1-fast`) - same backend with minimal thinking default
 - `vertex-flash-ultra` (`vertex/flash-3.1-ultra`) - same backend with high thinking default
 - `vertex-flash-lite` (`vertex/flash-3.1-lite`) - Gemini 3.1 Flash Lite via Vertex, $0.034/image, 1K only, minimal thinking default
-- Options the chosen provider does not support are reported with a warning and ignored (e.g. seed on Grok, image-size on Gemini 2.5 Flash).
-- Retired names (`imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` or `-pro` variants) now error with guidance to use the `vertex-flash` aliases above.
+- Options the chosen provider does not support are reported with a warning and ignored (e.g. seed on Grok or Nano Banana 2.1).
+- Retired names (`gemini-2.5-flash-image`, `imagen-4`, `imagen-4-fast`, `imagen-4-ultra`, and any `-preview` variants) error with guidance to use current models.
 
 **xAI Grok (Paid):**
 
-- `grok-imagine-image-2.0` - $0.04/image, current Quality Mode (default `grok` / `grok-quality` alias); `--quality low|medium|auto`; aspect ratio (16 values incl. `auto`); `--input-image` edits (max 5)
+- `grok-imagine-image-2.0` - $0.015-$0.07/image by quality & resolution, current Quality Mode (default `grok`, `grok-quality`, `grok-imagine-quality`, `grok-imagine-pro` aliases); `--quality low|medium|auto`; aspect ratio (16 values incl. `auto`); `--input-image` edits (max 5)
 - `grok-imagine-image` (`grok-fast`) - $0.02/image speed tier; `--input-image` edits (max 3)
-- `grok-imagine-image-quality` - previous quality tier, $0.05/image at 1K, $0.07/image at 2K (xAI `-pro` aliases still resolve here)
 
 ### Examples
 
@@ -121,7 +124,7 @@ gimage generate "futuristic city" --size 1024x1024 --style photorealistic
 **Using Vertex AI:**
 
 ```bash
-gimage generate "abstract art" --provider vertex/flash-3.1
+gimage generate "abstract art" --provider vertex/nano-banana-2.1
 ```
 
 **Stating exclusions in the prompt:**
@@ -133,7 +136,7 @@ gimage generate "forest scene with no people, no buildings, no cars"
 **Reproducible generation:**
 
 ```bash
-gimage generate "random pattern" --seed 12345
+gimage generate "random pattern" --model gemini-3-pro --seed 12345
 ```
 
 **Reference image editing (Gemini, Vertex, Grok):**
@@ -141,7 +144,7 @@ gimage generate "random pattern" --seed 12345
 ```bash
 # Single reference: drop a product into a new scene
 gimage generate "place this on a marble counter, soft studio light" \
- --model gemini-3.1-flash --input-image product.png
+ --input-image product.png
 
 # Grok 2.0 edit via xAI /images/edits (max 5 images)
 gimage generate "render this as a pencil sketch with detailed shading" \
@@ -149,23 +152,23 @@ gimage generate "render this as a pencil sketch with detailed shading" \
 
 # Multi-reference: combine character and background
 gimage generate "this character standing in this environment, cinematic lighting" \
- --model gemini-3-pro --input-image character.png --input-image scene.jpg
+ --input-image character.png --input-image scene.jpg
 ```
 
-**Thinking mode (Gemini 3+):**
+**Thinking mode (Gemini Nano Banana 2.1 / Gemini 3+):**
 
 ```bash
 # More planning for complex layouts/text rendering
 gimage generate "infographic showing 'Q3 revenue up 18%'" \
- --model gemini-3-pro --image-size 4K --thinking high
+ --image-size 4K --thinking high
 ```
 
-**Google Search grounding (Gemini 3+):**
+**Google Search grounding (Gemini Nano Banana 2.1 / Gemini 3+):**
 
 ```bash
 # Let the model pull current visual references from the web
 gimage generate "official Nintendo Switch 2 console front view" \
- --model gemini-3-pro --grounding
+ --grounding
 ```
 
 **Custom output path:**
@@ -180,16 +183,16 @@ gimage generate "landscape" --output my-landscape.png
 gimage generate "fantasy castle" --count 3
 ```
 
-**Gemini 3 Pro with aspect ratio:**
+**Gemini Nano Banana 2.1 with aspect ratio:**
 
 ```bash
-gimage generate "wide landscape" --model gemini-3-pro --aspect-ratio 16:9
+gimage generate "wide landscape" --aspect-ratio 16:9
 ```
 
-**Gemini 3 Pro with native 4K resolution:**
+**Gemini Nano Banana 2.1 with native 4K resolution:**
 
 ```bash
-gimage generate "detailed infographic" --model gemini-3-pro --image-size 4K
+gimage generate "detailed infographic" --image-size 4K
 ```
 
 **Vertex AI with output format:**
@@ -198,28 +201,28 @@ gimage generate "detailed infographic" --model gemini-3-pro --image-size 4K
 gimage generate "portrait" --api vertex --output-format webp
 ```
 
-**Using Gemini 3.1 Flash via Vertex - Fast (speed-optimized):**
+**Using Gemini Nano Banana 2.1 via Vertex - Fast (speed-optimized):**
 
 ```bash
-gimage generate "product mockup" --model vertex-flash-fast
+gimage generate "product mockup" --model vertex-nano-banana-fast
 ```
 
-**Using Gemini 3.1 Flash via Vertex - Ultra (high quality):**
+**Using Gemini Nano Banana 2.1 via Vertex - Ultra (high quality):**
 
 ```bash
-gimage generate "architectural visualization" --model vertex-flash-ultra
+gimage generate "architectural visualization" --model vertex-nano-banana-ultra
 ```
 
-**Using xAI Grok Imagine (fast, $0.02/image):**
+**Using xAI Grok Imagine 2.0 ($0.015-$0.07/image):**
 
 ```bash
 gimage generate "robot waving hello" --model grok
 ```
 
-**Using Grok Imagine Quality (higher quality):**
+**Using Grok Imagine Fast ($0.02/image speed tier):**
 
 ```bash
-gimage generate "detailed portrait" --model grok-imagine-quality
+gimage generate "quick concept art" --model grok-fast
 ```
 
 **Using Grok Imagine with aspect ratio:**
@@ -255,7 +258,7 @@ Common sizes (format: `WIDTHxHEIGHT`):
 - `1024x1024` - Default, balanced quality/speed
 - `1536x1536` - High quality
 
-Gemini 3+ uses `--image-size 1K/2K/4K` for native resolution instead of WxH. Custom sizes are supported by some models.
+Gemini Nano Banana 2.1 and Gemini 3+ use `--image-size 0.5K/1K/2K/4K` for native resolution instead of WxH. Custom sizes are supported by some models.
 
 ---
 
@@ -605,7 +608,7 @@ gimage auth setup <provider>
 
 | Argument | Description | Examples |
 | ---------- | -------------------- | ---------------------------------------------------------------------- |
-| `provider` | Provider ID or alias | `gemini`, `gemini/flash-2.5`, `vertex/flash-3.1`, `grok` |
+| `provider` | Provider ID or alias | `gemini`, `gemini/nano-banana-2.1`, `vertex/nano-banana-2.1`, `grok` |
 
 #### Examples
 
@@ -728,7 +731,7 @@ gimage auth list --missing --detailed
 Shows table with:
 
 - ✓ / ✗ Configuration status
-- Provider ID (e.g., `gemini/flash-2.5`)
+- Provider ID (e.g., `gemini/nano-banana-2.1`)
 - Provider name
 - Pricing (cost per image)
 - Credential source (env/config/both)
@@ -1154,8 +1157,8 @@ done
 Compare model outputs:
 
 ```bash
-gimage generate "sunset" --model gemini-2.5-flash-image --output gemini.png
-gimage generate "sunset" --provider vertex/flash-3.1 --output vertex-flash.png
+gimage generate "sunset" --model gemini-nano-banana-2.1 --output gemini.png
+gimage generate "sunset" --provider vertex/nano-banana-2.1 --output vertex-nano-banana.png
 ```
 
 ### Process Only JPEGs

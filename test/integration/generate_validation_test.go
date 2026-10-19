@@ -195,7 +195,7 @@ func TestGeminiSquareImage(t *testing.T) {
 	defer cancel()
 
 	opts := models.GenerateOptions{
-		Model:       "gemini-2.5-flash-image",
+		Model:       "gemini-nano-banana-2.1",
 		Size:        "1024x1024",
 		AspectRatio: "1:1",
 	}
@@ -370,7 +370,7 @@ func TestSeedReproducibility(t *testing.T) {
 	prompt := "a minimalist sunset with orange sky"
 
 	opts := models.GenerateOptions{
-		Model:       "gemini-2.5-flash-image",
+		Model:       "gemini-3.1-flash-lite-image",
 		Size:        "512x512",
 		AspectRatio: "1:1",
 		Seed:        seed,
@@ -425,7 +425,7 @@ func TestSaveAndLoadImage(t *testing.T) {
 	defer cancel()
 
 	opts := models.GenerateOptions{
-		Model:       "gemini-2.5-flash-image",
+		Model:       "gemini-nano-banana-2.1",
 		Size:        "512x512",
 		AspectRatio: "1:1",
 	}
@@ -487,7 +487,7 @@ func BenchmarkGeneration(b *testing.B) {
 	defer client.Close()
 
 	opts := models.GenerateOptions{
-		Model:       "gemini-2.5-flash-image",
+		Model:       "gemini-nano-banana-2.1",
 		Size:        "512x512",
 		AspectRatio: "1:1",
 	}

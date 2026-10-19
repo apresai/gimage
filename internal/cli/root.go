@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 	Long: `gimage is a Go-based CLI tool for AI-powered image generation and processing.
 
 FEATURES:
-  • Generate images from text using Google Gemini 2.5 Flash Image or Gemini 3.1 Flash via Vertex
+  • Generate images from text using Google Gemini Nano Banana 2.1, Gemini 3 Pro, Vertex AI, or xAI Grok
   • Process images: resize, scale, crop, compress (PNG, JPG, WebP, GIF, TIFF, BMP)
   • MCP server for Claude integration with batch operations
   • Pure Go implementation - single binary, no system dependencies

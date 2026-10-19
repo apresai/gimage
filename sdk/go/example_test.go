@@ -25,7 +25,7 @@ func Example() {
 	// Generate an image
 	resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt: "sunset over mountains",
-		Model:  modelPtr(gimage.Gemini25FlashImage),
+		Model:  modelPtr(gimage.GeminiNanoBanana21),
 		Size:   stringPtr("1024x1024"),
 	})
 	if err != nil {
@@ -55,7 +55,7 @@ func Example_withAPIKey() {
 	// Generate image with custom options
 	resp, err := client.GenerateImage(ctx, gimage.GenerateImageJSONRequestBody{
 		Prompt:         "futuristic city with flying cars",
-		Model:          modelPtr(gimage.Gemini25FlashImage),
+		Model:          modelPtr(gimage.GeminiNanoBanana21),
 		Size:           stringPtr("1024x1024"),
 		Style:          stylePtr(gimage.Photorealistic),
 		Seed:           int64Ptr(42),

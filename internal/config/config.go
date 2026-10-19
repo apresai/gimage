@@ -30,7 +30,7 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		// Set defaults
 		DefaultAPI:     "gemini",
-		DefaultModel:   "gemini-3-pro-image",
+		DefaultModel:   "gemini-nano-banana-2.1",
 		DefaultSize:    "1024x1024",
 		VertexLocation: "global",
 		LogLevel:       "info",
@@ -74,7 +74,7 @@ func LoadConfig() (*Config, error) {
 		cfg.DefaultAPI = "gemini"
 	}
 	if cfg.DefaultModel == "" {
-		cfg.DefaultModel = "gemini-3-pro-image"
+		cfg.DefaultModel = "gemini-nano-banana-2.1"
 	}
 	if cfg.DefaultSize == "" {
 		cfg.DefaultSize = "1024x1024"

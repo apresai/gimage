@@ -11,9 +11,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
-	"github.com/disintegration/imaging"
+	"github.com/apresai/gimage/internal/imaging"
 )
 
 // TestCLIResizeE2E tests the gimage resize command end-to-end
@@ -478,7 +479,9 @@ func TestCLIErrorHandling(t *testing.T) {
 
 // Helper functions
 
-// ensureBinaryBuilt builds the gimage binary if needed and returns its absolute path
+var buildBinaryOnce sync.Once
+
+// ensureBinaryBuilt builds the gimage binary once per test run and returns its absolute path
 func ensureBinaryBuilt(t *testing.T) string {
 	t.Helper()
 
@@ -489,29 +492,24 @@ func ensureBinaryBuilt(t *testing.T) string {
 		t.Fatalf("Failed to get absolute path: %v", err)
 	}
 
-	// Check if binary exists
-	if _, err := os.Stat(absPath); err == nil {
-		t.Logf("Using existing binary: %s", absPath)
-		return absPath
-	}
-
-	// Build the binary
-	t.Log("Building gimage binary for E2E tests...")
-	cmd := exec.Command("make", "build")
-	repoRoot := filepath.Join("..", "..")
-	absRepoRoot, _ := filepath.Abs(repoRoot)
-	cmd.Dir = absRepoRoot
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to build binary: %v\nOutput: %s", err, string(output))
-	}
+	buildBinaryOnce.Do(func() {
+		t.Log("Building gimage binary for E2E tests...")
+		cmd := exec.Command("make", "build")
+		repoRoot := filepath.Join("..", "..")
+		absRepoRoot, _ := filepath.Abs(repoRoot)
+		cmd.Dir = absRepoRoot
+		output, buildErr := cmd.CombinedOutput()
+		if buildErr != nil {
+			t.Fatalf("Failed to build binary: %v\nOutput: %s", buildErr, string(output))
+		}
+		t.Logf("Built binary: %s", absPath)
+	})
 
 	// Verify binary exists
 	if _, err := os.Stat(absPath); err != nil {
 		t.Fatalf("Binary not found after build: %s", absPath)
 	}
 
-	t.Logf("Built binary: %s", absPath)
 	return absPath
 }
 

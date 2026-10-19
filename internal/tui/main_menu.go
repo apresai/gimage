@@ -153,10 +153,10 @@ func (m *MainMenuModel) renderHelp() string {
 		"gimage is a powerful CLI tool for AI-powered image generation\n" +
 		"and processing. It supports multiple AI models including:\n\n" +
 		FormatList([]string{
-			"Gemini 2.5 Flash ($0.039/image)",
+			"Gemini Nano Banana 2.1 ($0.0225-$0.0756/image, default)",
 			"Gemini 3 Pro (Native 4K, $0.134/image)",
-			"Gemini 3.1 Flash via Vertex ($0.045-$0.151/image)",
-			"xAI Grok Imagine ($0.02/image)",
+			"Gemini 3.1 Flash Lite ($0.034/image)",
+			"xAI Grok Imagine 2.0 ($0.015-$0.07/image)",
 		}) + "\n" +
 		HelpStyle.Render("Press Esc to close this help")
 

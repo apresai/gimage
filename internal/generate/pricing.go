@@ -35,14 +35,27 @@ type PricingEntry struct {
 //
 //nolint:gochecknoglobals // This is the central pricing source of truth
 var ModelPricing = map[string]PricingEntry{
+	"gemini-nano-banana-2.1": {
+		ModelID:        "gemini-nano-banana-2.1",
+		Summary:        "$0.0336 (1K), $0.0504 (2K), $0.1134 (4K)",
+		Representative: 0.0336,
+		Calculate: imageSizeTieredPrice(map[string]float64{
+			"0.5K": 0.0168, "1K": 0.0336, "2K": 0.0504, "4K": 0.1134,
+			"": 0.0336,
+		}),
+		DisplayContext: imageSizeSuffix,
+		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
+		Verified:       "2026-10-19",
+		Note:           "Nano Banana 2.1 GA ($30/1M output image tokens: 1120 tok=$0.0336 @1K, 1680 tok=$0.0504 @2K, 3780 tok=$0.1134 @4K). Batch (~50% off) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
+	},
 	"gemini-2.5-flash-image": {
 		ModelID:        "gemini-2.5-flash-image",
-		Summary:        "$0.039/image",
+		Summary:        "$0.039/image (retired)",
 		Representative: 0.039,
 		Calculate:      flatPrice(0.039),
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-05-23",
-		Note:           "Batch (50% off, $0.0195) and Priority (1.8x, $0.0702) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
+		Verified:       "2026-10-19",
+		Note:           "Retired in gimage (restricted to legacy accounts by Google). Retained for cost audit only. Batch (50% off, $0.0195) via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3-pro-image": {
 		ModelID:        "gemini-3-pro-image",
@@ -54,7 +67,7 @@ var ModelPricing = map[string]PricingEntry{
 		}),
 		DisplayContext: imageSizeSuffix,
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-05-23",
+		Verified:       "2026-10-19",
 		Note:           "Batch (50% off, $0.067 @1K/2K) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3-pro-image-preview": {
@@ -76,7 +89,7 @@ var ModelPricing = map[string]PricingEntry{
 		Representative: 0.034,
 		Calculate:      flatPrice(0.034),
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-09-05",
+		Verified:       "2026-10-19",
 		Note:           "Nano Banana 2 Lite. 1K only (1120 output tokens at $30/1M ≈ $0.0336, listed as $0.034). Batch (~50% off) via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3.1-flash-image": {
@@ -89,7 +102,7 @@ var ModelPricing = map[string]PricingEntry{
 		}),
 		DisplayContext: imageSizeSuffix,
 		Source:         "https://ai.google.dev/gemini-api/docs/pricing",
-		Verified:       "2026-05-23",
+		Verified:       "2026-10-19",
 		Note:           "Batch (~50% off, $0.022 @0.5K, $0.034 @1K, $0.050 @2K, $0.076 @4K) available via separate :batchGenerateContent endpoint — not wired into gimage CLI.",
 	},
 	"gemini-3.1-flash-image-preview": {
@@ -110,12 +123,16 @@ var ModelPricing = map[string]PricingEntry{
 	// the "gemini-3.1-flash-image" tiered entry above).
 	"grok-imagine-image-2.0": {
 		ModelID:        "grok-imagine-image-2.0",
-		Summary:        "$0.04/image",
+		Summary:        "$0.04/image (1K), $0.06/image (2K)",
 		Representative: 0.04,
-		Calculate:      flatPrice(0.04),
+		Calculate: imageSizeTieredPrice(map[string]float64{
+			"1K": 0.04, "2K": 0.06,
+			"": 0.04,
+		}),
+		DisplayContext: imageSizeSuffix,
 		Source:         "https://docs.x.ai/developers/pricing",
-		Verified:       "2026-09-05",
-		Note:           "Official list price is flat $0.04/image. Optional quality=low|medium|auto (2.0 only). Edits bill input images in addition to output. Live ticks may still vary by resolution/quality.",
+		Verified:       "2026-10-19",
+		Note:           "Low quality (gen default): $0.04 (1K), $0.06 (2K). Medium quality (edit default): $0.06 (1K), $0.08 (2K). Edit input ~$0.01/input image.",
 	},
 	"grok-imagine-image": {
 		ModelID:        "grok-imagine-image",
@@ -123,12 +140,12 @@ var ModelPricing = map[string]PricingEntry{
 		Representative: 0.02,
 		Calculate:      flatPrice(0.02),
 		Source:         "https://x.ai/api (Imagine) + live cost_in_usd_ticks",
-		Verified:       "2026-08-01",
+		Verified:       "2026-10-19",
 		Note:           "Edits also bill media input (~$0.002/input image per x.ai/api). Output flat at 1K and 2K.",
 	},
 	"grok-imagine-image-quality": {
 		ModelID:        "grok-imagine-image-quality",
-		Summary:        "$0.05/image (1K), $0.07/image (2K)",
+		Summary:        "$0.05/image (1K), $0.07/image (2K) legacy",
 		Representative: 0.05,
 		Calculate: imageSizeTieredPrice(map[string]float64{
 			"1K": 0.05, "2K": 0.07,
@@ -136,8 +153,8 @@ var ModelPricing = map[string]PricingEntry{
 		}),
 		DisplayContext: imageSizeSuffix,
 		Source:         "https://x.ai/api (Imagine) + live cost_in_usd_ticks",
-		Verified:       "2026-08-01",
-		Note:           "Live probe 2026-08-01: 1K=5e8 ticks ($0.05), 2K=7e8 ticks ($0.07). docs.x.ai/pricing lists flat $0.05; billing matches marketing tiers. Media input on edits ~$0.01/input image. xAI aliases grok-imagine-image-pro → this model.",
+		Verified:       "2026-10-19",
+		Note:           "Retained for cost audit only; folded into grok-imagine-image-2.0 in gimage (retiring on xAI 2026-11-02).",
 	},
 }
 

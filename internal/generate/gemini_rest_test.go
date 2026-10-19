@@ -19,6 +19,7 @@ func TestMaxInputImagesForModel(t *testing.T) {
 		{"gemini-2.5-flash-image", geminiFlash25MaxRefImages},
 		{"gemini-3-pro-image", geminiPro3MaxRefImages},
 		{"gemini-3.1-flash-image", geminiFlash31MaxRefImages},
+		{"gemini-nano-banana-2.1", geminiFlash31MaxRefImages},
 		{"unknown-model", geminiFlash25MaxRefImages}, // conservative fallback
 	}
 	for _, tt := range tests {
@@ -319,5 +320,37 @@ func TestBuildGenerateContentRequest_LiteCoercesThinkingAndDropsGrounding(t *tes
 	}
 	if req.GenerationConfig.ImageConfig == nil || req.GenerationConfig.ImageConfig.ImageSize != "1K" {
 		t.Errorf("expected imageSize 1K on Flash Lite, got %#v", req.GenerationConfig.ImageConfig)
+	}
+}
+
+func TestBuildGenerateContentRequest_NanoBanana21(t *testing.T) {
+	c := newTestGeminiClient(t)
+	req, err := c.buildGenerateContentRequest(
+		"gemini-nano-banana-2.1",
+		"a sunset",
+		models.GenerateOptions{
+			ThinkingLevel:      "low",
+			WebSearchGrounding: true,
+			ImageSize:          "2K",
+			Seed:               42,
+		},
+	)
+	if err != nil {
+		t.Fatalf("buildGenerateContentRequest returned error: %v", err)
+	}
+	if req.GenerationConfig == nil || req.GenerationConfig.ThinkingConfig == nil {
+		t.Fatal("expected ThinkingConfig on Nano Banana 2.1")
+	}
+	if req.GenerationConfig.ThinkingConfig.ThinkingLevel != "minimal" {
+		t.Errorf("expected thinkingLevel=minimal (coerced from low), got %q", req.GenerationConfig.ThinkingConfig.ThinkingLevel)
+	}
+	if req.GenerationConfig.Seed != nil {
+		t.Errorf("Nano Banana 2.1 must omit seed, got %v", *req.GenerationConfig.Seed)
+	}
+	if len(req.Tools) != 1 || req.Tools[0].GoogleSearch == nil {
+		t.Errorf("expected GoogleSearch tool on Nano Banana 2.1, got %#v", req.Tools)
+	}
+	if req.GenerationConfig.ImageConfig == nil || req.GenerationConfig.ImageConfig.ImageSize != "2K" {
+		t.Errorf("expected imageSize 2K on Nano Banana 2.1, got %#v", req.GenerationConfig.ImageConfig)
 	}
 }

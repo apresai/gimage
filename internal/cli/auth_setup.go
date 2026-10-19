@@ -25,7 +25,7 @@ This command will:
 3. Test the configuration
 4. Save to config file`,
 	Example: `  # Set up Gemini authentication
-  gimage auth setup gemini/flash-2.5
+  gimage auth setup gemini/nano-banana-2.1
 
   # Set up using alias
   gimage auth setup gemini
@@ -220,6 +220,8 @@ func runAuthSetup(cmd *cobra.Command, args []string) error {
 				cfg.VertexLocation = value
 			case "vertex_api_key":
 				cfg.VertexAPIKey = value
+			case "grok_api_key":
+				cfg.GrokAPIKey = value
 			}
 		}
 
@@ -252,6 +254,8 @@ func getExistingValue(env generate.EnvVar, cfg *config.Config) string {
 		return cfg.VertexLocation
 	case "vertex_api_key":
 		return cfg.VertexAPIKey
+	case "grok_api_key":
+		return cfg.GrokAPIKey
 	}
 
 	return ""

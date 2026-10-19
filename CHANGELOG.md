@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (empty - ready for next release)
 
+## [1.2.168] - 2026-10-19
+
+### Added
+- Gemini Nano Banana 2.1 (`gemini-nano-banana-2.1`) via Gemini API (`gemini/nano-banana-2.1`) and Vertex AI thinking presets (`vertex-nano-banana`, `vertex-nano-banana-fast`, `vertex-nano-banana-ultra`) with 0.5K/1K/2K/4K resolution tiers, Search grounding, and up to 14 reference images
+- Pure-Go image processing (`internal/imaging/ops.go`) backed by `golang.org/x/image/draw` (`CatmullRom`) and standard library `image/*`
+- Grok provider support in the Lambda HTTP handler and `grok_api_key` support across `gimage auth setup`, `gimage auth status`, and TUI settings
+
+### Changed
+- Set `gemini-nano-banana-2.1` ($0.0336/image at 1K) as the default model across CLI, TUI, MCP server, Vertex clients, and OpenAPI/Go SDK
+- Folded `grok-quality`, `grok-imagine-quality`, `grok-imagine-image-quality`, `grok-imagine-pro`, and `grok-imagine-image-pro` aliases into `grok/grok-imagine-2.0` (`grok-imagine-image-2.0`) with tiered 1K/2K pricing
+- Upgraded Go dependencies (`google.golang.org/genai v1.75.0`, `charm.land/{bubbletea,bubbles,lipgloss}/v2`, `aws-sdk-go-v2`, `aws-lambda-go v1.55.1`, `sony/gobreaker/v2 v2.4.0`, `golang.org/x/{image,term} v0.47.0`, `kin-openapi v0.151.0`) and npm `tar ^7.5.22`
+- Enabled strict `OSV_FAIL_ON_VULN=true` in dependency audit CI
+
+### Removed
+- Replaced `github.com/disintegration/imaging` and removed the `GO-2026-4946` / `CVE-2023-36308` exception from `osv-scanner.toml`
+- Retired `gemini-2.5-flash-image` / `gemini-2.5` / `gemini/flash-2.5` with migration guidance to `nano-banana-2.1` or `flash` (`gemini-3.1-flash-lite-image`)
+
 ## [1.2.163] - 2026-09-05
 
 ### Added

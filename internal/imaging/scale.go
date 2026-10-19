@@ -6,10 +6,9 @@ import (
 	"fmt"
 
 	"github.com/apresai/gimage/internal/progress"
-	"github.com/disintegration/imaging"
 )
 
-// ScaleImage scales an image by a factor using high-quality Lanczos resampling.
+// ScaleImage scales an image by a factor using high-quality Catmull-Rom resampling.
 //
 // Parameters:
 //   - ctx: context for cancellation support
@@ -51,7 +50,7 @@ func ScaleImage(ctx context.Context, inputPath, outputPath string, factor float6
 
 	// Load the input image
 	reporter.Update(1, 4, "Loading input image")
-	img, err := imaging.Open(inputPath)
+	img, err := Open(inputPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open image %s: %w", inputPath, err)
 		reporter.Error(err)
@@ -85,9 +84,9 @@ func ScaleImage(ctx context.Context, inputPath, outputPath string, factor float6
 	default:
 	}
 
-	// Scale using Lanczos resampling (high quality)
+	// Scale using Catmull-Rom resampling (high quality)
 	reporter.Update(3, 4, fmt.Sprintf("Scaling to %dx%d", newWidth, newHeight))
-	scaled := imaging.Resize(img, newWidth, newHeight, imaging.Lanczos)
+	scaled := Resize(img, newWidth, newHeight)
 
 	// Check for cancellation
 	select {
@@ -100,7 +99,7 @@ func ScaleImage(ctx context.Context, inputPath, outputPath string, factor float6
 
 	// Save the scaled image
 	reporter.Update(4, 4, "Saving scaled image")
-	if err := imaging.Save(scaled, outputPath); err != nil {
+	if err := Save(scaled, outputPath); err != nil {
 		err = fmt.Errorf("failed to save scaled image to %s: %w", outputPath, err)
 		reporter.Error(err)
 		return err

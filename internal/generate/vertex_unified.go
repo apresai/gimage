@@ -9,7 +9,7 @@ import (
 
 	"github.com/apresai/gimage/internal/observability"
 	"github.com/apresai/gimage/pkg/models"
-	"github.com/sony/gobreaker"
+	"github.com/sony/gobreaker/v2"
 	"google.golang.org/genai"
 )
 
@@ -20,7 +20,7 @@ type VertexUnifiedClient struct {
 	project        string
 	location       string
 	log            *observability.VerboseLogger
-	circuitBreaker *gobreaker.CircuitBreaker
+	circuitBreaker *gobreaker.CircuitBreaker[*genai.GenerateContentResponse]
 }
 
 // NewVertexUnifiedClient creates a new Vertex AI client using the unified SDK
@@ -78,7 +78,7 @@ func NewVertexUnifiedClient(ctx context.Context, project, location string) (*Ver
 		project:        project,
 		location:       location,
 		log:            log,
-		circuitBreaker: newCircuitBreaker("VertexUnified"),
+		circuitBreaker: newCircuitBreaker[*genai.GenerateContentResponse]("VertexUnified"),
 	}, nil
 }
 
@@ -142,7 +142,7 @@ func buildVertexGeminiGenerateContentRequest(modelName, prompt string, options m
 		config.ImageConfig = imageConfig
 	}
 
-	if options.Seed != 0 {
+	if options.Seed != 0 && !isGeminiNanoBanana(modelName) {
 		config.Seed = genai.Ptr[int32](int32(options.Seed))
 	}
 	if level := normalizeGeminiThinkingLevel(modelName, options.ThinkingLevel); level != "" {
@@ -198,10 +198,10 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 	// Enhance prompt for better results, including style
 	enhancedPrompt := buildPromptWithOptions(EnhancePrompt(prompt), options)
 
-	// Use custom model if provided, otherwise default to Gemini 3.1 Flash Image
+	// Use custom model if provided, otherwise default to DefaultModel
 	modelName := options.Model
 	if modelName == "" {
-		modelName = "gemini-3.1-flash-image"
+		modelName = DefaultModel
 	}
 
 	if strings.Contains(modelName, "gemini") {
@@ -211,7 +211,7 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 		}
 
 		c.log.Debug("Sending request to Vertex AI GenerateContent (model=%s)...", modelName)
-		result, err := c.circuitBreaker.Execute(func() (interface{}, error) {
+		resp, err := c.circuitBreaker.Execute(func() (*genai.GenerateContentResponse, error) {
 			return c.client.Models.GenerateContent(ctx, modelName, contents, config)
 		})
 		if err != nil {
@@ -224,7 +224,6 @@ func (c *VertexUnifiedClient) GenerateImage(ctx context.Context, prompt string, 
 			return nil, fmt.Errorf("failed to generate image: %w", err)
 		}
 
-		resp := result.(*genai.GenerateContentResponse)
 		if len(resp.Candidates) == 0 {
 			c.log.Debug("No candidates in response")
 			return nil, fmt.Errorf("no image generated from prompt (model=%s)", modelName)

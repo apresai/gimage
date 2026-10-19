@@ -5,16 +5,16 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/observability"
-	"github.com/disintegration/imaging"
 )
 
 // RegisterScaleImageTool registers the scale_image tool
 func RegisterScaleImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "scale_image",
-		Description: "Scale an image by a factor while preserving aspect ratio. Use this when you want to make an image larger or smaller proportionally. For example, factor 0.5 makes image half size, factor 2.0 makes it double size. Uses high-quality Lanczos resampling.",
+		Description: "Scale an image by a factor while preserving aspect ratio. Use this when you want to make an image larger or smaller proportionally. For example, factor 0.5 makes image half size, factor 2.0 makes it double size. Uses high-quality Catmull-Rom resampling.",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -86,8 +86,8 @@ func RegisterScaleImageTool(server *mcp.MCPServer) {
 				return nil, fmt.Errorf("failed to load image: %w", err)
 			}
 
-			// Resize image using Lanczos resampling
-			scaled := imaging.Resize(img, newWidth, newHeight, imaging.Lanczos)
+			// Resize image using Catmull-Rom resampling
+			scaled := imaging.Resize(img, newWidth, newHeight)
 
 			// Save scaled image
 			err = saveImage(scaled, output)

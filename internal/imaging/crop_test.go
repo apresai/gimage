@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disintegration/imaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +23,7 @@ func setupTestImage(t *testing.T, width, height int) string {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	// Save it
-	err := imaging.Save(img, testFile)
+	err := Save(img, testFile)
 	require.NoError(t, err, "failed to create test image")
 
 	return testFile
@@ -219,7 +218,7 @@ func TestCropImage(t *testing.T) {
 			assert.NoError(t, err, "output file should exist")
 
 			// Load and verify cropped image dimensions
-			croppedImg, err := imaging.Open(outputPath)
+			croppedImg, err := Open(outputPath)
 			require.NoError(t, err)
 
 			bounds := croppedImg.Bounds()
@@ -253,7 +252,7 @@ func TestCropImage_RealFixture(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify output
-	croppedImg, err := imaging.Open(outputPath)
+	croppedImg, err := Open(outputPath)
 	require.NoError(t, err)
 
 	bounds := croppedImg.Bounds()

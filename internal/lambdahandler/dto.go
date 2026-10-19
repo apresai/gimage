@@ -7,6 +7,7 @@ type GenerateRequest struct {
 	Size           string `json:"size,omitempty"`
 	Style          string `json:"style,omitempty"`
 	Seed           int64  `json:"seed,omitempty"`
+	Quality        string `json:"quality,omitempty"`
 	ResponseFormat string `json:"response_format,omitempty"` // "base64" or "s3_url"
 }
 

@@ -80,7 +80,7 @@ func TestSizeEnforcement(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			options := models.GenerateOptions{
-				Model: "gemini-2.5-flash-image",
+				Model: "gemini-nano-banana-2.1",
 				Size:  tc.requestedSize,
 			}
 
@@ -192,7 +192,7 @@ func TestFormatConversion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			options := models.GenerateOptions{
-				Model: "gemini-2.5-flash-image",
+				Model: "gemini-nano-banana-2.1",
 				Size:  "512x512",
 			}
 

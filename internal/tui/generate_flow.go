@@ -37,10 +37,10 @@ const (
 
 // Provider selection item
 type providerOption struct {
-	id         string // e.g., "gemini/flash-2.5"
-	name       string // e.g., "Gemini 2.5 Flash (via Gemini API)"
+	id         string // e.g., "gemini/nano-banana-2.1"
+	name       string // e.g., "Gemini Nano Banana 2.1 (via Gemini API)"
 	api        string // e.g., "gemini", "vertex", "grok"
-	model      string // e.g., "gemini-2.5-flash-image"
+	model      string // e.g., "gemini-nano-banana-2.1"
 	cost       string // formatted cost string
 	free       bool
 	configured bool     // whether authentication is set up
@@ -294,7 +294,7 @@ func NewGenerateFlowModel() *GenerateFlowModel {
 
 	// Initialize provider retry input
 	providerRetryInput := textinput.New()
-	providerRetryInput.Placeholder = "e.g., gemini/flash-2.5, vertex/flash-3.1"
+	providerRetryInput.Placeholder = "e.g., gemini/nano-banana-2.1, vertex/nano-banana-2.1"
 	providerRetryInput.CharLimit = 100
 	providerRetryInput.SetWidth(70)
 
@@ -867,7 +867,7 @@ func (m *GenerateFlowModel) focusAdvancedInput() {
 func (m *GenerateFlowModel) viewAdvancedStep() string {
 	// Get provider info to show relevant options
 	provider := m.providers[m.selectedProvider]
-	isGeminiAdvanced := strings.Contains(provider.model, "gemini-3")
+	isGeminiAdvanced := strings.Contains(provider.model, "gemini-3") || strings.Contains(provider.model, "nano-banana")
 	isVertex := provider.api == "vertex"
 
 	var content string
@@ -1696,7 +1696,7 @@ func (m *GenerateFlowModel) supportsSeed() bool {
 		return true
 	}
 	provider := m.providers[m.selectedProvider]
-	if strings.HasPrefix(provider.id, "vertex/flash-3.1") {
+	if strings.HasPrefix(provider.id, "vertex/") || strings.Contains(provider.model, "nano-banana") {
 		return false
 	}
 	// Grok doesn't support seed

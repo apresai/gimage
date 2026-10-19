@@ -6,7 +6,7 @@ info:
     AI-powered image generation and processing API powered by Google Gemini, Vertex AI, and xAI Grok.
 
     ## Features
-    - **AI Image Generation**: Create images from text using Gemini 2.5 Flash, Gemini 3 Pro, Gemini 3.1 Flash via Vertex (vertex-flash presets), or xAI Grok Aurora
+    - **AI Image Generation**: Create images from text using Gemini Nano Banana 2.1, Gemini 3 Pro, Gemini 3.1 Flash/Lite, Vertex AI presets, or xAI Grok Imagine 2.0
     - **Image Processing**: Resize, scale, crop, compress, and convert images
     - **Batch Operations**: Process multiple images concurrently
     - **Flexible Response**: Small images as base64, large images as S3 presigned URLs
@@ -48,9 +48,9 @@ paths:
         Generate an AI image from a text description using Google Gemini, Vertex AI, or xAI Grok.
 
         **Models Available:**
-        - Gemini: `gemini-3.1-flash-lite-image` ($0.034/image, 1K), `gemini-3.1-flash-image` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image` ($0.134-$0.24/image, native 4K), `gemini-2.5-flash-image` (legacy, $0.039/image)
-        - Vertex AI: `vertex-flash` (medium thinking), `vertex-flash-fast` (minimal thinking), `vertex-flash-ultra` (high thinking), `vertex-flash-lite` (Flash Lite, $0.034/image)
-        - xAI Grok: `grok-imagine-image-2.0` ($0.04/image), `grok-imagine-image` ($0.02/image), `grok-imagine-image-quality` ($0.05-$0.07/image)
+        - Gemini: `gemini-nano-banana-2.1` ($0.0225-$0.0756/image, default), `gemini-3.1-flash-lite-image` ($0.034/image, 1K), `gemini-3.1-flash-image` ($0.045-$0.151/image tiered by resolution), `gemini-3-pro-image` ($0.134-$0.24/image, native 4K)
+        - Vertex AI: `vertex-nano-banana` (medium thinking), `vertex-nano-banana-fast` (minimal thinking), `vertex-nano-banana-ultra` (high thinking), `vertex-flash` (medium thinking), `vertex-flash-fast` (minimal thinking), `vertex-flash-ultra` (high thinking), `vertex-flash-lite` (Flash Lite, $0.034/image)
+        - xAI Grok: `grok-imagine-image-2.0` ($0.015-$0.07/image), `grok-imagine-image` ($0.02/image)
 
         **Response Formats:**
         - `base64`: Image data encoded in base64 (for images < 512KB)
@@ -72,7 +72,7 @@ paths:
                 summary: Advanced with options
                 value:
                   prompt: "futuristic city with flying cars"
-                  model: "gemini-2.5-flash-image"
+                  model: "gemini-nano-banana-2.1"
                   size: "1024x1024"
                   style: "photorealistic"
                   seed: 42
@@ -444,12 +444,16 @@ components:
         model:
           type: string
           description: AI model to use for generation
-          example: "gemini-3-pro-image"
+          example: "gemini-nano-banana-2.1"
+          default: "gemini-nano-banana-2.1"
           enum:
-            - gemini-2.5-flash-image
+            - gemini-nano-banana-2.1
             - gemini-3-pro-image
             - gemini-3.1-flash-image
             - gemini-3.1-flash-lite-image
+            - vertex-nano-banana
+            - vertex-nano-banana-fast
+            - vertex-nano-banana-ultra
             - vertex-flash
             - vertex-flash-fast
             - vertex-flash-ultra
@@ -486,19 +490,20 @@ components:
           example: "s3_url"
         image_size:
           type: string
-          description: "Native image resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution)."
+          description: "Native image resolution. Gemini Nano Banana 2.1 / 3.1 Flash / vertex-nano-banana* / vertex-flash*: 0.5K, 1K, 2K, or 4K. Gemini 3 Pro: 1K, 2K, or 4K. Flash Lite: 1K only. Grok Imagine: 1K or 2K only (maps to xAI resolution)."
           enum:
+            - 0.5K
             - 1K
             - 2K
             - 4K
           example: "2K"
         aspect_ratio:
           type: string
-          description: "Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto."
+          description: "Aspect ratio for Gemini Nano Banana 2.1, Gemini 3+, and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, and auto."
           example: "16:9"
         thinking_level:
           type: string
-          description: Reasoning depth for Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
+          description: Reasoning depth for Gemini Nano Banana 2.1 and Gemini 3+ models. Higher = more planning before generation. Ignored by other providers.
           enum:
             - minimal
             - low
@@ -507,7 +512,7 @@ components:
           example: "low"
         grounding:
           type: boolean
-          description: Enable Google Search grounding for Gemini 3+ models (not Flash Lite). Billed per search query in addition to the per-image cost.
+          description: Enable Google Search grounding for Gemini Nano Banana 2.1 and Gemini 3+ models (not Flash Lite). Billed per search query in addition to the per-image cost.
           example: false
           default: false
         quality:
@@ -522,7 +527,7 @@ components:
           type: array
           items:
             type: string
-          description: "Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14."
+          description: "Reference images for compositional editing. Local paths (PNG/JPEG/WebP) for all providers; Grok also accepts public https:// URLs. Caps: Grok 2.0=5, Grok Fast=3, Gemini Nano Banana 2.1 / 3 Pro / 3.1 Flash / Lite=14."
           maxItems: 14
           example:
             - "/tmp/character.png"

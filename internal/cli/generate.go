@@ -132,11 +132,11 @@ func defaultThinkingLevelForProvider(provider *generate.Provider) string {
 		return ""
 	}
 	switch provider.ID {
-	case "vertex/flash-3.1-fast", "vertex/flash-3.1-lite":
+	case "vertex/nano-banana-2.1-fast", "vertex/flash-3.1-fast", "vertex/flash-3.1-lite":
 		return "minimal"
-	case "vertex/flash-3.1":
+	case "vertex/nano-banana-2.1", "vertex/flash-3.1":
 		return "medium"
-	case "vertex/flash-3.1-ultra":
+	case "vertex/nano-banana-2.1-ultra", "vertex/flash-3.1-ultra":
 		return "high"
 	default:
 		return ""
@@ -471,11 +471,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 		modelName := model
 		if modelName == "" {
-			resolvedProvider, _ = registry.Get("vertex/flash-3.1")
+			resolvedProvider, _ = registry.Get("vertex/nano-banana-2.1")
 			if resolvedProvider != nil {
 				modelName = resolvedProvider.ModelID
 			} else {
-				modelName = "gemini-3.1-flash-image"
+				modelName = "gemini-nano-banana-2.1"
 			}
 		}
 
@@ -493,6 +493,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 			thinkingLevel = defaultThinkingLevelForProvider(resolvedProvider)
 			options.ThinkingLevel = thinkingLevel
 		}
+		options.Model = modelName
 		reconcileAndWarn(resolvedProvider, &options)
 
 		printInfo("Generating image...")
@@ -1116,6 +1117,9 @@ func printPromptHowto() error {
 │   21:9, 1:4, 4:1, 1:8, 8:1 (Gemini); Grok also adds 2:1, 1:2, 19.5:9,           │
 │   9:19.5, 20:9, 9:20, 5:2, auto                                                 │
 │                                                                                 │
+│ Gemini Nano Banana 2.1 pricing (default, tiered by resolution):                 │
+│   0.5K: $0.0168   1K: $0.0336   2K: $0.0504   4K: $0.1134                       │
+│                                                                                 │
 │ Gemini 3 Pro pricing (varies by size):                                          │
 │   1K/2K: $0.134/image    4K: $0.24/image                                        │
 │                                                                                 │
@@ -1131,15 +1135,16 @@ func printPromptHowto() error {
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │ Pass one or more reference images via --input-image and describe the change.    │
-│   Caps: Grok 2.0=5, older Grok=3, Gemini 2.5=3, Pro=11, Flash/Lite=14          │
+│   Caps: Gemini (Nano Banana 2.1 / 3 Pro / 3.1 Flash/Lite)=14, Grok 2.0=5,       │
+│         Grok Imagine=3                                                          │
 │   Formats: PNG, JPEG, WebP. Each image capped at 20 MB.                         │
 │   Grok uses xAI /images/edits; multi-image prompts may use <IMAGE_0>, etc.      │
 │                                                                                 │
 │   gimage generate "place this on a marble counter, soft studio light" \         │
-│     --model gemini-3.1-flash --input-image product.png                          │
+│     --model nano-banana-2.1 --input-image product.png                           │
 │                                                                                 │
 │   gimage generate "render this as a pencil sketch with detailed shading" \      │
-│     --model grok-quality --input-image photo.png --image-size 2K                │
+│     --model grok --input-image photo.png --image-size 2K                        │
 │                                                                                 │
 │   gimage generate "this character in this scene, cinematic lighting" \          │
 │     --model gemini-3-pro --input-image character.png --input-image scene.jpg    │
@@ -1188,7 +1193,7 @@ Source: https://ai.google.dev/gemini-api/docs/image-generation`)
 func init() {
 	generateCmd.Flags().StringP("prompt", "p", "", "Text description of the image to generate (required)")
 	generateCmd.Flags().StringP("output", "o", "", "Output file path (default: generated_<timestamp>.png)")
-	generateCmd.Flags().String("provider", "", "Provider to use (e.g., gemini/flash-2.5, vertex/flash-3.1)")
+	generateCmd.Flags().String("provider", "", "Provider to use (e.g., gemini/nano-banana-2.1, vertex/nano-banana-2.1)")
 	generateCmd.Flags().String("api", "", "API to use: gemini or vertex (deprecated, use --provider)")
 	generateCmd.Flags().String("api-key", "", "Gemini API key (or use GEMINI_API_KEY env var)")
 	generateCmd.Flags().String("project", "", "Vertex AI project ID (or use GIMAGE_VERTEX_PROJECT env var)")
@@ -1198,17 +1203,17 @@ func init() {
 	generateCmd.Flags().Bool("list-providers", false, "List all available providers with pricing and auth status")
 	generateCmd.Flags().Bool("prompt-howto", false, "Show tips and examples for writing effective prompts")
 	generateCmd.Flags().String("size", "1024x1024", "Image size (e.g., 1024x1024, 512x512)")
-	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini 3 Pro / 3.1 Flash / vertex-flash*: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only.")
-	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini 3+ and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, auto")
+	generateCmd.Flags().String("image-size", "", "Native resolution. Gemini Nano Banana 2.1 / 3.1 Flash: 0.5K, 1K, 2K, or 4K. Gemini 3 Pro: 1K, 2K, or 4K. Gemini 3.1 Flash Lite: 1K only. Grok Imagine: 1K or 2K only.")
+	generateCmd.Flags().String("aspect-ratio", "", "Aspect ratio for Gemini and Grok Imagine. Grok also accepts 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, auto")
 	generateCmd.Flags().String("style", "", "Image style: photorealistic, artistic, anime (Gemini/Vertex only)")
-	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility, 0 for random (Gemini API providers)")
+	generateCmd.Flags().Int64("seed", 0, "Random seed for reproducibility, 0 for random (Gemini 3 Pro / 3.1 Flash / Lite)")
 	generateCmd.Flags().IntP("count", "n", 1, "Number of images to generate (Grok returns N exactly up to 10; Gemini is best-effort)")
 	generateCmd.Flags().String("output-format", "", "Output format: png, jpeg, webp (default: png)")
 	generateCmd.Flags().String("resize-mode", "crop", "Resize mode when dimensions don't match: crop (fill), fit (padding) (default: crop)")
-	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini 3+ (minimal|low|medium|high). Flash Lite accepts minimal|high only. Ignored for Gemini 2.5 Flash.")
-	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini 3+ (billed per search query). Ignored by Flash Lite and Grok.")
+	generateCmd.Flags().String("thinking", "", "Reasoning depth for Gemini (minimal|low|medium|high). Nano Banana 2.1 accepts minimal|medium|high; Flash Lite accepts minimal|high only.")
+	generateCmd.Flags().Bool("grounding", false, "Enable Google Search grounding for Gemini (billed per search query). Ignored by Flash Lite and Grok.")
 	generateCmd.Flags().String("quality", "", "Grok Imagine 2.0 generation quality: low, medium, or auto (default auto). Ignored by other models.")
-	generateCmd.Flags().StringArray("input-image", []string{}, "Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Grok 2.0=5, older Grok=3, Gemini 2.5 Flash=3, Gemini 3 Pro=11, Gemini 3.1 Flash/Lite=14.")
+	generateCmd.Flags().StringArray("input-image", []string{}, "Reference image for editing/composition: local path (all providers) or https:// URL (Grok only). Repeatable. Caps: Gemini=14, Grok 2.0=5, Grok Imagine=3.")
 	generateCmd.Flags().String("user", "", "Optional end-user identifier for abuse monitoring (Grok/xAI only; sent as the API user field).")
 
 	// Bind to viper for config file support

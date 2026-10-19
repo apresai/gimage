@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/apresai/gimage/internal/imaging"
 	"github.com/apresai/gimage/internal/mcp"
 	"github.com/apresai/gimage/internal/observability"
-	"github.com/disintegration/imaging"
 )
 
 // RegisterResizeImageTool registers the resize_image tool
 func RegisterResizeImageTool(server *mcp.MCPServer) {
 	tool := mcp.Tool{
 		Name:        "resize_image",
-		Description: "Resize an image to specific dimensions using high-quality Lanczos resampling. Supports three modes: 'crop' (default) preserves aspect ratio by filling the target size and cropping excess, 'fit' preserves aspect ratio by fitting within target bounds (may be smaller), 'stretch' forces exact dimensions (may distort). Use 'crop' for thumbnails/avatars, 'fit' for constrained display, 'stretch' for exact sizing.",
+		Description: "Resize an image to specific dimensions using high-quality Catmull-Rom resampling. Supports three modes: 'crop' (default) preserves aspect ratio by filling the target size and cropping excess, 'fit' preserves aspect ratio by fitting within target bounds (may be smaller), 'stretch' forces exact dimensions (may distort). Use 'crop' for thumbnails/avatars, 'fit' for constrained display, 'stretch' for exact sizing.",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -110,13 +110,13 @@ func RegisterResizeImageTool(server *mcp.MCPServer) {
 			switch mode {
 			case "fit":
 				// Fit within bounds, preserving aspect ratio (may be smaller than target)
-				resized = imaging.Fit(img, width, height, imaging.Lanczos)
+				resized = imaging.Fit(img, width, height)
 			case "stretch":
 				// Force exact dimensions (may distort - backward compatible with old behavior)
-				resized = imaging.Resize(img, width, height, imaging.Lanczos)
+				resized = imaging.Resize(img, width, height)
 			default: // "crop"
 				// Fill target size, preserving aspect ratio, crop excess from center
-				resized = imaging.Fill(img, width, height, imaging.Center, imaging.Lanczos)
+				resized = imaging.Fill(img, width, height)
 			}
 
 			// Save resized image

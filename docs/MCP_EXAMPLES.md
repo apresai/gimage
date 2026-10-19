@@ -27,7 +27,7 @@ Generate an image of a sunset over mountain peaks with orange and purple sky
 
 **What Happens:**
 1. Claude calls `generate_image` tool with your prompt
-2. Uses Gemini 3 Pro (default, high quality with sharp text)
+2. Uses Gemini Nano Banana 2.1 (default, native 4K with sharp text)
 3. Generates 1024x1024 image
 4. Saves to current directory with timestamp
 
@@ -35,10 +35,10 @@ Generate an image of a sunset over mountain peaks with orange and purple sky
 ```
 Generated image saved to: generated_1730400123.png
 Size: 1024x1024
-Model: gemini-3-pro-image
+Model: gemini-nano-banana-2.1
 ```
 
-**Want lower-cost generation?** Specify `model="gemini-2.5-flash-image"` for the lowest-cost Google model.
+**Want fast 1K generation?** Specify `model="gemini-3.1-flash-lite-image"` (or `model="flash"`).
 
 ### Example 2: Resize an Existing Photo
 
