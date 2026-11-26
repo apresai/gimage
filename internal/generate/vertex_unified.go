@@ -23,6 +23,15 @@ type VertexUnifiedClient struct {
 	circuitBreaker *gobreaker.CircuitBreaker[*genai.GenerateContentResponse]
 }
 
+func vertexUnifiedClientConfig(project, location string) *genai.ClientConfig {
+	return &genai.ClientConfig{
+		Project:     project,
+		Location:    location,
+		Backend:     genai.BackendVertexAI,
+		HTTPOptions: genai.HTTPOptions{APIVersion: "v1"},
+	}
+}
+
 // NewVertexUnifiedClient creates a new Vertex AI client using the unified SDK
 // Authentication uses Application Default Credentials (ADC):
 // - GOOGLE_APPLICATION_CREDENTIALS environment variable (service account JSON)
@@ -64,11 +73,7 @@ func NewVertexUnifiedClient(ctx context.Context, project, location string) (*Ver
 
 	// Create unified SDK client with Vertex AI backend
 	// The unified SDK automatically handles ADC, service accounts, and workload identity
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		Project:  project,
-		Location: location,
-		Backend:  genai.BackendVertexAI,
-	})
+	client, err := genai.NewClient(ctx, vertexUnifiedClientConfig(project, location))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Vertex AI client: %w\nHint: Check that credentials are configured and have 'Vertex AI User' role", err)
 	}

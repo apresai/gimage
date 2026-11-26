@@ -353,4 +353,13 @@ func TestBuildGenerateContentRequest_NanoBanana21(t *testing.T) {
 	if req.GenerationConfig.ImageConfig == nil || req.GenerationConfig.ImageConfig.ImageSize != "2K" {
 		t.Errorf("expected imageSize 2K on Nano Banana 2.1, got %#v", req.GenerationConfig.ImageConfig)
 	}
+	out, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	for _, forbidden := range []string{`"temperature"`, `"topP"`, `"topK"`} {
+		if strings.Contains(string(out), forbidden) {
+			t.Errorf("Nano Banana 2.1 payload must not contain %s; got: %s", forbidden, out)
+		}
+	}
 }

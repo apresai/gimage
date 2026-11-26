@@ -121,3 +121,16 @@ func TestBuildVertexGeminiGenerateContentRequest_CapViolationErrorsEarly(t *test
 		t.Fatalf("expected cap error, got %v", err)
 	}
 }
+
+func TestVertexUnifiedClientConfig_PinsV1(t *testing.T) {
+	cfg := vertexUnifiedClientConfig("test-proj", "global")
+	if cfg.Backend != genai.BackendVertexAI {
+		t.Fatalf("Backend = %v, want BackendVertexAI", cfg.Backend)
+	}
+	if cfg.Project != "test-proj" || cfg.Location != "global" {
+		t.Fatalf("Project/Location = %q/%q, want test-proj/global", cfg.Project, cfg.Location)
+	}
+	if cfg.HTTPOptions.APIVersion != "v1" {
+		t.Fatalf("HTTPOptions.APIVersion = %q, want v1", cfg.HTTPOptions.APIVersion)
+	}
+}

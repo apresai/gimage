@@ -504,9 +504,6 @@ type geminiInlineData struct {
 
 type geminiGenerationConfig struct {
 	ResponseModalities []string              `json:"responseModalities,omitempty"`
-	Temperature        *float64              `json:"temperature,omitempty"`
-	TopP               *float64              `json:"topP,omitempty"`
-	TopK               *int                  `json:"topK,omitempty"`
 	CandidateCount     *int                  `json:"candidateCount,omitempty"`
 	Seed               *int64                `json:"seed,omitempty"`
 	ImageConfig        *geminiImageConfig    `json:"imageConfig,omitempty"`
